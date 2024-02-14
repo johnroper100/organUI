@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Bootstrap demo</title>
+    <title>Organ Control UI</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
         integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
     <script type="importmap">
@@ -18,7 +18,12 @@
 
 <body>
     <div id="app">
-        <button @click="playTrack">Play Track</button>
+        <h1>Track Number: <b>{{ trackNum }}</b> Time: <b>{{ trackTime }}</b></h1>
+        <button @click="sendMessage('playTrack')" class="btn btn-success">Play</button>
+        <button @click="sendMessage('stopTrack')" class="btn btn-danger">Stop</button>
+        <button @click="sendMessage('trackUp')" class="btn btn-secondary">Track Up</button>
+        <button @click="sendMessage('trackDown')" class="btn btn-secondary">Track Down</button>
+        <button @click="sendMessage('recordTrack')" class="btn btn-danger">Record</button>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
@@ -31,18 +36,19 @@
         const app = createApp({
             data() {
                 return {
-                    message: 'Hello Vue!'
+                    trackNum: "None",
+                    trackTime: "None",
                 }
             },
             methods: {
-                playTrack() {
-                    socket.emit('playTrack');
+                sendMessage(message) {
+                    socket.emit(message);
                 }
             }
         }).mount('#app');
 
-        socket.on('trackNumber0', function(num) {
-            app.message = num;
+        socket.on('trackNumber', function(num) {
+            app.trackNum = num;
         });
     </script>
 </body>

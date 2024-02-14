@@ -9,6 +9,14 @@ const { Client, Server } = require('node-osc');
 const oscClient = new Client('127.0.0.1', 9000);
 var oscServer = new Server(8000, '127.0.0.1');
 
+var data = {
+    trackNum: {
+        0: "",
+        1: "",
+        2: ""
+    }
+}
+
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
@@ -47,7 +55,23 @@ oscServer.on('message', (msg) => {
     let messageValue = msg[1];
     if (messageParts[0] == 'RP') {
         if (messageParts[1] == 'label213') {
-            io.emit('trackNumber0', messageValue);
+            messageValue = messageValue.toString();
+            if (messageValue != data.trackNum[2]) {
+                data.trackNum[2] = messageValue;
+                io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+            }
+        } else if (messageParts[1] == 'label212') {
+            messageValue = messageValue.toString();
+            if (messageValue != data.trackNum[1]) {
+                data.trackNum[1] = messageValue;
+                io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+            }
+        } else if (messageParts[1] == 'label210') {
+            messageValue = messageValue.toString();
+            if (messageValue != data.trackNum[0]) {
+                data.trackNum[0] = messageValue;
+                io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+            }
         }
     }
     console.log(messageParts, messageValue);
