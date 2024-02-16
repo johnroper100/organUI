@@ -37,8 +37,18 @@ io.on('connection', (socket) => {
             if (err) console.error(err);
         });
     });
+    socket.on('trackUpTen', () => {
+        oscClient.send('/OPTICS/special2030', 1, (err) => {
+            if (err) console.error(err);
+        });
+    });
     socket.on('trackDown', () => {
         oscClient.send('/OPTICS/special2032', 1, (err) => {
+            if (err) console.error(err);
+        });
+    });
+    socket.on('trackDownTen', () => {
+        oscClient.send('/OPTICS/special2033', 1, (err) => {
             if (err) console.error(err);
         });
     });
