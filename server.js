@@ -40,8 +40,8 @@ io.on('connection', (socket) => {
 
 oscServer.on('message', (msg) => {
     // Parse the message
-    let messageValue = msg[1];
     let messageParts = msg[0].split('/').shift();
+    let messageValue = msg[1];
 
     // Figure out what the message is
     if (messageParts[0] == 'RP') {
