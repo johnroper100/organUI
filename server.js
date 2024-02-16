@@ -27,8 +27,8 @@ app.get('/', (req, res) => {
 
 io.on('connection', (socket) => {
     // Send the current data to the client
-    io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
-    io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
+    socket.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+    socket.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
