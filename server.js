@@ -22,23 +22,13 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
-    socket.on('playTrack', () => {
-        oscClient.send('/OPTICS/special2036', 1, (err) => {
-            if (err) console.error(err);
-        });
-    });
-    socket.on('stopTrack', () => {
-        oscClient.send('/OPTICS/special2037', 1, (err) => {
+    socket.on('trackUpTen', () => {
+        oscClient.send('/OPTICS/special2030', 1, (err) => {
             if (err) console.error(err);
         });
     });
     socket.on('trackUp', () => {
         oscClient.send('/OPTICS/special2031', 1, (err) => {
-            if (err) console.error(err);
-        });
-    });
-    socket.on('trackUpTen', () => {
-        oscClient.send('/OPTICS/special2030', 1, (err) => {
             if (err) console.error(err);
         });
     });
@@ -52,8 +42,23 @@ io.on('connection', (socket) => {
             if (err) console.error(err);
         });
     });
+    socket.on('protectTrack', () => {
+        oscClient.send('/OPTICS/special2034', 1, (err) => {
+            if (err) console.error(err);
+        });
+    });
     socket.on('recordTrack', () => {
         oscClient.send('/OPTICS/special2035', 1, (err) => {
+            if (err) console.error(err);
+        });
+    });
+    socket.on('playTrack', () => {
+        oscClient.send('/OPTICS/special2036', 1, (err) => {
+            if (err) console.error(err);
+        });
+    });
+    socket.on('stopTrack', () => {
+        oscClient.send('/OPTICS/special2037', 1, (err) => {
             if (err) console.error(err);
         });
     });
