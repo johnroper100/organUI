@@ -26,8 +26,12 @@ app.get('/', (req, res) => {
 });
 
 io.on('connection', (socket) => {
+    // Send the current data to the client
+    io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+    io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
+
+    // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
-        console.log('sendOSCcmd', cmd);
         oscClient.send(cmd, 1, (err) => {
             if (err) console.error(err);
         });
@@ -35,9 +39,12 @@ io.on('connection', (socket) => {
 });
 
 oscServer.on('message', (msg) => {
+    // Parse the message
     let messageParts = msg[0].split('/');
     messageParts.shift();
     let messageValue = msg[1];
+
+    // Figure out what the message is
     if (messageParts[0] == 'RP') {
         if (messageParts[1] == 'label338') {
             messageValue = messageValue.toString();
@@ -71,6 +78,8 @@ oscServer.on('message', (msg) => {
             }
         }
     }
+
+    // Log the message for testing
     console.log(messageParts, messageValue);
 });
 
