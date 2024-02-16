@@ -106,6 +106,10 @@
         socket.on('trackNumber', function(num) {
             app.trackNum = num;
         });
+
+        socket.on('trackTime', function(time) {
+            app.trackTime = time;
+        });
     </script>
 </body>
 

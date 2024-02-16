@@ -14,6 +14,10 @@ var data = {
         0: "",
         1: "",
         2: ""
+    },
+    trackTime: {
+        0: "",
+        1: ""
     }
 }
 
@@ -35,23 +39,35 @@ oscServer.on('message', (msg) => {
     messageParts.shift();
     let messageValue = msg[1];
     if (messageParts[0] == 'RP') {
-        if (messageParts[1] == 'label213') {
+        if (messageParts[1] == 'label338') {
             messageValue = messageValue.toString();
             if (messageValue != data.trackNum[2]) {
                 data.trackNum[2] = messageValue;
                 io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
             }
-        } else if (messageParts[1] == 'label212') {
+        } else if (messageParts[1] == 'label337') {
             messageValue = messageValue.toString();
             if (messageValue != data.trackNum[1]) {
                 data.trackNum[1] = messageValue;
                 io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
             }
-        } else if (messageParts[1] == 'label210') {
+        } else if (messageParts[1] == 'label336') {
             messageValue = messageValue.toString();
             if (messageValue != data.trackNum[0]) {
                 data.trackNum[0] = messageValue;
                 io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+            }
+        } else if (messageParts[1] == 'label331') {
+            messageValue = messageValue.toString();
+            if (messageValue != data.trackTime[1]) {
+                data.trackTime[1] = messageValue;
+                io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
+            }
+        } else if (messageParts[1] == 'label330') {
+            messageValue = messageValue.toString();
+            if (messageValue != data.trackTime[0]) {
+                data.trackTime[0] = messageValue;
+                io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
             }
         }
     }
