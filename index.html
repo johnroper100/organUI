@@ -47,32 +47,32 @@
             </div>
             <div class="row mt-1 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendMessage('protectTrack')" class="btn btn-lg w-100 btn-primary pt-4 pb-4">Protect</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2034')" class="btn btn-lg w-100 btn-primary pt-4 pb-4">Protect</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendMessage('recordTrack')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Record</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2035')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Record</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendMessage('trackDownTen')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track -10</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2033')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track -10</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendMessage('trackDown')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Down</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2032')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Down</button>
                 </div>
                 <div class="col-6 col-md-3 mt-3 mt-md-0">
-                    <button @click="sendMessage('trackUp')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Up</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2031')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Up</button>
                 </div>
                 <div class="col-6 col-md-3 mt-3 mt-md-0">
-                    <button @click="sendMessage('trackUpTen')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track +10</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2030')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track +10</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendMessage('playTrack')" class="btn btn-lg w-100 btn-success pt-4 pb-4">Play</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2036')" class="btn btn-lg w-100 btn-success pt-4 pb-4">Play</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendMessage('stopTrack')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Stop</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2037')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Stop</button>
                 </div>
             </div>
         </div>
@@ -96,6 +96,9 @@
             methods: {
                 sendMessage(message) {
                     socket.emit(message);
+                },
+                sendOSCcmd(cmd) {
+                    socket.emit('sendOSCcmd', cmd);
                 }
             }
         }).mount('#app');
