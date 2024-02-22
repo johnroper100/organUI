@@ -17,7 +17,16 @@ var data = {
     magicTunerStatus: "Off",
     trackLocked: 0,
     tunerPattern: "No Pattern",
-    trackNames: { 1: "No Track", 2: "No Track", 3: "No Track", 4: "No Track", 5: "No Track", 6: "No Track", 7: "No Track", 8: "No Track", 9: "No Track", 10: "No Track" }
+    trackNames: {},
+    stopNames: {}
+}
+
+for (let i = 1; i <= 10; i++) {
+    data.trackNames[i] = "No Track";
+}
+
+for (let i = 1; i <= 252; i++) {
+    data.stopNames[i] = "No Stop";
 }
 
 function sendSubscribeMessage() {
@@ -69,6 +78,14 @@ oscServer.on('message', (msg) => {
             if (data.tunerPattern != messageValue) {
                 data.tunerPattern = messageValue;
                 io.emit('tunerPattern', data.tunerPattern);
+            }
+        } else if (messageParts[1].startsWith('label')) {
+            let labelNum = parseInt(messageParts[1].substring(5));
+            if (labelNum >= 1 && labelNum <= 252) {
+                if (data.stopNames[labelNum] != messageValue) {
+                    data.stopNames[labelNum] = messageValue;
+                    io.emit('stopNames', data.stopNames);
+                }
             }
         }
     } else if (messageParts[0] == 'UserDef'){
@@ -144,6 +161,7 @@ io.on('connection', (socket) => {
     socket.emit('magicTunerStatus', data.magicTunerStatus);
     socket.emit('tunerPattern', data.tunerPattern);
     socket.emit('trackNames', data.trackNames);
+    socket.emit('stopNames', data.stopNames);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {

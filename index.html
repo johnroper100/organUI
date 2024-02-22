@@ -146,6 +146,7 @@
         </div>
         <div class="container-fluid" v-if="page == 0">
             <h1>{{uptime}}</h1>
+            {{stopNames}}
         </div>
         <div class="container-fluid" v-if="page == 5">
             <input type="range" class="form-range" orient="vertical">
@@ -228,7 +229,8 @@
                     uptime: "No Uptime",
                     magicTunerStatus: "Off",
                     tunerPattern: "No Pattern",
-                    trackNames: { 1: "No Track", 2: "No Track", 3: "No Track", 4: "No Track", 5: "No Track", 6: "No Track", 7: "No Track", 8: "No Track", 9: "No Track", 10: "No Track" }
+                    trackNames: { },
+                    stopNames: { }
                 }
             },
             methods: {
@@ -267,6 +269,10 @@
 
         socket.on('trackNames', function (names) {
             app.trackNames = names;
+        });
+
+        socket.on('stopNames', function (names) {
+            app.stopNames = names;
         });
     </script>
 </body>
