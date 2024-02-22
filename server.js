@@ -14,14 +14,19 @@ var data = {
     trackNum: "No Track",
     trackTime: "-- : --",
     uptime: "No Uptime",
+    magicTunerStatus: "Off",
     trackLocked: 0
 }
 
-app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
-});
+function sendSubscribeMessage() {
+    oscClient.send("/OPTICS/special2001", 1, (err) => {
+        if (err) console.error(err);
+    });
+}
 
-app.use('/static', express.static(path.join(__dirname, 'static')));
+sendSubscribeMessage();
+
+setInterval(sendSubscribeMessage, 30 * 60 * 1000);
 
 oscServer.on('message', (msg) => {
     // Parse the message
@@ -48,6 +53,11 @@ oscServer.on('message', (msg) => {
                 data.uptime = messageValue;
                 io.emit('uptime', data.uptime);
             }
+        } else if (messageParts[1] == 'label301') {
+            if (data.magicTunerStatus != messageValue) {
+                data.magicTunerStatus = messageValue;
+                io.emit('magicTunerStatus', data.magicTunerStatus);
+            }
         } else if (messageParts[1] == 'label305') {
             if (data.trackNum != messageValue) {
                 data.trackNum = messageValue;
@@ -61,11 +71,14 @@ oscServer.on('message', (msg) => {
 });
 
 io.on('connection', (socket) => {
+    sendSubscribeMessage();
+
     // Send the current data to the client
     socket.emit('trackNum', data.trackNum);
     socket.emit('trackTime', data.trackTime);
     socket.emit('trackLocked', data.trackLocked);
     socket.emit('uptime', data.uptime);
+    socket.emit('magicTunerStatus', data.magicTunerStatus);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
@@ -75,19 +88,15 @@ io.on('connection', (socket) => {
     });
 });
 
-function sendSubscribeMessage() {
-    oscClient.send("/OPTICS/special2001", 1, (err) => {
-        if (err) console.error(err);
-    });
-}
-
-sendSubscribeMessage();
-
-setInterval(sendSubscribeMessage, 30 * 60 * 1000);
-
 oscServer.on('listening', () => {
     console.log('OSC Server is listening on 0.0.0.0:9000');
 });
+
+app.get('/', (req, res) => {
+    res.sendFile(__dirname + '/index.html');
+});
+
+app.use('/static', express.static(path.join(__dirname, 'static')));
 
 httpServer.listen(3000, () => {
     console.log('HTTP Server is listening on *:3000');

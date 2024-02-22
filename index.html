@@ -27,10 +27,10 @@
                     <button @click="page = 1" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 1, 'btn-secondary': page != 1}">Stops/Notes 2</button>
                 </div>
                 <div class="col-3 d-flex p-0">
-                    <button @click="page = 2" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 2, 'btn-secondary': page != 2}">Stops/Notes 3</button>
+                    <button @click="page = 2" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 2, 'btn-secondary': page != 2}">Stops/Notes 3</button>
                 </div>
                 <div class="col-3 d-flex p-0">
-                    <button @click="page = 3" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Stops/Notes 4</button>
+                    <button @click="page = 3" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Stops/Notes 4</button>
                 </div>
             </div>
             <div class="row">
@@ -48,10 +48,7 @@
                 </div>
             </div>
         </div>
-        <div class="container-fluid" v-if="page == 0">
-            <h1>{{uptime}}</h1>
-        </div>
-        <div class="container-fluid" v-if="page == 1">
+        <div class="container-fluid mb-3" v-if="page < 4">
             <div class="row mb-3">
                 <div class="col-12 col-lg-8 mb-3 mb-lg-0">
                     <div id="piano-keyboard">
@@ -84,20 +81,20 @@
                 </div>
                 <div class="col-12 col-lg-4">
                     <div class="row">
-                        <div class="col-4">
+                        <div class="col-3">
                             <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2014')">Back</button>
                         </div>
-                        <div class="col-4">
+                        <div class="col-3">
                             <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2015')">Next</button>
                         </div>
-                        <div class="col-4">
-                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2012')">Magic Tuner</button>
+                        <div class="col-6">
+                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2012')">Magic Tuner {{ magicTunerStatus }}</button>
                         </div>
                     </div>
                 </div>
             </div>
             <div class="row">
-                <div class="col-8">
+                <div class="col-12 col-lg-8">
                     <div class="row">
                         <div class="col-2 mb-2">
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2020')">-2 oct</button>
@@ -135,6 +132,9 @@
                     </div>
                 </div>
             </div>
+        </div>
+        <div class="container-fluid" v-if="page == 0">
+            <h1>{{uptime}}</h1>
         </div>
         <div class="container-fluid" v-if="page == 6">
             <div class="row mt-5">
@@ -195,11 +195,12 @@
         const app = createApp({
             data() {
                 return {
-                    page: 1,
+                    page: 0,
                     trackNum: "No Track",
                     trackTime: "-- : --",
                     trackLocked: 0,
-                    uptime: "No Uptime"
+                    uptime: "No Uptime",
+                    magicTunerStatus: "Off"
                 }
             },
             methods: {
@@ -226,6 +227,10 @@
 
         socket.on('uptime', function (time) {
             app.uptime = time;
+        });
+
+        socket.on('magicTunerStatus', function (status) {
+            app.magicTunerStatus = status;
         });
     </script>
 </body>
