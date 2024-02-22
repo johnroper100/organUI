@@ -38,7 +38,7 @@
                     <button @click="page = 4" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Naming</button>
                 </div>
                 <div class="col-3 d-flex p-0">
-                    <button @click="page = 5" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Expressions</button>
+                    <button @click="page = 5" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Expressions</button>
                 </div>
                 <div class="col-3 d-flex p-0">
                     <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
@@ -146,6 +146,9 @@
         </div>
         <div class="container-fluid" v-if="page == 0">
             <h1>{{uptime}}</h1>
+        </div>
+        <div class="container-fluid" v-if="page == 5">
+            <input type="range" class="form-range" orient="vertical">
         </div>
         <div class="container-fluid" v-if="page == 6">
             <div class="row mt-5">

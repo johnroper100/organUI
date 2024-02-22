@@ -49,3 +49,10 @@
         transform: translate(-90%);
     }
 }
+
+input[type=range][orient=vertical]
+{
+    -webkit-appearance: slider-vertical; /* WebKit */
+    width: 3em;
+    height: 15em;
+}
