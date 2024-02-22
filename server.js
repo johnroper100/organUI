@@ -90,7 +90,7 @@ oscServer.on('message', (msg) => {
         } else if (messageParts[1].startsWith('push')) {
             let btnNum = parseInt(messageParts[1].substring(4));
             if (btnNum >= 1 && btnNum <= 252) {
-                if (messageParts.length == 3) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
                     let active = messageValue;
                     if (active == 'purple') {
                         active = 0;
