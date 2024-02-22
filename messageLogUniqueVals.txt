@@ -1,15 +1,3 @@
-[ 'OPTICS', 'special1898', 'color' ] blue
-[ 'OPTICS', 'special1898', 'color' ] red
-[ 'OPTICS', 'special1900', 'color' ] blue
-[ 'OPTICS', 'special1901', 'color' ] blue
-[ 'OPTICS', 'special1902', 'color' ] blue
-[ 'OPTICS', 'special1903', 'color' ] blue
-[ 'OPTICS', 'special1904', 'color' ] blue
-[ 'OPTICS', 'special1905', 'color' ] blue
-[ 'OPTICS', 'special1906', 'color' ] blue
-[ 'OPTICS', 'special1907', 'color' ] blue
-[ 'OPTICS', 'special1908', 'color' ] blue
-[ 'OPTICS', 'special1999', 'color' ] blue
 [ 'OPTICS', 'special2000', 'color' ] blue
 [ 'OPTICS', 'special2001', 'color' ] blue
 [ 'OPTICS', 'special2002', 'color' ] blue
@@ -20,10 +8,7 @@
 [ 'OPTICS', 'special2007', 'color' ] blue
 [ 'OPTICS', 'special2008', 'color' ] blue
 [ 'OPTICS', 'special2009', 'color' ] blue
-[ 'OPTICS', 'special2010', 'color' ] blue
 [ 'OPTICS', 'special2011', 'color' ] blue
-[ 'OPTICS', 'special2012', 'color' ] blue
-[ 'OPTICS', 'special2012', 'color' ] red
 [ 'OPTICS', 'special2013', 'color' ] blue
 [ 'OPTICS', 'special2014', 'color' ] orange
 [ 'OPTICS', 'special2015', 'color' ] orange
@@ -32,26 +17,6 @@
 [ 'OPTICS', 'special2017', 'color' ] blue
 [ 'OPTICS', 'special2018', 'color' ] blue
 [ 'OPTICS', 'special2019', 'color' ] blue
-[ 'OPTICS', 'special2020', 'color' ] blue
-[ 'OPTICS', 'special2020', 'color' ] red
-[ 'OPTICS', 'special2021', 'color' ] blue
-[ 'OPTICS', 'special2021', 'color' ] red
-[ 'OPTICS', 'special2022', 'color' ] blue
-[ 'OPTICS', 'special2022', 'color' ] red
-[ 'OPTICS', 'special2023', 'color' ] blue
-[ 'OPTICS', 'special2023', 'color' ] red
-[ 'OPTICS', 'special2024', 'color' ] blue
-[ 'OPTICS', 'special2024', 'color' ] red
-[ 'OPTICS', 'special2025', 'color' ] blue
-[ 'OPTICS', 'special2025', 'color' ] red
-[ 'OPTICS', 'special2026', 'color' ] blue
-[ 'OPTICS', 'special2026', 'color' ] red
-[ 'OPTICS', 'special2027', 'color' ] blue
-[ 'OPTICS', 'special2027', 'color' ] red
-[ 'OPTICS', 'special2028', 'color' ] blue
-[ 'OPTICS', 'special2028', 'color' ] red
-[ 'OPTICS', 'special2029', 'color' ] blue
-[ 'OPTICS', 'special2029', 'color' ] red
 [ 'OPTICS', 'special2030', 'color' ] blue
 [ 'OPTICS', 'special2031', 'color' ] blue
 [ 'OPTICS', 'special2032', 'color' ] blue
@@ -76,127 +41,73 @@
 [ 'OPTICS', 'special2049', 'color' ] blue
 [ 'OPTICS', 'special2049', 'color' ] red
 [ 'OPTICS', 'special2050', 'color' ] red
+
+# Unison and pitches active
+[ 'OPTICS', 'special2020', 'color' ] blue
+[ 'OPTICS', 'special2020', 'color' ] red
+[ 'OPTICS', 'special2021', 'color' ] blue
+[ 'OPTICS', 'special2021', 'color' ] red
+[ 'OPTICS', 'special2022', 'color' ] blue
+[ 'OPTICS', 'special2022', 'color' ] red
+[ 'OPTICS', 'special2023', 'color' ] blue
+[ 'OPTICS', 'special2023', 'color' ] red
+[ 'OPTICS', 'special2024', 'color' ] blue
+[ 'OPTICS', 'special2024', 'color' ] red
+[ 'OPTICS', 'special2025', 'color' ] blue
+[ 'OPTICS', 'special2025', 'color' ] red
+[ 'OPTICS', 'special2026', 'color' ] blue
+[ 'OPTICS', 'special2026', 'color' ] red
+[ 'OPTICS', 'special2027', 'color' ] blue
+[ 'OPTICS', 'special2027', 'color' ] red
+[ 'OPTICS', 'special2028', 'color' ] blue
+[ 'OPTICS', 'special2028', 'color' ] red
+[ 'OPTICS', 'special2029', 'color' ] blue
+[ 'OPTICS', 'special2029', 'color' ] red
+[ 'OPTICS', 'special1898', 'color' ] blue
+[ 'OPTICS', 'special1898', 'color' ] red
+
+# Sostenuto active
+[ 'OPTICS', 'special2010', 'color' ] blue
+
+# Magic tuner active
+[ 'OPTICS', 'special2012', 'color' ] blue
+[ 'OPTICS', 'special2012', 'color' ] red
+
+# Track number?
 [ 'RP', 'label328' ] 1
 [ 'RP', 'label329' ] 1
-[ 'RP', 'label330' ] --
-[ 'RP', 'label331' ] --
+
+# preset active
+[ 'OPTICS', 'special1900', 'color' ] blue
+[ 'OPTICS', 'special1901', 'color' ] blue
+[ 'OPTICS', 'special1902', 'color' ] blue
+[ 'OPTICS', 'special1999', 'color' ] blue
+[ 'OPTICS', 'special1903', 'color' ] blue
+[ 'OPTICS', 'special1904', 'color' ] blue
+[ 'OPTICS', 'special1905', 'color' ] blue
+[ 'OPTICS', 'special1906', 'color' ] blue
+[ 'OPTICS', 'special1907', 'color' ] blue
+[ 'OPTICS', 'special1908', 'color' ] blue
+[ 'OPTICS', 'special1909', 'color' ] blue
+[ 'OPTICS', 'special1910', 'color' ] blue
+[ 'OPTICS', 'special1911', 'color' ] blue
+
 [ 'RP', 'label340' ] Off
-[ 'Stops', 'DivLabel1' ] Nave Gt
-[ 'Stops', 'DivLabel10' ] 
-[ 'Stops', 'DivLabel11' ] 
-[ 'Stops', 'DivLabel12' ] 
-[ 'Stops', 'DivLabel13' ] 
-[ 'Stops', 'DivLabel14' ] 
-[ 'Stops', 'DivLabel15' ] 
-[ 'Stops', 'DivLabel16' ] 
-[ 'Stops', 'DivLabel17' ] 
-[ 'Stops', 'DivLabel18' ] 
-[ 'Stops', 'DivLabel19' ] 
-[ 'Stops', 'DivLabel2' ] Nave Gt
-[ 'Stops', 'DivLabel20' ] 
-[ 'Stops', 'DivLabel21' ] 
-[ 'Stops', 'DivLabel22' ] 
-[ 'Stops', 'DivLabel23' ] 
-[ 'Stops', 'DivLabel24' ] 
-[ 'Stops', 'DivLabel25' ] 
-[ 'Stops', 'DivLabel26' ] 
-[ 'Stops', 'DivLabel27' ] 
-[ 'Stops', 'DivLabel28' ] 
-[ 'Stops', 'DivLabel29' ] 
-[ 'Stops', 'DivLabel3' ] Nave Sw
-[ 'Stops', 'DivLabel30' ] 
-[ 'Stops', 'DivLabel31' ] 
-[ 'Stops', 'DivLabel32' ] 
-[ 'Stops', 'DivLabel33' ] 
-[ 'Stops', 'DivLabel34' ] 
-[ 'Stops', 'DivLabel35' ] 
-[ 'Stops', 'DivLabel36' ] 
-[ 'Stops', 'DivLabel4' ] Nave Sw
-[ 'Stops', 'DivLabel5' ] Nave Pd
-[ 'Stops', 'DivLabel6' ] Nave iPad
-[ 'Stops', 'DivLabel7' ] Nave iPad
-[ 'Stops', 'DivLabel8' ] 
-[ 'Stops', 'DivLabel9' ] 
-[ 'Tabs', 'Label1' ] Buttons 1-63
-[ 'Tabs', 'Label2' ] Buttons 64-126
-[ 'Tabs', 'Label3' ] Buttons 127-189
-[ 'Tabs', 'Label4' ] Naming
-[ 'Tabs', 'Label5' ] Expressions
-[ 'Tabs', 'Label6' ] Record/Play
-[ 'Tabs', 'Label7' ] Site-Specific
+
 [ 'TrackDup', 'SrcTrk1' ] -1
 [ 'TrackDup', 'TgtTrk1' ] -1
+
 [ 'UserDef', 'label1' ] 
-[ 'UserDef', 'label10' ] 
-[ 'UserDef', 'label2' ] 
-[ 'UserDef', 'label3' ] 
-[ 'UserDef', 'label4' ] 
-[ 'UserDef', 'label5' ] 
-[ 'UserDef', 'label6' ] 
-[ 'UserDef', 'label7' ] 
-[ 'UserDef', 'label8' ] 
-[ 'UserDef', 'label9' ]
+
 [ 'UserDef', 'page1' ] Off
+
 [ 'UserDef', 'value1' ] 
-[ 'UserDef', 'value10' ] 
-[ 'UserDef', 'value2' ] 
-[ 'UserDef', 'value3' ] 
-[ 'UserDef', 'value4' ] 
-[ 'UserDef', 'value5' ] 
-[ 'UserDef', 'value6' ] 
-[ 'UserDef', 'value7' ] 
-[ 'UserDef', 'value8' ] 
-[ 'UserDef', 'value9' ] 
+
 [ 'faders', 'expr1' ] 
-[ 'faders', 'expr10' ] 
-[ 'faders', 'expr11' ] 
-[ 'faders', 'expr12' ] 
-[ 'faders', 'expr13' ] 
-[ 'faders', 'expr14' ] 
-[ 'faders', 'expr15' ] 
-[ 'faders', 'expr16' ] 
-[ 'faders', 'expr17' ] 
-[ 'faders', 'expr18' ] 
-[ 'faders', 'expr19' ] 
-[ 'faders', 'expr2' ] 
-[ 'faders', 'expr20' ] 
-[ 'faders', 'expr21' ] 
-[ 'faders', 'expr22' ] 
-[ 'faders', 'expr23' ] 
-[ 'faders', 'expr24' ] 
-[ 'faders', 'expr3' ] 
-[ 'faders', 'expr4' ] 
-[ 'faders', 'expr5' ] 
-[ 'faders', 'expr6' ] 
-[ 'faders', 'expr7' ] 
-[ 'faders', 'expr8' ] 
-[ 'faders', 'expr9' ] 
-[ 'keyboard', 'key1', 'color' ] brown
+
 [ 'keyboard', 'key1', 'color' ] green
-[ 'keyboard', 'key10', 'color' ] green
-[ 'keyboard', 'key11', 'color' ] brown
-[ 'keyboard', 'key12', 'color' ] purple
-[ 'keyboard', 'key13', 'color' ] green
-[ 'keyboard', 'key14', 'color' ] purple
-[ 'keyboard', 'key15', 'color' ] brown
-[ 'keyboard', 'key16', 'color' ] green
-[ 'keyboard', 'key16', 'color' ] purple
-[ 'keyboard', 'key17', 'color' ] green
-[ 'keyboard', 'key18', 'color' ] green
-[ 'keyboard', 'key18', 'color' ] purple
-[ 'keyboard', 'key19', 'color' ] brown
 [ 'keyboard', 'key2', 'color' ] purple
-[ 'keyboard', 'key20', 'color' ] green
-[ 'keyboard', 'key21', 'color' ] green
-[ 'keyboard', 'key22', 'color' ] purple
-[ 'keyboard', 'key23', 'color' ] brown
-[ 'keyboard', 'key24', 'color' ] purple
-[ 'keyboard', 'key25', 'color' ] brown
 [ 'keyboard', 'key3', 'color' ] brown
-[ 'keyboard', 'key4', 'color' ] purple
-[ 'keyboard', 'key5', 'color' ] brown
-[ 'keyboard', 'key5', 'color' ] green
-[ 'keyboard', 'key6', 'color' ] green
-[ 'keyboard', 'key7', 'color' ] brown
-[ 'keyboard', 'key8', 'color' ] green
-[ 'keyboard', 'key9', 'color' ] brown
+
+[ 'Stops', 'DivLabel1' ] Nave Gt
+[ 'Tabs', 'Label1' ] Buttons 1-63
