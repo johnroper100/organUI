@@ -76,6 +76,10 @@ oscServer.on('message', (msg) => {
     //console.log(messageParts, messageValue);
 });
 
+oscServer.on('error', (err) => {
+    console.error(err);
+});
+
 io.on('connection', (socket) => {
     sendSubscribeMessage();
 
