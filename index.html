@@ -146,7 +146,33 @@
         </div>
         <div class="container-fluid" v-if="page == 0">
             <h1>{{uptime}}</h1>
-            {{stopNames}}
+            <div class="row">
+                <div class="col-1 mb-2 d-flex" v-for="(stop, i) in stops.slice(0, 63)" :id="i">
+                    <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid" v-if="page == 1">
+            <div class="row">
+                <div class="col-1 mb-2 d-flex" v-for="(stop, i) in stops.slice(63, 126)" :id="i">
+                    <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid" v-if="page == 2">
+            <h1>{{uptime}}</h1>
+            <div class="row">
+                <div class="col-1 mb-2 d-flex" v-for="(stop, i) in stops.slice(126, 189)" :id="i">
+                    <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid" v-if="page == 3">
+            <div class="row">
+                <div class="col-1 mb-2 d-flex" v-for="(stop, i) in stops.slice(189, 252)" :id="i">
+                    <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                </div>
+            </div>
         </div>
         <div class="container-fluid" v-if="page == 5">
             <input type="range" class="form-range" orient="vertical">
@@ -230,7 +256,7 @@
                     magicTunerStatus: "Off",
                     tunerPattern: "No Pattern",
                     trackNames: { },
-                    stopNames: { }
+                    stops: []
                 }
             },
             methods: {
@@ -271,8 +297,8 @@
             app.trackNames = names;
         });
 
-        socket.on('stopNames', function (names) {
-            app.stopNames = names;
+        socket.on('stops', function (stops) {
+            app.stops = stops;
         });
     </script>
 </body>

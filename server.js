@@ -18,7 +18,7 @@ var data = {
     trackLocked: 0,
     tunerPattern: "No Pattern",
     trackNames: {},
-    stopNames: {}
+    stops: []
 }
 
 for (let i = 1; i <= 10; i++) {
@@ -26,7 +26,7 @@ for (let i = 1; i <= 10; i++) {
 }
 
 for (let i = 1; i <= 252; i++) {
-    data.stopNames[i] = "No Stop";
+    data.stops.push({name: "Stop "+i.toString(), active: 0});
 }
 
 function sendSubscribeMessage() {
@@ -82,9 +82,25 @@ oscServer.on('message', (msg) => {
         } else if (messageParts[1].startsWith('label')) {
             let labelNum = parseInt(messageParts[1].substring(5));
             if (labelNum >= 1 && labelNum <= 252) {
-                if (data.stopNames[labelNum] != messageValue) {
-                    data.stopNames[labelNum] = messageValue;
-                    io.emit('stopNames', data.stopNames);
+                if (data.stops[labelNum-1].name != messageValue) {
+                    data.stops[labelNum-1].name = messageValue;
+                    io.emit('stops', data.stops);
+                }
+            }
+        } else if (messageParts[1].startsWith('push')) {
+            let btnNum = parseInt(messageParts[1].substring(4));
+            if (btnNum >= 1 && btnNum <= 252) {
+                if (messageParts.length == 3) {
+                    let active = messageValue;
+                    if (active == 'purple') {
+                        active = 0;
+                    } else if (active == 'green') {
+                        active = 1;
+                    }
+                    if (data.stops[btnNum-1].active != active) {
+                        data.stops[btnNum-1].active = active;
+                        io.emit('stops', data.stops);
+                    }
                 }
             }
         }
@@ -161,7 +177,7 @@ io.on('connection', (socket) => {
     socket.emit('magicTunerStatus', data.magicTunerStatus);
     socket.emit('tunerPattern', data.tunerPattern);
     socket.emit('trackNames', data.trackNames);
-    socket.emit('stopNames', data.stopNames);
+    socket.emit('stops', data.stops);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
