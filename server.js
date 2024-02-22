@@ -75,12 +75,18 @@ io.on('connection', (socket) => {
     });
 });
 
-oscServer.on('listening', () => {
-    console.log('OSC Server is listening on 0.0.0.0:9000');
-
+function sendSubscribeMessage() {
     oscClient.send("/OPTICS/special2001", 1, (err) => {
         if (err) console.error(err);
     });
+}
+
+sendSubscribeMessage();
+
+setInterval(sendSubscribeMessage, 30 * 60 * 1000);
+
+oscServer.on('listening', () => {
+    console.log('OSC Server is listening on 0.0.0.0:9000');
 });
 
 httpServer.listen(3000, () => {
