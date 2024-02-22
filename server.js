@@ -11,10 +11,10 @@ const oscClient = new Client('192.168.175.12', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 
 var data = {
-    trackNum: "",
-    trackTime: "",
+    trackNum: "No Track",
+    trackTime: "-- : --",
     uptime: "",
-    trackLocked: 1
+    trackLocked: 0
 }
 
 app.get('/', (req, res) => {

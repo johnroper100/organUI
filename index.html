@@ -16,33 +16,51 @@
 </head>
 
 <body class="bg-dark text-light">
-    <div id="app">
-        <div class="btn-group w-100" role="group">
-            <button @click="page = 0" type="button" class="btn rounded-0" :class="{'btn-primary': page == 0, 'btn-secondary': page != 0}">Stops/Notes 1</button>
-            <button @click="page = 1" type="button" class="btn" :class="{'btn-primary': page == 1, 'btn-secondary': page != 1}">Stops/Notes 2</button>
-            <button @click="page = 2" type="button" class="btn" :class="{'btn-primary': page == 2, 'btn-secondary': page != 2}">Folder Naming</button>
-            <button @click="page = 3" type="button" class="btn" :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Expression</button>
-            <button @click="page = 4" type="button" class="btn" :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Sequencer</button>
-            <button @click="page = 5" type="button" class="btn rounded-0" :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Site-Specific</button>
+    <div id="app" class="container-fluid">
+        <div class="row mb-2">
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 0" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 0, 'btn-secondary': page != 0}">Stops/Notes 1</button>
+            </div>
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 1" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 1, 'btn-secondary': page != 1}">Stops/Notes 2</button>
+            </div>
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 2" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 2, 'btn-secondary': page != 2}">Stops/Notes 3</button>
+            </div>
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 3" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Stops/Notes 4</button>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 4" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Naming</button>
+            </div>
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 5" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Expressions</button>
+            </div>
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
+            </div>
+            <div class="col-3 d-flex p-0">
+                <button @click="page = 7" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 7, 'btn-secondary': page != 7}">Site Specific</button>
+            </div>
         </div>
         <div class="container" v-if="page == 0">
             <h1>{{uptime}}</h1>
         </div>
-        <div class="container" v-if="page == 4">
+        <div class="container" v-if="page == 6">
             <div class="row mt-5">
                 <div class="col-12 col-md-6 text-center">
-                    <h2>Track Number:</h2>
                     <h1><b>{{ trackNum }}</b></h1>
                 </div>
                 <div class="col-12 col-md-6 text-center mt-5 mt-md-0">
-                    <h2>Time:</h2>
-                    <h1><b>{{ trackTime }}</b></h1>
+                    <h1>Time: <b>{{ trackTime }}</b></h1>
                 </div>
             </div>
             <div class="row mt-5 justify-content-center">
                 <div class="col-6 col-md-3">
                     <h4 class="text-danger" v-if="trackLocked == 1">Track Locked</h4>
-                    <h4 class="text-success" v-if="trackLocked == 0">Track Unlocked</h4>
+                    <h4 class="text-warning" v-if="trackLocked == 0">Track Unlocked</h4>
                 </div>
                 <div class="col-6 col-md-3">
                     <!-- Empty for spacing -->
@@ -50,7 +68,7 @@
             </div>
             <div class="row mt-1 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2034')" class="btn btn-lg w-100 btn-primary pt-4 pb-4"><span v-if="trackLocked == 1">Un</span>Protect</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2034')" class="btn btn-lg w-100 btn-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
                 </div>
                 <div class="col-6 col-md-3">
                     <button @click="sendOSCcmd('/OPTICS/special2035')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Record</button>
@@ -89,10 +107,10 @@
         const app = createApp({
             data() {
                 return {
-                    page: 4,
-                    trackNum: "",
-                    trackTime: "",
-                    trackLocked: 1,
+                    page: 6,
+                    trackNum: "No Track",
+                    trackTime: "-- : --",
+                    trackLocked: 0,
                     uptime: ""
                }
             },
