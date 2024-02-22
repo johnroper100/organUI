@@ -89,8 +89,8 @@
             data() {
                 return {
                     page: 4,
-                    trackNum: "001",
-                    trackTime: "01:24",
+                    trackNum: "",
+                    trackTime: "",
                     uptime: ""
                }
             },
@@ -104,7 +104,7 @@
             }
         }).mount('#app');
 
-        socket.on('trackNumber', function(num) {
+        socket.on('trackNum', function(num) {
             app.trackNum = num;
         });
 

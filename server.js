@@ -11,15 +11,8 @@ const oscClient = new Client('192.168.175.12', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 
 var data = {
-    trackNum: {
-        0: "",
-        1: "",
-        2: ""
-    },
-    trackTime: {
-        0: "",
-        1: ""
-    },
+    trackNum: "",
+    trackTime: "",
     uptime: ""
 }
 
@@ -37,35 +30,10 @@ oscServer.on('message', (msg) => {
 
     // Figure out what the message is
     if (messageParts[0] == 'RP') {
-        if (messageParts[1] == 'label338') {
-            messageValue = messageValue.toString();
-            if (messageValue != data.trackNum[2]) {
-                data.trackNum[2] = messageValue;
-                io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
-            }
-        } else if (messageParts[1] == 'label337') {
-            messageValue = messageValue.toString();
-            if (messageValue != data.trackNum[1]) {
-                data.trackNum[1] = messageValue;
-                io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
-            }
-        } else if (messageParts[1] == 'label336') {
-            messageValue = messageValue.toString();
-            if (messageValue != data.trackNum[0]) {
-                data.trackNum[0] = messageValue;
-                io.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
-            }
-        } else if (messageParts[1] == 'label331') {
-            messageValue = messageValue.toString();
-            if (messageValue != data.trackTime[1]) {
-                data.trackTime[1] = messageValue;
-                io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
-            }
-        } else if (messageParts[1] == 'label330') {
-            messageValue = messageValue.toString();
-            if (messageValue != data.trackTime[0]) {
-                data.trackTime[0] = messageValue;
-                io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
+        if (messageParts[1] == 'label332') {
+            if (data.trackTime != messageValue) {
+                data.trackTime = messageValue;
+                io.emit('trackTime', data.trackTime);
             }
         }
     } else if (messageParts[0] == 'Stops'){
@@ -74,17 +42,23 @@ oscServer.on('message', (msg) => {
                 data.uptime = messageValue;
                 io.emit('uptime', data.uptime);
             }
-        }
+        } else if (messageParts[1] == 'label305') {
+            if (data.trackNum != messageValue) {
+                data.trackNum = messageValue;
+                io.emit('trackNum', data.trackNum);
+            }
+        } 
     }
 
     // Log the message for testing
-    console.log(messageParts, messageValue);
+    //console.log(messageParts, messageValue);
 });
 
 io.on('connection', (socket) => {
     // Send the current data to the client
-    socket.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
-    socket.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
+    socket.emit('trackNum', data.trackNum);
+    socket.emit('trackTime', data.trackTime);
+    socket.emit('uptime', data.uptime);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
