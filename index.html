@@ -5,12 +5,11 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Organ Control UI</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN" crossorigin="anonymous">
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <script type="importmap">
         {
             "imports": {
-            "vue": "https://unpkg.com/vue@3/dist/vue.esm-browser.js"
+            "vue": "/static/js/vue.esm-browser.js"
             }
         }
     </script>
@@ -25,6 +24,9 @@
             <button @click="page = 3" type="button" class="btn" :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Expression</button>
             <button @click="page = 4" type="button" class="btn" :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Sequencer</button>
             <button @click="page = 5" type="button" class="btn rounded-0" :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Site-Specific</button>
+        </div>
+        <div class="container" v-if="page == 0">
+            <h1>{{uptime}}</h1>
         </div>
         <div class="container" v-if="page == 4">
             <div class="row mt-5">
@@ -77,9 +79,7 @@
             </div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
-        integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
-        crossorigin="anonymous"></script>
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script type="module">
         import { createApp } from 'vue'
@@ -91,7 +91,8 @@
                     page: 4,
                     trackNum: "001",
                     trackTime: "01:24",
-                }
+                    uptime: ""
+               }
             },
             methods: {
                 sendMessage(message) {
@@ -109,6 +110,10 @@
 
         socket.on('trackTime', function(time) {
             app.trackTime = time;
+        });
+
+        socket.on('uptime', function(time) {
+            app.uptime = time;
         });
     </script>
 </body>

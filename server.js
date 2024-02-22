@@ -1,13 +1,14 @@
 const express = require('express');
 const app = express();
+const path = require('path');
 const http = require('http');
 const httpServer = http.createServer(app);
 const { Server: SocketServer } = require("socket.io");
 const io = new SocketServer(httpServer);
 const { Client, Server } = require('node-osc');
 
-const oscClient = new Client('127.0.0.1', 9000);
-var oscServer = new Server(8000, '127.0.0.1');
+const oscClient = new Client('192.168.175.12', 8000);
+var oscServer = new Server(9000, '0.0.0.0');
 
 var data = {
     trackNum: {
@@ -18,29 +19,20 @@ var data = {
     trackTime: {
         0: "",
         1: ""
-    }
+    },
+    uptime: ""
 }
 
 app.get('/', (req, res) => {
     res.sendFile(__dirname + '/index.html');
 });
 
-io.on('connection', (socket) => {
-    // Send the current data to the client
-    socket.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
-    socket.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
-
-    // Handle the client doing things
-    socket.on('sendOSCcmd', (cmd) => {
-        oscClient.send(cmd, 1, (err) => {
-            if (err) console.error(err);
-        });
-    });
-});
+app.use('/static', express.static(path.join(__dirname, 'static')));
 
 oscServer.on('message', (msg) => {
     // Parse the message
-    let messageParts = msg[0].split('/').shift();
+    let messageParts = msg[0].split('/');
+    messageParts.shift();
     let messageValue = msg[1];
 
     // Figure out what the message is
@@ -76,14 +68,38 @@ oscServer.on('message', (msg) => {
                 io.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
             }
         }
+    } else if (messageParts[0] == 'Stops'){
+        if (messageParts[1] == 'label300') {
+            if (data.uptime != messageValue) {
+                data.uptime = messageValue;
+                io.emit('uptime', data.uptime);
+            }
+        }
     }
 
     // Log the message for testing
     console.log(messageParts, messageValue);
 });
 
+io.on('connection', (socket) => {
+    // Send the current data to the client
+    socket.emit('trackNumber', data.trackNum[0] + data.trackNum[1] + data.trackNum[2]);
+    socket.emit('trackTime', data.trackTime[0] + ":" + data.trackTime[1]);
+
+    // Handle the client doing things
+    socket.on('sendOSCcmd', (cmd) => {
+        oscClient.send(cmd, 1, (err) => {
+            if (err) console.error(err);
+        });
+    });
+});
+
 oscServer.on('listening', () => {
-    console.log('OSC Server is listening on 127.0.0.1:8000');
+    console.log('OSC Server is listening on 0.0.0.0:9000');
+
+    oscClient.send("/OPTICS/special2001", 1, (err) => {
+        if (err) console.error(err);
+    });
 });
 
 httpServer.listen(3000, () => {
