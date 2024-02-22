@@ -80,7 +80,7 @@
                     </div>
                 </div>
                 <div class="col-12 col-lg-4">
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-3">
                             <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2014')">Back</button>
                         </div>
@@ -89,6 +89,17 @@
                         </div>
                         <div class="col-6">
                             <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2012')">Magic Tuner {{ magicTunerStatus }}</button>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-4">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2000')">OSC Cancel</button>
+                        </div>
+                        <div class="col-4">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2017')">Tuner Release</button>
+                        </div>
+                        <div class="col-4">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2013')">{{tunerPattern}}</button>
                         </div>
                     </div>
                 </div>
@@ -200,7 +211,8 @@
                     trackTime: "-- : --",
                     trackLocked: 0,
                     uptime: "No Uptime",
-                    magicTunerStatus: "Off"
+                    magicTunerStatus: "Off",
+                    tunerPattern: "No Pattern",
                 }
             },
             methods: {
@@ -231,6 +243,10 @@
 
         socket.on('magicTunerStatus', function (status) {
             app.magicTunerStatus = status;
+        });
+
+        socket.on('tunerPattern', function (pattern) {
+            app.tunerPattern = pattern;
         });
     </script>
 </body>

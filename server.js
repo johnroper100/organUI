@@ -15,7 +15,8 @@ var data = {
     trackTime: "-- : --",
     uptime: "No Uptime",
     magicTunerStatus: "Off",
-    trackLocked: 0
+    trackLocked: 0,
+    tunerPattern: "No Pattern"
 }
 
 function sendSubscribeMessage() {
@@ -63,7 +64,12 @@ oscServer.on('message', (msg) => {
                 data.trackNum = messageValue;
                 io.emit('trackNum', data.trackNum);
             }
-        } 
+        } else if (messageParts[1] == 'LabelSpecial4') {
+            if (data.tunerPattern != messageValue) {
+                data.tunerPattern = messageValue;
+                io.emit('tunerPattern', data.tunerPattern);
+            }
+        }
     }
 
     // Log the message for testing
@@ -79,6 +85,7 @@ io.on('connection', (socket) => {
     socket.emit('trackLocked', data.trackLocked);
     socket.emit('uptime', data.uptime);
     socket.emit('magicTunerStatus', data.magicTunerStatus);
+    socket.emit('tunerPattern', data.tunerPattern);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
