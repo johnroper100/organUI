@@ -41,7 +41,8 @@
             </div>
             <div class="row mt-5 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <h4 class="text-danger">Track Locked</h4>
+                    <h4 class="text-danger" v-if="trackLocked == 1">Track Locked</h4>
+                    <h4 class="text-success" v-if="trackLocked == 0">Track Unlocked</h4>
                 </div>
                 <div class="col-6 col-md-3">
                     <!-- Empty for spacing -->
@@ -49,7 +50,7 @@
             </div>
             <div class="row mt-1 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2034')" class="btn btn-lg w-100 btn-primary pt-4 pb-4">Protect</button>
+                    <button @click="sendOSCcmd('/OPTICS/special2034')" class="btn btn-lg w-100 btn-primary pt-4 pb-4"><span v-if="trackLocked == 1">Un</span>Protect</button>
                 </div>
                 <div class="col-6 col-md-3">
                     <button @click="sendOSCcmd('/OPTICS/special2035')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Record</button>
@@ -91,6 +92,7 @@
                     page: 4,
                     trackNum: "",
                     trackTime: "",
+                    trackLocked: 1,
                     uptime: ""
                }
             },
@@ -110,6 +112,10 @@
 
         socket.on('trackTime', function(time) {
             app.trackTime = time;
+        });
+
+        socket.on('trackLocked', function(locked) {
+            app.trackLocked = locked;
         });
 
         socket.on('uptime', function(time) {

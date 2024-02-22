@@ -13,7 +13,8 @@ var oscServer = new Server(9000, '0.0.0.0');
 var data = {
     trackNum: "",
     trackTime: "",
-    uptime: ""
+    uptime: "",
+    trackLocked: 1
 }
 
 app.get('/', (req, res) => {
@@ -34,6 +35,11 @@ oscServer.on('message', (msg) => {
             if (data.trackTime != messageValue) {
                 data.trackTime = messageValue;
                 io.emit('trackTime', data.trackTime);
+            }
+        } else if (messageParts[1] == 'label350') {
+            if (data.trackLocked != messageValue) {
+                data.trackLocked = messageValue;
+                io.emit('trackLocked', data.trackLocked);
             }
         }
     } else if (messageParts[0] == 'Stops'){
@@ -58,6 +64,7 @@ io.on('connection', (socket) => {
     // Send the current data to the client
     socket.emit('trackNum', data.trackNum);
     socket.emit('trackTime', data.trackTime);
+    socket.emit('trackLocked', data.trackLocked);
     socket.emit('uptime', data.uptime);
 
     // Handle the client doing things
