@@ -16,7 +16,8 @@ var data = {
     uptime: "No Uptime",
     magicTunerStatus: "Off",
     trackLocked: 0,
-    tunerPattern: "No Pattern"
+    tunerPattern: "No Pattern",
+    trackNames: { 1: "No Track", 2: "No Track", 3: "No Track", 4: "No Track", 5: "No Track", 6: "No Track", 7: "No Track", 8: "No Track", 9: "No Track", 10: "No Track" }
 }
 
 function sendSubscribeMessage() {
@@ -70,6 +71,58 @@ oscServer.on('message', (msg) => {
                 io.emit('tunerPattern', data.tunerPattern);
             }
         }
+    } else if (messageParts[0] == 'UserDef'){
+        if (messageParts[1] == 'label981') {
+            if (data.trackNames[1] != messageValue) {
+                data.trackNames[1] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label982') {
+            if (data.trackNames[2] != messageValue) {
+                data.trackNames[2] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label983') {
+            if (data.trackNames[3] != messageValue) {
+                data.trackNames[3] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label984') {
+            if (data.trackNames[4] != messageValue) {
+                data.trackNames[4] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label985') {
+            if (data.trackNames[5] != messageValue) {
+                data.trackNames[5] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label986') {
+            if (data.trackNames[6] != messageValue) {
+                data.trackNames[6] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label987') {
+            if (data.trackNames[7] != messageValue) {
+                data.trackNames[7] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label988') {
+            if (data.trackNames[8] != messageValue) {
+                data.trackNames[8] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label989') {
+            if (data.trackNames[9] != messageValue) {
+                data.trackNames[9] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        } else if (messageParts[1] == 'label990') {
+            if (data.trackNames[10] != messageValue) {
+                data.trackNames[10] = messageValue;
+                io.emit('trackNames', data.trackNames);
+            }
+        }
     }
 
     // Log the message for testing
@@ -90,6 +143,7 @@ io.on('connection', (socket) => {
     socket.emit('uptime', data.uptime);
     socket.emit('magicTunerStatus', data.magicTunerStatus);
     socket.emit('tunerPattern', data.tunerPattern);
+    socket.emit('trackNames', data.trackNames);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
