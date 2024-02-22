@@ -1,0 +1,51 @@
+#piano-keyboard {
+    position: relative;
+    display: flex;
+    justify-content: center;
+}
+
+:root {
+    --natural-key-width: 48px;
+    --natural-key-height: 200px;
+    --sharp-key-width: 30px;
+    --sharp-key-height: 100px;
+}
+
+.key-sharp {
+    position: relative;
+    width: var(--sharp-key-width);
+    height: var(--sharp-key-height);
+    background: #36454f;
+    box-sizing: border-box;
+    z-index: 1;
+    transform: translateX(-50%);
+}
+
+.key-sharp:hover {
+    background: #2c3e50;
+    cursor: pointer;
+}
+
+.key-natural {
+    position: relative;
+    width: var(--natural-key-width);
+    height: var(--natural-key-height);
+    border: 1px solid black;
+    box-sizing: border-box;
+    background: #fffff0;
+}
+
+.key-natural:hover {
+    background: #f0f0f0;
+    cursor: pointer;
+}
+
+.key-sharp+.key-natural {
+    margin-left: calc(-1 * var(--sharp-key-width));
+}
+
+@media screen and (max-width: 600px){
+    .key-sharp {
+        transform: translate(-90%);
+    }
+}

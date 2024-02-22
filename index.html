@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Organ Control UI</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
     <script type="importmap">
         {
             "imports": {
@@ -16,39 +17,126 @@
 </head>
 
 <body class="bg-dark text-light">
-    <div id="app" class="container-fluid">
-        <div class="row mb-2">
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 0" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 0, 'btn-secondary': page != 0}">Stops/Notes 1</button>
+    <div id="app">
+        <div class="container-fluid mb-3">
+            <div class="row mb-2">
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 0" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 0, 'btn-secondary': page != 0}">Stops/Notes 1</button>
+                </div>
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 1" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 1, 'btn-secondary': page != 1}">Stops/Notes 2</button>
+                </div>
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 2" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 2, 'btn-secondary': page != 2}">Stops/Notes 3</button>
+                </div>
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 3" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Stops/Notes 4</button>
+                </div>
             </div>
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 1" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 1, 'btn-secondary': page != 1}">Stops/Notes 2</button>
-            </div>
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 2" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 2, 'btn-secondary': page != 2}">Stops/Notes 3</button>
-            </div>
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 3" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 3, 'btn-secondary': page != 3}">Stops/Notes 4</button>
+            <div class="row">
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 4" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Naming</button>
+                </div>
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 5" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Expressions</button>
+                </div>
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
+                </div>
+                <div class="col-3 d-flex p-0">
+                    <button @click="page = 7" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 7, 'btn-secondary': page != 7}">Site Specific</button>
+                </div>
             </div>
         </div>
-        <div class="row">
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 4" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Naming</button>
-            </div>
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 5" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Expressions</button>
-            </div>
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
-            </div>
-            <div class="col-3 d-flex p-0">
-                <button @click="page = 7" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 7, 'btn-secondary': page != 7}">Site Specific</button>
-            </div>
-        </div>
-        <div class="container" v-if="page == 0">
+        <div class="container-fluid" v-if="page == 0">
             <h1>{{uptime}}</h1>
         </div>
-        <div class="container" v-if="page == 6">
+        <div class="container-fluid" v-if="page == 1">
+            <div class="row mb-3">
+                <div class="col-12 col-lg-8 mb-3 mb-lg-0">
+                    <div id="piano-keyboard">
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key1')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key2')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key3')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key4')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key5')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key6')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key7')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key8')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key9')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key10')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key11')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key12')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key13')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key14')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key15')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key16')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key17')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key18')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key19')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key20')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key21')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key22')"></div>
+                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key23')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key24')"></div>
+                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key25')"></div>
+                    </div>
+                </div>
+                <div class="col-12 col-lg-4">
+                    <div class="row">
+                        <div class="col-4">
+                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2014')">Back</button>
+                        </div>
+                        <div class="col-4">
+                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2015')">Next</button>
+                        </div>
+                        <div class="col-4">
+                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2012')">Magic Tuner</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="row">
+                <div class="col-8">
+                    <div class="row">
+                        <div class="col-2 mb-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2020')">-2 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2021')">-1 oct</button>
+                        </div>
+                        <div class="col-4">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2022')">unison</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2023')">+1 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2024')">+2 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2025')">+3 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2026')">+4 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2027')">+5 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2028')">+6 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2029')">+7 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1898')">+8 oct</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="container-fluid" v-if="page == 6">
             <div class="row mt-5">
                 <div class="col-12 col-md-6 text-center">
                     <h1><b>{{ trackNum }}</b></h1>
@@ -107,12 +195,12 @@
         const app = createApp({
             data() {
                 return {
-                    page: 6,
+                    page: 1,
                     trackNum: "No Track",
                     trackTime: "-- : --",
                     trackLocked: 0,
-                    uptime: ""
-               }
+                    uptime: "No Uptime"
+                }
             },
             methods: {
                 sendMessage(message) {
@@ -124,19 +212,19 @@
             }
         }).mount('#app');
 
-        socket.on('trackNum', function(num) {
+        socket.on('trackNum', function (num) {
             app.trackNum = num;
         });
 
-        socket.on('trackTime', function(time) {
+        socket.on('trackTime', function (time) {
             app.trackTime = time;
         });
 
-        socket.on('trackLocked', function(locked) {
+        socket.on('trackLocked', function (locked) {
             app.trackLocked = locked;
         });
 
-        socket.on('uptime', function(time) {
+        socket.on('uptime', function (time) {
             app.uptime = time;
         });
     </script>

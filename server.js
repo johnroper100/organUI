@@ -13,7 +13,7 @@ var oscServer = new Server(9000, '0.0.0.0');
 var data = {
     trackNum: "No Track",
     trackTime: "-- : --",
-    uptime: "",
+    uptime: "No Uptime",
     trackLocked: 0
 }
 
