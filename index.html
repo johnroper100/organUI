@@ -273,16 +273,7 @@
                 </div>
             </div>
             <div class="container mt-3 text-center">
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2101')">{{trackNames[1]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2102')">{{trackNames[2]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2103')">{{trackNames[3]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2104')">{{trackNames[4]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2105')">{{trackNames[5]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2106')">{{trackNames[6]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2107')">{{trackNames[7]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2108')">{{trackNames[8]}}</button>
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special2109')">{{trackNames[9]}}</button>
-                <button class="btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2110')">{{trackNames[10]}}</button>
+                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString())" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
             </div>
         </div>
     </div>
