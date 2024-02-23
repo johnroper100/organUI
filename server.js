@@ -14,9 +14,9 @@ var data = {
     trackNum: "No Track",
     trackTime: "-- : --",
     uptime: "No Uptime",
-    magicTunerStatus: "Off",
+    magicTunerStatus: {active: 0, currentNote: "Off", pattern: "No Pattern"},
+    sostActive: 0,
     trackLocked: 0,
-    tunerPattern: "No Pattern",
     trackNames: {},
     stops: []
 }
@@ -65,8 +65,8 @@ oscServer.on('message', (msg) => {
                 io.emit('uptime', data.uptime);
             }
         } else if (messageParts[1] == 'label301') {
-            if (data.magicTunerStatus != messageValue) {
-                data.magicTunerStatus = messageValue;
+            if (data.magicTunerStatus.currentNote != messageValue) {
+                data.magicTunerStatus.currentNote = messageValue;
                 io.emit('magicTunerStatus', data.magicTunerStatus);
             }
         } else if (messageParts[1] == 'label305') {
@@ -75,9 +75,9 @@ oscServer.on('message', (msg) => {
                 io.emit('trackNum', data.trackNum);
             }
         } else if (messageParts[1] == 'LabelSpecial4') {
-            if (data.tunerPattern != messageValue) {
-                data.tunerPattern = messageValue;
-                io.emit('tunerPattern', data.tunerPattern);
+            if (data.magicTunerStatus.pattern != messageValue) {
+                data.magicTunerStatus.pattern = messageValue;
+                io.emit('magicTunerStatus', data.magicTunerStatus);
             }
         } else if (messageParts[1].startsWith('label')) {
             let labelNum = parseInt(messageParts[1].substring(5));
@@ -156,6 +156,34 @@ oscServer.on('message', (msg) => {
                 io.emit('trackNames', data.trackNames);
             }
         }
+    } else if (messageParts[0] == 'OPTICS'){
+        if (messageParts[1] == 'special2012') {
+            if (messageParts.length == 3 && messageParts[2] == 'color') {
+                let active = messageValue;
+                if (active == 'blue') {
+                    active = 0;
+                } else if (active == 'red') {
+                    active = 1;
+                }
+                if (data.magicTunerStatus.active != active) {
+                    data.magicTunerStatus.active = active;
+                    io.emit('magicTunerStatus', data.magicTunerStatus);
+                }
+            }
+        } else if (messageParts[1] == 'special2010') {
+            if (messageParts.length == 3 && messageParts[2] == 'color') {
+                let active = messageValue;
+                if (active == 'blue') {
+                    active = 0;
+                } else if (active == 'red') {
+                    active = 1;
+                }
+                if (data.sostActive != active) {
+                    data.sostActive = active;
+                    io.emit('sostActive', data.sostActive);
+                }
+            }
+        }
     }
 
     // Log the message for testing
@@ -175,9 +203,9 @@ io.on('connection', (socket) => {
     socket.emit('trackLocked', data.trackLocked);
     socket.emit('uptime', data.uptime);
     socket.emit('magicTunerStatus', data.magicTunerStatus);
-    socket.emit('tunerPattern', data.tunerPattern);
     socket.emit('trackNames', data.trackNames);
     socket.emit('stops', data.stops);
+    socket.emit('sostActive', data.sostActive);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {

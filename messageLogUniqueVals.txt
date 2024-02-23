@@ -66,13 +66,6 @@
 [ 'OPTICS', 'special1898', 'color' ] blue
 [ 'OPTICS', 'special1898', 'color' ] red
 
-# Sostenuto active
-[ 'OPTICS', 'special2010', 'color' ] blue
-
-# Magic tuner active
-[ 'OPTICS', 'special2012', 'color' ] blue
-[ 'OPTICS', 'special2012', 'color' ] red
-
 # Track number?
 [ 'RP', 'label328' ] 1
 [ 'RP', 'label329' ] 1
