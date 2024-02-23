@@ -51,7 +51,7 @@
         <div class="container-fluid mb-3" v-if="page < 4">
             <div class="row mb-3">
                 <div class="col-12 col-lg-8 mb-3 mb-lg-0">
-                    <div id="piano-keyboard">
+                    <div id="piano-keyboard" class="mb-3">
                         <div class="key key-natural" @click="sendOSCcmd('/keyboard/key1')"></div>
                         <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key2')"></div>
                         <div class="key key-natural" @click="sendOSCcmd('/keyboard/key3')"></div>
@@ -78,16 +78,51 @@
                         <div class="key key-natural" @click="sendOSCcmd('/keyboard/key24')"></div>
                         <div class="key key-natural" @click="sendOSCcmd('/keyboard/key25')"></div>
                     </div>
+                    <div class="row">
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2020')">-2 oct</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2021')">-1 oct</button>
+                        </div>
+                        <div class="col-4 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2022')">unison</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2023')">+1 oct</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2024')">+2 oct</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2025')">+3 oct</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2026')">+4 oct</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2027')">+5 oct</button>
+                        </div>
+                        <div class="col-2 mb-2 d-flex">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2028')">+6 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2029')">+7 oct</button>
+                        </div>
+                        <div class="col-2">
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1898')">+8 oct</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-12 col-lg-4">
                     <div class="row mb-3">
-                        <div class="col-3">
+                        <div class="col-3 d-flex">
                             <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2014')">Back</button>
                         </div>
-                        <div class="col-3">
+                        <div class="col-3 d-flex">
                             <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2015')">Next</button>
                         </div>
-                        <div class="col-6">
+                        <div class="col-6 d-flex">
                             <button class="w-100 btn btn-lg" :class="{'btn-primary': magicTunerStatus.active == 0, 'btn-danger': magicTunerStatus.active == 1}" @click="sendOSCcmd('/OPTICS/special2012')">Magic Tuner ({{ magicTunerStatus.currentNote }})</button>
                         </div>
                     </div>
@@ -113,7 +148,7 @@
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2011')">Sost. Release</button>
                         </div>
                     </div>
-                    <div class="row">
+                    <div class="row mb-3">
                         <div class="col-3" v-if="page == 0">
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1900')">Preset<b class="d-block">1</b></button>
                         </div>
@@ -154,50 +189,11 @@
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1999')">Preset<b class="d-block">Set</b></button>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-12 col-lg-8">
-                    <div class="row">
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2020')">-2 oct</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2021')">-1 oct</button>
-                        </div>
-                        <div class="col-4 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2022')">unison</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2023')">+1 oct</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2024')">+2 oct</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2025')">+3 oct</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2026')">+4 oct</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2027')">+5 oct</button>
-                        </div>
-                        <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2028')">+6 oct</button>
-                        </div>
-                        <div class="col-2">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2029')">+7 oct</button>
-                        </div>
-                        <div class="col-2">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1898')">+8 oct</button>
-                        </div>
-                    </div>
+                    <h1>{{uptime}}</h1>
                 </div>
             </div>
         </div>
         <div class="container-fluid" v-if="page == 0">
-            <h1>{{uptime}}</h1>
             <div class="row">
                 <div class="col-1 mb-2 d-flex" v-for="(stop, i) in stops.slice(0, 63)" :id="i">
                     <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
@@ -212,7 +208,6 @@
             </div>
         </div>
         <div class="container-fluid" v-if="page == 2">
-            <h1>{{uptime}}</h1>
             <div class="row">
                 <div class="col-1 mb-2 d-flex" v-for="(stop, i) in stops.slice(126, 189)" :id="i">
                     <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
