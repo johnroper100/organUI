@@ -273,7 +273,7 @@
                 </div>
             </div>
             <div class="container mt-3 text-center">
-                <button class="btn btn-sm btn-primary me-2" @click="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString())" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
+                <button class="btn btn-primary me-2" @click="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString())" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
             </div>
         </div>
     </div>
