@@ -102,5 +102,4 @@
 [ 'keyboard', 'key2', 'color' ] purple
 [ 'keyboard', 'key3', 'color' ] brown
 
-[ 'Stops', 'DivLabel1' ] Nave Gt
 [ 'Tabs', 'Label1' ] Buttons 1-63

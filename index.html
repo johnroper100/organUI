@@ -86,7 +86,7 @@
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2021')">-1 oct</button>
                         </div>
                         <div class="col-4 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2022')">unison</button>
+                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2022')">Unison</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2023')">+1 oct</button>
@@ -189,13 +189,14 @@
                             <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1999')">Preset<b class="d-block">Set</b></button>
                         </div>
                     </div>
-                    <h1>{{uptime}}</h1>
+                    <h1 class="text-center">{{uptime}}</h1>
                 </div>
             </div>
         </div>
         <div class="container-fluid" v-if="page == 0">
             <div class="row">
-                <div class="col" v-for="n in 9">
+                <div class="col text-center" v-for="n in 9">
+                    <b>{{divLabels[n-1]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice((n-1)*7, n*7)" :id="i+(n-1)*7">
                         <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
@@ -204,7 +205,8 @@
         </div>
         <div class="container-fluid" v-if="page == 1">
             <div class="row">
-                <div class="col" v-for="n in 9">
+                <div class="col text-center" v-for="n in 9">
+                    <b>{{divLabels[9+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(63+(n-1)*7, 63+n*7)" :id="63+i+(n-1)*7">
                         <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
@@ -213,7 +215,8 @@
         </div>
         <div class="container-fluid" v-if="page == 2">
             <div class="row">
-                <div class="col" v-for="n in 9">
+                <div class="col text-center" v-for="n in 9">
+                    <b>{{divLabels[18+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(126+(n-1)*7, 126+n*7)" :id="126+i+(n-1)*7">
                         <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
@@ -222,7 +225,8 @@
         </div>
         <div class="container-fluid" v-if="page == 3">
             <div class="row">
-                <div class="col" v-for="n in 9">
+                <div class="col text-center" v-for="n in 9">
+                    <b>{{divLabels[27+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(189+(n-1)*7, 189+n*7)" :id="189+i+(n-1)*7">
                         <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
@@ -302,6 +306,7 @@
                     magicTunerStatus: {active: 0, pattern: "No Pattern", currentNote: "Off"},
                     trackNames: { },
                     stops: [],
+                    divLabels: [],
                     sostActive: 0
                 }
             },
@@ -341,6 +346,10 @@
 
         socket.on('stops', function (stops) {
             app.stops = stops;
+        });
+
+        socket.on('divLabels', function (labels) {
+            app.divLabels = labels;
         });
 
         socket.on('sostActive', function (active) {

@@ -18,7 +18,8 @@ var data = {
     sostActive: 0,
     trackLocked: 0,
     trackNames: {},
-    stops: []
+    stops: [],
+    divLabels: []
 }
 
 for (let i = 1; i <= 10; i++) {
@@ -27,6 +28,10 @@ for (let i = 1; i <= 10; i++) {
 
 for (let i = 1; i <= 252; i++) {
     data.stops.push({name: "Stop "+i.toString(), active: 0});
+}
+
+for (let i = 1; i <= 36; i++) {
+    data.divLabels.push("Div Label "+i.toString());
 }
 
 function sendSubscribeMessage() {
@@ -101,6 +106,14 @@ oscServer.on('message', (msg) => {
                         data.stops[btnNum-1].active = active;
                         io.emit('stops', data.stops);
                     }
+                }
+            }
+        } else if (messageParts[1].startsWith('DivLabel')) {
+            let labelNum = parseInt(messageParts[1].substring(8));
+            if (labelNum >= 1 && labelNumNum <= 36) {
+                if (data.divLabels[labelNumNum-1] != messageValue) {
+                    data.divLabels[labelNumNum-1] = messageValue;
+                    io.emit('divLabels', data.divLabels);
                 }
             }
         }
@@ -206,6 +219,7 @@ io.on('connection', (socket) => {
     socket.emit('trackNames', data.trackNames);
     socket.emit('stops', data.stops);
     socket.emit('sostActive', data.sostActive);
+    socket.emit('divLabels', data.divLabels);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
