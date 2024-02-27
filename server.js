@@ -13,7 +13,7 @@ var oscServer = new Server(9000, '0.0.0.0');
 var data = {
     trackNum: "No Track",
     trackTime: "-- : --",
-    uptime: "No Uptime",
+    uptime: "Not Connected",
     magicTunerStatus: {active: 0, currentNote: "Off", pattern: "No Pattern"},
     sostActive: 0,
     trackLocked: 0,
