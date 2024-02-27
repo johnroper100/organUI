@@ -234,7 +234,19 @@ oscServer.on('listening', () => {
 });
 
 app.get('/', (req, res) => {
-    res.sendFile(__dirname + '/index.html');
+    res.sendFile(__dirname + '/landing.html');
+});
+
+app.get('/tuner', (req, res) => {
+    res.sendFile(__dirname + '/tuner.html');
+});
+
+app.get('/organist', (req, res) => {
+    res.sendFile(__dirname + '/organist.html');
+});
+
+app.get('/sequencer', (req, res) => {
+    res.sendFile(__dirname + '/sequencer.html');
 });
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
