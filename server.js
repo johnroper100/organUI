@@ -19,7 +19,9 @@ var data = {
     trackLocked: 0,
     trackNames: {},
     stops: [],
-    divLabels: []
+    divLabels: [],
+    presetStatus: [],
+    pitchStatus: []
 }
 
 for (let i = 1; i <= 10; i++) {
@@ -32,6 +34,14 @@ for (let i = 1; i <= 252; i++) {
 
 for (let i = 1; i <= 36; i++) {
     data.divLabels.push("Div Label "+i.toString());
+}
+
+for (let i = 1; i <= 12; i++) {
+    data.presetStatus.push(0);
+}
+
+for (let i = 1; i <= 11; i++) {
+    data.pitchStatus.push(0);
 }
 
 function sendSubscribeMessage() {
@@ -110,9 +120,9 @@ oscServer.on('message', (msg) => {
             }
         } else if (messageParts[1].startsWith('DivLabel')) {
             let labelNum = parseInt(messageParts[1].substring(8));
-            if (labelNum >= 1 && labelNumNum <= 36) {
-                if (data.divLabels[labelNumNum-1] != messageValue) {
-                    data.divLabels[labelNumNum-1] = messageValue;
+            if (labelNum >= 1 && labelNum <= 36) {
+                if (data.divLabels[labelNum-1] != messageValue) {
+                    data.divLabels[labelNum-1] = messageValue;
                     io.emit('divLabels', data.divLabels);
                 }
             }
@@ -170,30 +180,72 @@ oscServer.on('message', (msg) => {
             }
         }
     } else if (messageParts[0] == 'OPTICS'){
-        if (messageParts[1] == 'special2012') {
-            if (messageParts.length == 3 && messageParts[2] == 'color') {
-                let active = messageValue;
-                if (active == 'blue') {
-                    active = 0;
-                } else if (active == 'red') {
-                    active = 1;
+        if (messageParts[1].startsWith('special')) {
+            let itemNum = parseInt(messageParts[1].substring(7));
+            if (itemNum == 1898) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
+                    let active = messageValue;
+                    if (active == 'blue') {
+                        active = 0;
+                    } else if (active == 'red') {
+                        active = 1;
+                    }
+                    if (data.pitchStatus[10] != active) {
+                        data.pitchStatus[10] = active;
+                        io.emit('pitchStatus', data.pitchStatus);
+                    }
                 }
-                if (data.magicTunerStatus.active != active) {
-                    data.magicTunerStatus.active = active;
-                    io.emit('magicTunerStatus', data.magicTunerStatus);
+            } else if (itemNum == 2010) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
+                    let active = messageValue;
+                    if (active == 'blue') {
+                        active = 0;
+                    } else if (active == 'red') {
+                        active = 1;
+                    }
+                    if (data.sostActive != active) {
+                        data.sostActive = active;
+                        io.emit('sostActive', data.sostActive);
+                    }
                 }
-            }
-        } else if (messageParts[1] == 'special2010') {
-            if (messageParts.length == 3 && messageParts[2] == 'color') {
-                let active = messageValue;
-                if (active == 'blue') {
-                    active = 0;
-                } else if (active == 'red') {
-                    active = 1;
+            } else if (itemNum == 2012) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
+                    let active = messageValue;
+                    if (active == 'blue') {
+                        active = 0;
+                    } else if (active == 'red') {
+                        active = 1;
+                    }
+                    if (data.magicTunerStatus.active != active) {
+                        data.magicTunerStatus.active = active;
+                        io.emit('magicTunerStatus', data.magicTunerStatus);
+                    }
                 }
-                if (data.sostActive != active) {
-                    data.sostActive = active;
-                    io.emit('sostActive', data.sostActive);
+            } else if (itemNum >= 1900 && itemNum <= 1911) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
+                    let active = messageValue;
+                    if (active == 'blue') {
+                        active = 0;
+                    } else if (active == 'red') {
+                        active = 1;
+                    }
+                    if (data.presetStatus[itemNum-1900] != active) {
+                        data.presetStatus[itemNum-1900] = active;
+                        io.emit('presetStatus', data.presetStatus);
+                    }
+                }
+            } else if (itemNum >= 2020 && itemNum <= 2029) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
+                    let active = messageValue;
+                    if (active == 'blue') {
+                        active = 0;
+                    } else if (active == 'red') {
+                        active = 1;
+                    }
+                    if (data.pitchStatus[itemNum-2020] != active) {
+                        data.pitchStatus[itemNum-2020] = active;
+                        io.emit('pitchStatus', data.pitchStatus);
+                    }
                 }
             }
         }
@@ -220,6 +272,8 @@ io.on('connection', (socket) => {
     socket.emit('stops', data.stops);
     socket.emit('sostActive', data.sostActive);
     socket.emit('divLabels', data.divLabels);
+    socket.emit('presetStatus', data.presetStatus);
+    socket.emit('pitchStatus', data.pitchStatus);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {

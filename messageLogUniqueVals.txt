@@ -42,48 +42,9 @@
 [ 'OPTICS', 'special2049', 'color' ] red
 [ 'OPTICS', 'special2050', 'color' ] red
 
-# Unison and pitches active
-[ 'OPTICS', 'special2020', 'color' ] blue
-[ 'OPTICS', 'special2020', 'color' ] red
-[ 'OPTICS', 'special2021', 'color' ] blue
-[ 'OPTICS', 'special2021', 'color' ] red
-[ 'OPTICS', 'special2022', 'color' ] blue
-[ 'OPTICS', 'special2022', 'color' ] red
-[ 'OPTICS', 'special2023', 'color' ] blue
-[ 'OPTICS', 'special2023', 'color' ] red
-[ 'OPTICS', 'special2024', 'color' ] blue
-[ 'OPTICS', 'special2024', 'color' ] red
-[ 'OPTICS', 'special2025', 'color' ] blue
-[ 'OPTICS', 'special2025', 'color' ] red
-[ 'OPTICS', 'special2026', 'color' ] blue
-[ 'OPTICS', 'special2026', 'color' ] red
-[ 'OPTICS', 'special2027', 'color' ] blue
-[ 'OPTICS', 'special2027', 'color' ] red
-[ 'OPTICS', 'special2028', 'color' ] blue
-[ 'OPTICS', 'special2028', 'color' ] red
-[ 'OPTICS', 'special2029', 'color' ] blue
-[ 'OPTICS', 'special2029', 'color' ] red
-[ 'OPTICS', 'special1898', 'color' ] blue
-[ 'OPTICS', 'special1898', 'color' ] red
-
 # Track number?
 [ 'RP', 'label328' ] 1
 [ 'RP', 'label329' ] 1
-
-# preset active
-[ 'OPTICS', 'special1900', 'color' ] blue
-[ 'OPTICS', 'special1901', 'color' ] blue
-[ 'OPTICS', 'special1902', 'color' ] blue
-[ 'OPTICS', 'special1999', 'color' ] blue
-[ 'OPTICS', 'special1903', 'color' ] blue
-[ 'OPTICS', 'special1904', 'color' ] blue
-[ 'OPTICS', 'special1905', 'color' ] blue
-[ 'OPTICS', 'special1906', 'color' ] blue
-[ 'OPTICS', 'special1907', 'color' ] blue
-[ 'OPTICS', 'special1908', 'color' ] blue
-[ 'OPTICS', 'special1909', 'color' ] blue
-[ 'OPTICS', 'special1910', 'color' ] blue
-[ 'OPTICS', 'special1911', 'color' ] blue
 
 [ 'RP', 'label340' ] Off
 
