@@ -57,8 +57,6 @@
 
 [ 'UserDef', 'value1' ] 
 
-[ 'faders', 'expr1' ] 
-
 [ 'keyboard', 'key1', 'color' ] green
 [ 'keyboard', 'key2', 'color' ] purple
 [ 'keyboard', 'key3', 'color' ] brown

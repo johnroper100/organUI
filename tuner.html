@@ -52,31 +52,31 @@
             <div class="row mb-3">
                 <div class="col-12 col-lg-8 mb-3 mb-lg-0">
                     <div id="piano-keyboard" class="mb-3">
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key1')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key2')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key3')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key4')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key5')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key6')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key7')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key8')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key9')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key10')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key11')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key12')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key13')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key14')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key15')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key16')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key17')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key18')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key19')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key20')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key21')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key22')"></div>
-                        <div class="key key-sharp" @click="sendOSCcmd('/keyboard/key23')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key24')"></div>
-                        <div class="key key-natural" @click="sendOSCcmd('/keyboard/key25')"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key1', 1)" @mouseup="sendOSCcmd('/keyboard/key1', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key2', 1)" @mouseup="sendOSCcmd('/keyboard/key2', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key3', 1)" @mouseup="sendOSCcmd('/keyboard/key3', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key4', 1)" @mouseup="sendOSCcmd('/keyboard/key4', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key5', 1)" @mouseup="sendOSCcmd('/keyboard/key5', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key6', 1)" @mouseup="sendOSCcmd('/keyboard/key6', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key7', 1)" @mouseup="sendOSCcmd('/keyboard/key7', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key8', 1)" @mouseup="sendOSCcmd('/keyboard/key8', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key9', 1)" @mouseup="sendOSCcmd('/keyboard/key9', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key10', 1)" @mouseup="sendOSCcmd('/keyboard/key10', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key11', 1)" @mouseup="sendOSCcmd('/keyboard/key11', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key12', 1)" @mouseup="sendOSCcmd('/keyboard/key12', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key13', 1)" @mouseup="sendOSCcmd('/keyboard/key13', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key14', 1)" @mouseup="sendOSCcmd('/keyboard/key14', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key15', 1)" @mouseup="sendOSCcmd('/keyboard/key15', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key16', 1)" @mouseup="sendOSCcmd('/keyboard/key16', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key17', 1)" @mouseup="sendOSCcmd('/keyboard/key17', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key18', 1)" @mouseup="sendOSCcmd('/keyboard/key18', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key19', 1)" @mouseup="sendOSCcmd('/keyboard/key19', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key20', 1)" @mouseup="sendOSCcmd('/keyboard/key20', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key21', 1)" @mouseup="sendOSCcmd('/keyboard/key21', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key22', 1)" @mouseup="sendOSCcmd('/keyboard/key22', 0)"></div>
+                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key23', 1)" @mouseup="sendOSCcmd('/keyboard/key23', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key24', 1)" @mouseup="sendOSCcmd('/keyboard/key24', 0)"></div>
+                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key25', 1)" @mouseup="sendOSCcmd('/keyboard/key25', 0)"></div>
                     </div>
                     <div class="row">
                         <div class="col-2 mb-2 d-flex">
@@ -139,7 +139,7 @@
                     </div>
                     <div class="row mb-3">
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2016')">Touch</button>
+                            <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2016', 1)" @mouseup="sendOSCcmd('/OPTICS/special2016', 0)">Touch</button>
                         </div>
                         <div class="col-4">
                             <button class="w-100 btn btn-sm" :class="{'btn-primary': sostActive == 0, 'btn-danger': sostActive == 1}" @click="sendOSCcmd('/OPTICS/special2010')">Sostenuto</button>
@@ -321,8 +321,8 @@
                 sendMessage(message) {
                     socket.emit(message);
                 },
-                sendOSCcmd(cmd) {
-                    socket.emit('sendOSCcmd', cmd);
+                sendOSCcmd(cmd, state = 1) {
+                    socket.emit('sendOSCcmd', {cmd: cmd, state: state});
                 },
                 moveFader(id) {
                     socket.emit('moveFader', {id: id, value: this.expressions[id].value});

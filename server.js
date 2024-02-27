@@ -302,7 +302,7 @@ io.on('connection', (socket) => {
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
-        oscClient.send(cmd, 1, (err) => {
+        oscClient.send(cmd.cmd, cmd.state, (err) => {
             if (err) console.error(err);
         });
     });
