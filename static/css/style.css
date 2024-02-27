@@ -1,3 +1,7 @@
+body {
+    touch-action: manipulation !important;
+}
+
 #piano-keyboard {
     position: relative;
     display: flex;
