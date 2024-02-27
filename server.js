@@ -21,14 +21,18 @@ var data = {
     stops: [],
     divLabels: [],
     presetStatus: [],
-    pitchStatus: []
+    pitchStatus: [],
+    expressions: [],
 }
+
+// 220 user variables
+// presets are buttons 1900-1998
 
 for (let i = 1; i <= 10; i++) {
     data.trackNames[i] = "No Track";
 }
 
-for (let i = 1; i <= 252; i++) {
+for (let i = 1; i <= 253; i++) {
     data.stops.push({name: "Stop "+i.toString(), active: 0});
 }
 
@@ -38,6 +42,10 @@ for (let i = 1; i <= 36; i++) {
 
 for (let i = 1; i <= 12; i++) {
     data.presetStatus.push(0);
+}
+
+for (let i = 1; i <= 32; i++) {
+    data.expressions.push({name: "Expression "+i.toString(), value: 0});
 }
 
 for (let i = 1; i <= 11; i++) {
@@ -73,6 +81,19 @@ oscServer.on('message', (msg) => {
                 io.emit('trackLocked', data.trackLocked);
             }
         }
+    } else if (messageParts[0] == 'faders') {
+        if (messageParts[1].startsWith('expr')) {
+            let exprNum = parseInt(messageParts[1].substring(4));
+            if (exprNum >= 1 && exprNum <= 32) {
+                if (data.expressions[exprNum-1].name != messageValue) {
+                    if (messageValue == "") {
+                        messageValue = "Unlabeled"
+                    }
+                    data.expressions[exprNum-1].name = messageValue;
+                    io.emit('expressions', data.expressions);
+                }
+            }
+        }
     } else if (messageParts[0] == 'Stops'){
         if (messageParts[1] == 'label300') {
             if (data.uptime != messageValue) {
@@ -96,7 +117,7 @@ oscServer.on('message', (msg) => {
             }
         } else if (messageParts[1].startsWith('label')) {
             let labelNum = parseInt(messageParts[1].substring(5));
-            if (labelNum >= 1 && labelNum <= 252) {
+            if (labelNum >= 1 && labelNum <= 253) {
                 if (data.stops[labelNum-1].name != messageValue) {
                     data.stops[labelNum-1].name = messageValue;
                     io.emit('stops', data.stops);
@@ -104,7 +125,7 @@ oscServer.on('message', (msg) => {
             }
         } else if (messageParts[1].startsWith('push')) {
             let btnNum = parseInt(messageParts[1].substring(4));
-            if (btnNum >= 1 && btnNum <= 252) {
+            if (btnNum >= 1 && btnNum <= 253) {
                 if (messageParts.length == 3 && messageParts[2] == 'color') {
                     let active = messageValue;
                     if (active == 'purple') {
@@ -122,6 +143,9 @@ oscServer.on('message', (msg) => {
             let labelNum = parseInt(messageParts[1].substring(8));
             if (labelNum >= 1 && labelNum <= 36) {
                 if (data.divLabels[labelNum-1] != messageValue) {
+                    if (messageValue == "") {
+                        messageValue = "Div Label"
+                    }
                     data.divLabels[labelNum-1] = messageValue;
                     io.emit('divLabels', data.divLabels);
                 }
@@ -274,6 +298,7 @@ io.on('connection', (socket) => {
     socket.emit('divLabels', data.divLabels);
     socket.emit('presetStatus', data.presetStatus);
     socket.emit('pitchStatus', data.pitchStatus);
+    socket.emit('expressions', data.expressions);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
@@ -281,10 +306,16 @@ io.on('connection', (socket) => {
             if (err) console.error(err);
         });
     });
-});
 
-oscServer.on('listening', () => {
-    console.log('OSC Server is listening on 0.0.0.0:9000');
+    socket.on('moveFader', (cmd) => {
+        if (data.expressions[cmd.id].value != cmd.value) {
+            data.expressions[cmd.id].value = cmd.value;
+            oscClient.send("/faders/fader"+cmd.id.toString(), cmd.value, (err) => {
+                if (err) console.error(err);
+            });
+            socket.broadcast.emit('expressions', data.expressions);
+        }
+    });
 });
 
 app.get('/', (req, res) => {
@@ -304,6 +335,10 @@ app.get('/sequencer', (req, res) => {
 });
 
 app.use('/static', express.static(path.join(__dirname, 'static')));
+
+oscServer.on('listening', () => {
+    console.log('OSC Server is listening on 0.0.0.0:9000');
+});
 
 httpServer.listen(3000, () => {
     console.log('HTTP Server is listening on *:3000');

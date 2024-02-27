@@ -233,8 +233,12 @@
                 </div>
             </div>
         </div>
-        <div class="container-fluid" v-if="page == 5">
-            <input type="range" class="form-range" orient="vertical">
+        <div class="container-fluid text-light" v-if="page == 5">
+            <div v-for="(expr, i) in expressions" class="d-inline-block me-5 mb-5 text-center" :key="i">
+                <b>{{expr.name}}</b>
+                <br>
+                <input type="range" class="form-range mt-2" orient="vertical" min="0" max="1" @input="moveFader(i)" v-model="expr.value" step="0.001">
+            </div>
         </div>
         <div class="container-fluid" v-if="page == 6">
             <div class="row mt-5">
@@ -309,7 +313,8 @@
                     divLabels: [],
                     sostActive: 0,
                     presetStatus: [],
-                    pitchStatus: []
+                    pitchStatus: [],
+                    expressions: []
                 }
             },
             methods: {
@@ -318,6 +323,9 @@
                 },
                 sendOSCcmd(cmd) {
                     socket.emit('sendOSCcmd', cmd);
+                },
+                moveFader(id) {
+                    socket.emit('moveFader', {id: id, value: this.expressions[id].value});
                 }
             }
         }).mount('#app');
@@ -364,6 +372,10 @@
 
         socket.on('pitchStatus', function (status) {
             app.pitchStatus = status;
+        });
+
+        socket.on('expressions', function (expressions) {
+            app.expressions = expressions;
         });
     </script>
 </body>
