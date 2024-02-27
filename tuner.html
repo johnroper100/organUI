@@ -186,7 +186,7 @@
                             <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[11] == 0, 'btn-danger': presetStatus[11] == 1}" @click="sendOSCcmd('/OPTICS/special1911')">Preset<b class="d-block">12</b></button>
                         </div>
                         <div class="col-3">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special1999')">Preset<b class="d-block">Set</b></button>
+                            <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special1999', 1)" @mouseup="sendOSCcmd('/OPTICS/special1999', 0)">Preset<b class="d-block">Set</b></button>
                         </div>
                     </div>
                     <h1 class="text-center">{{uptime}}</h1>
@@ -289,7 +289,7 @@
                 </div>
             </div>
             <div class="container mt-3 text-center">
-                <button class="btn btn-primary me-2" @click="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString())" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
+                <button class="btn btn-primary me-2" @mousedown="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 1)" @mouseup="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 0)" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
             </div>
         </div>
     </div>
