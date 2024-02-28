@@ -80,61 +80,61 @@
                     </div>
                     <div class="row">
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[0] == 0, 'btn-danger': pitchStatus[0] == 1}" @click="sendOSCcmd('/OPTICS/special2020')">-2 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[0] == 0, 'btn-danger': pitchStatus[0] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2020', 1)" @mouseup="sendOSCcmd('/OPTICS/special2020', 0)">-2 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[1] == 0, 'btn-danger': pitchStatus[1] == 1}" @click="sendOSCcmd('/OPTICS/special2021')">-1 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[1] == 0, 'btn-danger': pitchStatus[1] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2021', 1)" @mouseup="sendOSCcmd('/OPTICS/special2021', 0)">-1 oct</button>
                         </div>
                         <div class="col-4 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[2] == 0, 'btn-danger': pitchStatus[2] == 1}" @click="sendOSCcmd('/OPTICS/special2022')">Unison</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[2] == 0, 'btn-danger': pitchStatus[2] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2022', 1)" @mouseup="sendOSCcmd('/OPTICS/special2022', 0)">Unison</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[3] == 0, 'btn-danger': pitchStatus[3] == 1}" @click="sendOSCcmd('/OPTICS/special2023')">+1 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[3] == 0, 'btn-danger': pitchStatus[3] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2023', 1)" @mouseup="sendOSCcmd('/OPTICS/special2023', 0)">+1 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[4] == 0, 'btn-danger': pitchStatus[4] == 1}" @click="sendOSCcmd('/OPTICS/special2024')">+2 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[4] == 0, 'btn-danger': pitchStatus[4] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2024', 1)" @mouseup="sendOSCcmd('/OPTICS/special2024', 0)">+2 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[5] == 0, 'btn-danger': pitchStatus[5] == 1}" @click="sendOSCcmd('/OPTICS/special2025')">+3 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[5] == 0, 'btn-danger': pitchStatus[5] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2025', 1)" @mouseup="sendOSCcmd('/OPTICS/special2025', 0)">+3 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[6] == 0, 'btn-danger': pitchStatus[6] == 1}" @click="sendOSCcmd('/OPTICS/special2026')">+4 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[6] == 0, 'btn-danger': pitchStatus[6] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2026', 1)" @mouseup="sendOSCcmd('/OPTICS/special2026', 0)">+4 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[7] == 0, 'btn-danger': pitchStatus[7] == 1}" @click="sendOSCcmd('/OPTICS/special2027')">+5 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[7] == 0, 'btn-danger': pitchStatus[7] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2027', 1)" @mouseup="sendOSCcmd('/OPTICS/special2027', 0)">+5 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[8] == 0, 'btn-danger': pitchStatus[8] == 1}" @click="sendOSCcmd('/OPTICS/special2028')">+6 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[8] == 0, 'btn-danger': pitchStatus[8] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2028', 1)" @mouseup="sendOSCcmd('/OPTICS/special2028', 0)">+6 oct</button>
                         </div>
                         <div class="col-2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[9] == 0, 'btn-danger': pitchStatus[9] == 1}" @click="sendOSCcmd('/OPTICS/special2029')">+7 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[9] == 0, 'btn-danger': pitchStatus[9] == 1}" @mousedown="sendOSCcmd('/OPTICS/special2029', 1)" @mouseup="sendOSCcmd('/OPTICS/special2029', 0)">+7 oct</button>
                         </div>
                         <div class="col-2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[10] == 0, 'btn-danger': pitchStatus[10] == 1}" @click="sendOSCcmd('/OPTICS/special1898')">+8 oct</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': pitchStatus[10] == 0, 'btn-danger': pitchStatus[10] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1898', 1)" @mouseup="sendOSCcmd('/OPTICS/special1898', 0)">+8 oct</button>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-lg-4">
                     <div class="row mb-3">
                         <div class="col-3 d-flex">
-                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2014')">Back</button>
+                            <button class="w-100 btn btn-lg btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2014', 1)" @mouseup="sendOSCcmd('/OPTICS/special2014', 0)">Back</button>
                         </div>
                         <div class="col-3 d-flex">
-                            <button class="w-100 btn btn-lg btn-primary" @click="sendOSCcmd('/OPTICS/special2015')">Next</button>
+                            <button class="w-100 btn btn-lg btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2015', 1)" @mouseup="sendOSCcmd('/OPTICS/special2015', 0)">Next</button>
                         </div>
                         <div class="col-6 d-flex">
-                            <button class="w-100 btn btn-lg" :class="{'btn-primary': magicTunerStatus.active == 0, 'btn-danger': magicTunerStatus.active == 1}" @click="sendOSCcmd('/OPTICS/special2012')">Magic Tuner ({{ magicTunerStatus.currentNote }})</button>
+                            <button class="w-100 btn btn-lg" :class="{'btn-primary': magicTunerStatus.active == 0, 'btn-danger': magicTunerStatus.active == 1}" @mousedown="sendOSCcmd('/OPTICS/special2012', 1)" @mouseup="sendOSCcmd('/OPTICS/special2012', 0)">Magic Tuner ({{ magicTunerStatus.currentNote }})</button>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2000')">OSC Cancel</button>
+                            <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2000', 1)" @mouseup="sendOSCcmd('/OPTICS/special2000', 0)">OSC Cancel</button>
                         </div>
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2017')">Tuner Release</button>
+                            <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2017', 1)" @mouseup="sendOSCcmd('/OPTICS/special2017', 0)">Tuner Release</button>
                         </div>
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2013')">{{magicTunerStatus.pattern}}</button>
+                            <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2013', 1)" @mouseup="sendOSCcmd('/OPTICS/special2013', 0)">{{magicTunerStatus.pattern}}</button>
                         </div>
                     </div>
                     <div class="row mb-3">
@@ -142,48 +142,48 @@
                             <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2016', 1)" @mouseup="sendOSCcmd('/OPTICS/special2016', 0)">Touch</button>
                         </div>
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': sostActive == 0, 'btn-danger': sostActive == 1}" @click="sendOSCcmd('/OPTICS/special2010')">Sostenuto</button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': sostActive == 0, 'btn-danger': sostActive == 1}" @mousedown="sendOSCcmd('/OPTICS/special2010', 1)" @mouseup="sendOSCcmd('/OPTICS/special2010', 0)">Sostenuto</button>
                         </div>
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-primary" @click="sendOSCcmd('/OPTICS/special2011')">Sost. Release</button>
+                            <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special2011', 1)" @mouseup="sendOSCcmd('/OPTICS/special2011', 0)">Sost. Release</button>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-3" v-if="page == 0">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[0] == 0, 'btn-danger': presetStatus[0] == 1}" @click="sendOSCcmd('/OPTICS/special1900')">Preset<b class="d-block">1</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[0] == 0, 'btn-danger': presetStatus[0] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1900', 1)" @mouseup="sendOSCcmd('/OPTICS/special1900', 0)">Preset<b class="d-block">1</b></button>
                         </div>
                         <div class="col-3" v-if="page == 0">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[1] == 0, 'btn-danger': presetStatus[1] == 1}" @click="sendOSCcmd('/OPTICS/special1901')">Preset<b class="d-block">2</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[1] == 0, 'btn-danger': presetStatus[1] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1901', 1)" @mouseup="sendOSCcmd('/OPTICS/special1901', 0)">Preset<b class="d-block">2</b></button>
                         </div>
                         <div class="col-3" v-if="page == 0">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[2] == 0, 'btn-danger': presetStatus[2] == 1}" @click="sendOSCcmd('/OPTICS/special1902')">Preset<b class="d-block">3</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[2] == 0, 'btn-danger': presetStatus[2] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1902', 1)" @mouseup="sendOSCcmd('/OPTICS/special1902', 0)">Preset<b class="d-block">3</b></button>
                         </div>
                         <div class="col-3" v-if="page == 1">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[3] == 0, 'btn-danger': presetStatus[3] == 1}" @click="sendOSCcmd('/OPTICS/special1903')">Preset<b class="d-block">4</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[3] == 0, 'btn-danger': presetStatus[3] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1903', 1)" @mouseup="sendOSCcmd('/OPTICS/special1903', 0)">Preset<b class="d-block">4</b></button>
                         </div>
                         <div class="col-3" v-if="page == 1">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[4] == 0, 'btn-danger': presetStatus[4] == 1}" @click="sendOSCcmd('/OPTICS/special1904')">Preset<b class="d-block">5</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[4] == 0, 'btn-danger': presetStatus[4] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1904', 1)" @mouseup="sendOSCcmd('/OPTICS/special1904', 0)">Preset<b class="d-block">5</b></button>
                         </div>
                         <div class="col-3" v-if="page == 1">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[5] == 0, 'btn-danger': presetStatus[5] == 1}" @click="sendOSCcmd('/OPTICS/special1905')">Preset<b class="d-block">6</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[5] == 0, 'btn-danger': presetStatus[5] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1905', 1)" @mouseup="sendOSCcmd('/OPTICS/special1905', 0)">Preset<b class="d-block">6</b></button>
                         </div>
                         <div class="col-3" v-if="page == 2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[6] == 0, 'btn-danger': presetStatus[6] == 1}" @click="sendOSCcmd('/OPTICS/special1906')">Preset<b class="d-block">7</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[6] == 0, 'btn-danger': presetStatus[6] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1906', 1)" @mouseup="sendOSCcmd('/OPTICS/special1906', 0)">Preset<b class="d-block">7</b></button>
                         </div>
                         <div class="col-3" v-if="page == 2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[7] == 0, 'btn-danger': presetStatus[7] == 1}" @click="sendOSCcmd('/OPTICS/special1907')">Preset<b class="d-block">8</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[7] == 0, 'btn-danger': presetStatus[7] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1907', 1)" @mouseup="sendOSCcmd('/OPTICS/special1907', 0)">Preset<b class="d-block">8</b></button>
                         </div>
                         <div class="col-3" v-if="page == 2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[8] == 0, 'btn-danger': presetStatus[8] == 1}" @click="sendOSCcmd('/OPTICS/special1908')">Preset<b class="d-block">9</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[8] == 0, 'btn-danger': presetStatus[8] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1908', 1)" @mouseup="sendOSCcmd('/OPTICS/special1908', 0)">Preset<b class="d-block">9</b></button>
                         </div>
                         <div class="col-3" v-if="page == 3">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[9] == 0, 'btn-danger': presetStatus[9] == 1}" @click="sendOSCcmd('/OPTICS/special1909')">Preset<b class="d-block">10</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[9] == 0, 'btn-danger': presetStatus[9] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1909', 1)" @mouseup="sendOSCcmd('/OPTICS/special1909', 0)">Preset<b class="d-block">10</b></button>
                         </div>
                         <div class="col-3" v-if="page == 3">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[10] == 0, 'btn-danger': presetStatus[10] == 1}" @click="sendOSCcmd('/OPTICS/special1910')">Preset<b class="d-block">11</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[10] == 0, 'btn-danger': presetStatus[10] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1910', 1)" @mouseup="sendOSCcmd('/OPTICS/special1910', 0)">Preset<b class="d-block">11</b></button>
                         </div>
                         <div class="col-3" v-if="page == 3">
-                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[11] == 0, 'btn-danger': presetStatus[11] == 1}" @click="sendOSCcmd('/OPTICS/special1911')">Preset<b class="d-block">12</b></button>
+                            <button class="w-100 btn btn-sm" :class="{'btn-primary': presetStatus[11] == 0, 'btn-danger': presetStatus[11] == 1}" @mousedown="sendOSCcmd('/OPTICS/special1911', 1)" @mouseup="sendOSCcmd('/OPTICS/special1911', 0)">Preset<b class="d-block">12</b></button>
                         </div>
                         <div class="col-3">
                             <button class="w-100 btn btn-sm btn-primary" @mousedown="sendOSCcmd('/OPTICS/special1999', 1)" @mouseup="sendOSCcmd('/OPTICS/special1999', 0)">Preset<b class="d-block">Set</b></button>
@@ -198,7 +198,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[n-1]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice((n-1)*7, n*7)" :id="i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
                 </div>
             </div>
@@ -208,7 +208,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[9+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(63+(n-1)*7, 63+n*7)" :id="63+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
                 </div>
             </div>
@@ -218,7 +218,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[18+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(126+(n-1)*7, 126+n*7)" :id="126+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
                 </div>
             </div>
@@ -228,7 +228,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[27+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(189+(n-1)*7, 189+n*7)" :id="189+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @click="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString())">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
                     </div>
                 </div>
             </div>
@@ -260,32 +260,32 @@
             </div>
             <div class="row mt-1 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2034')" class="btn btn-lg w-100 btn-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2034', 1)" @mouseup="sendOSCcmd('/OPTICS/special2034', 0)" class="btn btn-lg w-100 btn-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2035')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Record</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2035', 1)" @mouseup="sendOSCcmd('/OPTICS/special2035', 0)" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Record</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2033')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track -10</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2033', 1)" @mouseup="sendOSCcmd('/OPTICS/special2033', 0)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track -10</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2032')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Down</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2032', 1)" @mouseup="sendOSCcmd('/OPTICS/special2032', 0)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Down</button>
                 </div>
                 <div class="col-6 col-md-3 mt-3 mt-md-0">
-                    <button @click="sendOSCcmd('/OPTICS/special2031')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Up</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2031', 1)" @mouseup="sendOSCcmd('/OPTICS/special2031', 0)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Up</button>
                 </div>
                 <div class="col-6 col-md-3 mt-3 mt-md-0">
-                    <button @click="sendOSCcmd('/OPTICS/special2030')" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track +10</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2030', 1)" @mouseup="sendOSCcmd('/OPTICS/special2030', 0)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track +10</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2036')" class="btn btn-lg w-100 btn-success pt-4 pb-4">Play</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2036', 1)" @mouseup="sendOSCcmd('/OPTICS/special2036', 0)" class="btn btn-lg w-100 btn-success pt-4 pb-4">Play</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendOSCcmd('/OPTICS/special2037')" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Stop</button>
+                    <button @mousedown="sendOSCcmd('/OPTICS/special2037', 1)" @mouseup="sendOSCcmd('/OPTICS/special2037', 0)" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Stop</button>
                 </div>
             </div>
             <div class="container mt-3 text-center">
