@@ -52,31 +52,31 @@
             <div class="row mb-3">
                 <div class="col-12 col-lg-8 mb-3 mb-lg-0">
                     <div id="piano-keyboard" class="mb-3">
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key1', 1)" @mouseup="sendOSCcmd('/keyboard/key1', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key2', 1)" @mouseup="sendOSCcmd('/keyboard/key2', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key3', 1)" @mouseup="sendOSCcmd('/keyboard/key3', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key4', 1)" @mouseup="sendOSCcmd('/keyboard/key4', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key5', 1)" @mouseup="sendOSCcmd('/keyboard/key5', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key6', 1)" @mouseup="sendOSCcmd('/keyboard/key6', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key7', 1)" @mouseup="sendOSCcmd('/keyboard/key7', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key8', 1)" @mouseup="sendOSCcmd('/keyboard/key8', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key9', 1)" @mouseup="sendOSCcmd('/keyboard/key9', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key10', 1)" @mouseup="sendOSCcmd('/keyboard/key10', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key11', 1)" @mouseup="sendOSCcmd('/keyboard/key11', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key12', 1)" @mouseup="sendOSCcmd('/keyboard/key12', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key13', 1)" @mouseup="sendOSCcmd('/keyboard/key13', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key14', 1)" @mouseup="sendOSCcmd('/keyboard/key14', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key15', 1)" @mouseup="sendOSCcmd('/keyboard/key15', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key16', 1)" @mouseup="sendOSCcmd('/keyboard/key16', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key17', 1)" @mouseup="sendOSCcmd('/keyboard/key17', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key18', 1)" @mouseup="sendOSCcmd('/keyboard/key18', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key19', 1)" @mouseup="sendOSCcmd('/keyboard/key19', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key20', 1)" @mouseup="sendOSCcmd('/keyboard/key20', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key21', 1)" @mouseup="sendOSCcmd('/keyboard/key21', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key22', 1)" @mouseup="sendOSCcmd('/keyboard/key22', 0)"></div>
-                        <div class="key key-sharp" @mousedown="sendOSCcmd('/keyboard/key23', 1)" @mouseup="sendOSCcmd('/keyboard/key23', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key24', 1)" @mouseup="sendOSCcmd('/keyboard/key24', 0)"></div>
-                        <div class="key key-natural" @mousedown="sendOSCcmd('/keyboard/key25', 1)" @mouseup="sendOSCcmd('/keyboard/key25', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[0] == 1}" @mousedown="sendOSCcmd('/keyboard/key1', 1)" @mouseup="sendOSCcmd('/keyboard/key1', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[1] == 1}" @mousedown="sendOSCcmd('/keyboard/key2', 1)" @mouseup="sendOSCcmd('/keyboard/key2', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[2] == 1}" @mousedown="sendOSCcmd('/keyboard/key3', 1)" @mouseup="sendOSCcmd('/keyboard/key3', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[3] == 1}" @mousedown="sendOSCcmd('/keyboard/key4', 1)" @mouseup="sendOSCcmd('/keyboard/key4', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[4] == 1}" @mousedown="sendOSCcmd('/keyboard/key5', 1)" @mouseup="sendOSCcmd('/keyboard/key5', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[5] == 1}" @mousedown="sendOSCcmd('/keyboard/key6', 1)" @mouseup="sendOSCcmd('/keyboard/key6', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[6] == 1}" @mousedown="sendOSCcmd('/keyboard/key7', 1)" @mouseup="sendOSCcmd('/keyboard/key7', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[7] == 1}" @mousedown="sendOSCcmd('/keyboard/key8', 1)" @mouseup="sendOSCcmd('/keyboard/key8', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[8] == 1}" @mousedown="sendOSCcmd('/keyboard/key9', 1)" @mouseup="sendOSCcmd('/keyboard/key9', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[9] == 1}" @mousedown="sendOSCcmd('/keyboard/key10', 1)" @mouseup="sendOSCcmd('/keyboard/key10', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[10] == 1}" @mousedown="sendOSCcmd('/keyboard/key11', 1)" @mouseup="sendOSCcmd('/keyboard/key11', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[11] == 1}" @mousedown="sendOSCcmd('/keyboard/key12', 1)" @mouseup="sendOSCcmd('/keyboard/key12', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[12] == 1}" @mousedown="sendOSCcmd('/keyboard/key13', 1)" @mouseup="sendOSCcmd('/keyboard/key13', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[13] == 1}" @mousedown="sendOSCcmd('/keyboard/key14', 1)" @mouseup="sendOSCcmd('/keyboard/key14', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[14] == 1}" @mousedown="sendOSCcmd('/keyboard/key15', 1)" @mouseup="sendOSCcmd('/keyboard/key15', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[15] == 1}" @mousedown="sendOSCcmd('/keyboard/key16', 1)" @mouseup="sendOSCcmd('/keyboard/key16', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[16] == 1}" @mousedown="sendOSCcmd('/keyboard/key17', 1)" @mouseup="sendOSCcmd('/keyboard/key17', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[17] == 1}" @mousedown="sendOSCcmd('/keyboard/key18', 1)" @mouseup="sendOSCcmd('/keyboard/key18', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[18] == 1}" @mousedown="sendOSCcmd('/keyboard/key19', 1)" @mouseup="sendOSCcmd('/keyboard/key19', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[19] == 1}" @mousedown="sendOSCcmd('/keyboard/key20', 1)" @mouseup="sendOSCcmd('/keyboard/key20', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[20] == 1}" @mousedown="sendOSCcmd('/keyboard/key21', 1)" @mouseup="sendOSCcmd('/keyboard/key21', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[21] == 1}" @mousedown="sendOSCcmd('/keyboard/key22', 1)" @mouseup="sendOSCcmd('/keyboard/key22', 0)"></div>
+                        <div class="key key-sharp" :class="{'bg-success': keyboardStatus[22] == 1}" @mousedown="sendOSCcmd('/keyboard/key23', 1)" @mouseup="sendOSCcmd('/keyboard/key23', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[23] == 1}" @mousedown="sendOSCcmd('/keyboard/key24', 1)" @mouseup="sendOSCcmd('/keyboard/key24', 0)"></div>
+                        <div class="key key-natural" :class="{'bg-success': keyboardStatus[24] == 1}" @mousedown="sendOSCcmd('/keyboard/key25', 1)" @mouseup="sendOSCcmd('/keyboard/key25', 0)"></div>
                     </div>
                     <div class="row">
                         <div class="col-2 mb-2 d-flex">
@@ -198,7 +198,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[n-1]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice((n-1)*7, n*7)" :id="i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 0)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
@@ -235,9 +235,9 @@
         </div>
         <div class="container-fluid text-light" v-if="page == 5">
             <div v-for="(expr, i) in expressions" class="d-inline-block me-5 mb-5 text-center" :key="i">
-                <b>{{expr.name}}</b>
-                <br>
-                <input type="range" class="form-range mt-2" orient="vertical" min="0" max="1" @input="moveFader(i)" v-model="expr.value" step="0.001">
+                <b v-if="expr.name != ''">{{expr.name}}</b>
+                <br v-if="expr.name != ''">
+                <input v-if="expr.name != ''" type="range" class="form-range mt-2" orient="vertical" min="0" max="1" @input="moveFader(i)" v-model="expr.value" step="0.001">
             </div>
         </div>
         <div class="container-fluid" v-if="page == 6">
@@ -314,7 +314,8 @@
                     sostActive: 0,
                     presetStatus: [],
                     pitchStatus: [],
-                    expressions: []
+                    expressions: [],
+                    keyboardStatus: []
                 }
             },
             methods: {
@@ -376,6 +377,10 @@
 
         socket.on('expressions', function (expressions) {
             app.expressions = expressions;
+        });
+
+        socket.on('keyboardStatus', function (status) {
+            app.keyboardStatus = status;
         });
     </script>
 </body>

@@ -23,6 +23,7 @@ var data = {
     presetStatus: [],
     pitchStatus: [],
     expressions: [],
+    keyboardStatus: []
 }
 
 // 220 user variables
@@ -33,11 +34,11 @@ for (let i = 1; i <= 10; i++) {
 }
 
 for (let i = 1; i <= 253; i++) {
-    data.stops.push({name: "Stop "+i.toString(), active: 0});
+    data.stops.push({name: "", active: 0});
 }
 
 for (let i = 1; i <= 36; i++) {
-    data.divLabels.push("Div Label "+i.toString());
+    data.divLabels.push("Unlabeled Div");
 }
 
 for (let i = 1; i <= 12; i++) {
@@ -45,11 +46,15 @@ for (let i = 1; i <= 12; i++) {
 }
 
 for (let i = 1; i <= 32; i++) {
-    data.expressions.push({name: "Expression "+i.toString(), value: 0});
+    data.expressions.push({name: "", value: 0});
 }
 
 for (let i = 1; i <= 11; i++) {
     data.pitchStatus.push(0);
+}
+
+for (let i = 1; i <= 25; i++) {
+    data.keyboardStatus.push(0);
 }
 
 function sendSubscribeMessage() {
@@ -86,11 +91,26 @@ oscServer.on('message', (msg) => {
             let exprNum = parseInt(messageParts[1].substring(4));
             if (exprNum >= 1 && exprNum <= 32) {
                 if (data.expressions[exprNum-1].name != messageValue) {
-                    if (messageValue == "") {
-                        messageValue = "Unlabeled"
-                    }
                     data.expressions[exprNum-1].name = messageValue;
                     io.emit('expressions', data.expressions);
+                }
+            }
+        }
+    } else if (messageParts[0] == 'keyboard') {
+        if (messageParts[1].startsWith('key')) {
+            let keyNum = parseInt(messageParts[1].substring(3));
+            if (keyNum >= 1 && keyNum <= 25) {
+                if (messageParts.length == 3 && messageParts[2] == 'color') {
+                    let active = messageValue;
+                    if (active == 'purple' || active == 'brown') {
+                        active = 0;
+                    } else if (active == 'green') {
+                        active = 1;
+                    }
+                    if (data.keyboardStatus[keyNum-1] != active) {
+                        data.keyboardStatus[keyNum-1] = active;
+                        io.emit('keyboardStatus', data.keyboardStatus);
+                    }
                 }
             }
         }
@@ -144,7 +164,7 @@ oscServer.on('message', (msg) => {
             if (labelNum >= 1 && labelNum <= 36) {
                 if (data.divLabels[labelNum-1] != messageValue) {
                     if (messageValue == "") {
-                        messageValue = "Div Label"
+                        messageValue = "Unlabeled Div"
                     }
                     data.divLabels[labelNum-1] = messageValue;
                     io.emit('divLabels', data.divLabels);
@@ -299,6 +319,7 @@ io.on('connection', (socket) => {
     socket.emit('presetStatus', data.presetStatus);
     socket.emit('pitchStatus', data.pitchStatus);
     socket.emit('expressions', data.expressions);
+    socket.emit('keyboardStatus', data.keyboardStatus);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
