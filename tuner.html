@@ -376,7 +376,7 @@
         </div>
         <div class="container-fluid" v-if="page == 7">
             <h2 class="text-center mb-4">Track Duplication</h2>
-            <div class="row justify-content-center mb-5">
+            <div class="row justify-content-center mb-4">
                 <div class="col-4 text-center">
                     <h3 class="text-success">{{trackDupSrc}}</h3>
                     <p class="mb-5">Source</p>
@@ -404,12 +404,20 @@
                 <h5 class="me-3 d-inline">{{userVarPage}}</h5>
                 <button class="btn btn-secondary"@mousedown="sendOSCcmd('/UserDef/inc999', 1)" @mouseup="sendOSCcmd('/UserDef/inc999', 0)">Up</button>
             </div>
-            <div class="row justify-content-center">
-                <div class="col-2 text-center" v-for="(uvar, i) in userVars.slice(0, 5)" :key="i">
+            <div class="row justify-content-center mb-3">
+                <div class="col text-center" v-for="(uvar, i) in userVars.slice(0, 5)" :key="i">
                     <h5 class="text-start w-100 bg-danger p-1"><b>Name:</b> {{uvar.name}}</h5>
                     <h5 class="text-start w-100 bg-secondary p-1"><b>Value:</b> {{uvar.value}}</h5>
                     <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 1)" @mouseup="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 0)">Down</button>
                     <button class="btn btn-secondary"@mousedown="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 1)" @mouseup="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 0)">Up</button>
+                </div>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col text-center" v-for="(uvar, i) in userVars.slice(5, 10)" :key="i">
+                    <h5 class="text-start w-100 bg-danger p-1"><b>Name:</b> {{uvar.name}}</h5>
+                    <h5 class="text-start w-100 bg-secondary p-1"><b>Value:</b> {{uvar.value}}</h5>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/UserDef/dec'+(i+6).toString(), 1)" @mouseup="sendOSCcmd('/UserDef/dec'+(i+6).toString(), 0)">Down</button>
+                    <button class="btn btn-secondary"@mousedown="sendOSCcmd('/UserDef/inc'+(i+6).toString(), 1)" @mouseup="sendOSCcmd('/UserDef/inc'+(i+6).toString(), 0)">Up</button>
                 </div>
             </div>
         </div>
