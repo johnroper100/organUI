@@ -254,6 +254,27 @@ oscServer.on('message', (msg) => {
                 data.trackNames[10] = messageValue;
                 io.emit('trackNames', data.trackNames);
             }
+        } else if (messageParts[1] == 'page1') {
+            if (data.userVarPage != messageValue) {
+                data.userVarPage = messageValue;
+                io.emit('userVarPage', data.userVarPage);
+            }
+        } else if (messageParts[1].startsWith('label')) {
+            let labelNum = parseInt(messageParts[1].substring(5));
+            if (labelNum >= 1 && labelNum <= 10) {
+                if (data.userVars[labelNum-1].name != messageValue) {
+                    data.userVars[labelNum-1].name = messageValue;
+                    io.emit('userVars', data.userVars);
+                }
+            }
+        } else if (messageParts[1].startsWith('value')) {
+            let valueNum = parseInt(messageParts[1].substring(5));
+            if (valueNum >= 1 && valueNum <= 10) {
+                if (data.userVars[valueNum-1].value != messageValue) {
+                    data.userVars[valueNum-1].value = messageValue;
+                    io.emit('userVars', data.userVars);
+                }
+            }
         }
     } else if (messageParts[0] == 'OPTICS'){
         if (messageParts[1].startsWith('special')) {
