@@ -11,7 +11,7 @@ const oscClient = new Client('192.168.175.12', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 
 var data = {
-    trackNum: "No Track",
+    trackNum: "",
     trackTime: "-- : --",
     uptime: "Not Connected",
     magicTunerStatus: {active: 0, currentNote: "Off", pattern: "No Pattern"},
@@ -23,14 +23,16 @@ var data = {
     presetStatus: [],
     pitchStatus: [],
     expressions: [],
-    keyboardStatus: []
+    keyboardStatus: [],
+    folderTrackName: "",
+    namingCurrentFolder: ""
 }
 
 // 220 user variables
 // presets are buttons 1900-1998
 
 for (let i = 1; i <= 10; i++) {
-    data.trackNames[i] = "No Track";
+    data.trackNames[i] = "";
 }
 
 for (let i = 1; i <= 253; i++) {
@@ -129,6 +131,16 @@ oscServer.on('message', (msg) => {
             if (data.trackNum != messageValue) {
                 data.trackNum = messageValue;
                 io.emit('trackNum', data.trackNum);
+            }
+        } else if (messageParts[1] == 'label306') {
+            if (data.namingCurrentFolder != messageValue) {
+                data.namingCurrentFolder = messageValue;
+                io.emit('namingCurrentFolder', data.namingCurrentFolder);
+            }
+        } else if (messageParts[1] == 'label307') {
+            if (data.folderTrackName != messageValue) {
+                data.folderTrackName = messageValue;
+                io.emit('folderTrackName', data.folderTrackName);
             }
         } else if (messageParts[1] == 'LabelSpecial4') {
             if (data.magicTunerStatus.pattern != messageValue) {
@@ -320,6 +332,8 @@ io.on('connection', (socket) => {
     socket.emit('pitchStatus', data.pitchStatus);
     socket.emit('expressions', data.expressions);
     socket.emit('keyboardStatus', data.keyboardStatus);
+    socket.emit('folderTrackName', data.folderTrackName);
+    socket.emit('namingCurrentFolder', data.namingCurrentFolder);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {

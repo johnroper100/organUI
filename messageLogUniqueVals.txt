@@ -57,8 +57,4 @@
 
 [ 'UserDef', 'value1' ] 
 
-[ 'keyboard', 'key1', 'color' ] green
-[ 'keyboard', 'key2', 'color' ] purple
-[ 'keyboard', 'key3', 'color' ] brown
-
 [ 'Tabs', 'Label1' ] Buttons 1-63
