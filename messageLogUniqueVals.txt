@@ -48,9 +48,6 @@
 
 [ 'RP', 'label340' ] Off
 
-[ 'TrackDup', 'SrcTrk1' ] -1
-[ 'TrackDup', 'TgtTrk1' ] -1
-
 [ 'UserDef', 'label1' ] 
 
 [ 'UserDef', 'page1' ] Off

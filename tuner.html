@@ -44,7 +44,7 @@
                     <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
                 </div>
                 <div class="col-3 d-flex p-0">
-                    <button @click="page = 7" type="button" class="btn rounded-0 w-100" disabled :class="{'btn-primary': page == 7, 'btn-secondary': page != 7}">Site Specific</button>
+                    <button @click="page = 7" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 7, 'btn-secondary': page != 7}">Site Specific</button>
                 </div>
             </div>
         </div>
@@ -374,6 +374,45 @@
                 <button class="btn btn-primary me-2" @mousedown="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 1)" @mouseup="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 0)" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
             </div>
         </div>
+        <div class="container-fluid" v-if="page == 7">
+            <h2 class="text-center mb-4">Track Duplication</h2>
+            <div class="row justify-content-center mb-5">
+                <div class="col-4 text-center">
+                    <h3 class="text-success">{{trackDupSrc}}</h3>
+                    <p class="mb-5">Source</p>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/OPTICS/special2049', 1)" @mouseup="sendOSCcmd('/OPTICS/special2049', 0)">Track -10</button>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/OPTICS/special2045', 1)" @mouseup="sendOSCcmd('/OPTICS/special2045', 0)">Track Dn</button>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/OPTICS/special2044', 1)" @mouseup="sendOSCcmd('/OPTICS/special2044', 0)">Track Up</button>
+                    <button class="btn btn-secondary" @mousedown="sendOSCcmd('/OPTICS/special2048', 1)" @mouseup="sendOSCcmd('/OPTICS/special2048', 0)">Track +10</button>
+                </div>
+                <div class="col-4 col-md-2 text-center">
+                    <button class="btn btn-lg w-100 btn-outline-primary" @mousedown="sendOSCcmd('/OPTICS/special2052', 1)" @mouseup="sendOSCcmd('/OPTICS/special2052', 0)">Copy >></button>
+                </div>
+                <div class="col-4 text-center">
+                    <h3 class="text-danger">{{trackDupTgt}}</h3>
+                    <p class="mb-5">Destination</p>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/OPTICS/special2051', 1)" @mouseup="sendOSCcmd('/OPTICS/special2051', 0)">Track -10</button>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/OPTICS/special2047', 1)" @mouseup="sendOSCcmd('/OPTICS/special2047', 0)">Track Dn</button>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/OPTICS/special2046', 1)" @mouseup="sendOSCcmd('/OPTICS/special2046', 0)">Track Up</button>
+                    <button class="btn btn-secondary" @mousedown="sendOSCcmd('/OPTICS/special2050', 1)" @mouseup="sendOSCcmd('/OPTICS/special2050', 0)">Track +10</button>
+                </div>
+            </div>
+            <h2 class="text-center mb-3">User Variables</h2>
+            <div class="text-center mb-4">
+                <h5>Page Number</h5>
+                <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/UserDef/dec999', 1)" @mouseup="sendOSCcmd('/UserDef/dec999', 0)">Down</button>
+                <h5 class="me-3 d-inline">{{userVarPage}}</h5>
+                <button class="btn btn-secondary"@mousedown="sendOSCcmd('/UserDef/inc999', 1)" @mouseup="sendOSCcmd('/UserDef/inc999', 0)">Up</button>
+            </div>
+            <div class="row justify-content-center">
+                <div class="col-2 text-center" v-for="(uvar, i) in userVars.slice(0, 5)" :key="i">
+                    <h5 class="text-start w-100 bg-danger p-1"><b>Name:</b> {{uvar.name}}</h5>
+                    <h5 class="text-start w-100 bg-secondary p-1"><b>Value:</b> {{uvar.value}}</h5>
+                    <button class="btn btn-secondary me-3" @mousedown="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 1)" @mouseup="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 0)">Down</button>
+                    <button class="btn btn-secondary"@mousedown="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 1)" @mouseup="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 0)">Up</button>
+                </div>
+            </div>
+        </div>
     </div>
     <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
@@ -399,7 +438,11 @@
                     expressions: [],
                     keyboardStatus: [],
                     folderTrackName: "",
-                    namingCurrentFolder: ""
+                    namingCurrentFolder: "",
+                    trackDupSrc: "",
+                    trackDupTgt: "",
+                    userVars: [],
+                    userVarPage: ""
                 }
             },
             methods: {
@@ -473,6 +516,22 @@
 
         socket.on('namingCurrentFolder', function (name) {
             app.namingCurrentFolder = name;
+        });
+
+        socket.on('trackDupSrc', function (name) {
+            app.trackDupSrc = name;
+        });
+
+        socket.on('trackDupTgt', function (name) {
+            app.trackDupTgt = name;
+        });
+
+        socket.on('userVars', function (vars) {
+            app.userVars = vars;
+        });
+
+        socket.on('userVarPage', function (page) {
+            app.userVarPage = page;
         });
     </script>
 </body>

@@ -25,7 +25,11 @@ var data = {
     expressions: [],
     keyboardStatus: [],
     folderTrackName: "",
-    namingCurrentFolder: ""
+    namingCurrentFolder: "",
+    trackDupSrc: "[source]",
+    trackDupTgt: "[target]",
+    userVars: [],
+    userVarPage: ""
 }
 
 // 220 user variables
@@ -59,6 +63,10 @@ for (let i = 1; i <= 25; i++) {
     data.keyboardStatus.push(0);
 }
 
+for (let i = 1; i <= 10; i++) {
+    data.userVars.push({name: "", value: ""});
+}
+
 function sendSubscribeMessage() {
     oscClient.send("/OPTICS/special2001", 1, (err) => {
         if (err) console.error(err);
@@ -86,6 +94,18 @@ oscServer.on('message', (msg) => {
             if (data.trackLocked != messageValue) {
                 data.trackLocked = messageValue;
                 io.emit('trackLocked', data.trackLocked);
+            }
+        }
+    } else if (messageParts[0] == 'TrackDup') {
+        if (messageParts[1] == 'SrcTrk1') {
+            if (data.trackDupSrc != messageValue) {
+                data.trackDupSrc = messageValue;
+                io.emit('trackDupSrc', data.trackDupSrc);
+            }
+        } else if (messageParts[1] == 'TgtTrk1') {
+            if (data.trackDupTgt != messageValue) {
+                data.trackDupTgt = messageValue;
+                io.emit('trackDupTgt', data.trackDupTgt);
             }
         }
     } else if (messageParts[0] == 'faders') {
@@ -334,6 +354,10 @@ io.on('connection', (socket) => {
     socket.emit('keyboardStatus', data.keyboardStatus);
     socket.emit('folderTrackName', data.folderTrackName);
     socket.emit('namingCurrentFolder', data.namingCurrentFolder);
+    socket.emit('trackDupSrc', data.trackDupSrc);
+    socket.emit('trackDupTgt', data.trackDupTgt);
+    socket.emit('userVars', data.userVars);
+    socket.emit('userVarPage', data.userVarPage);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
