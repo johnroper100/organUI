@@ -236,10 +236,10 @@
         <div class="container-fluid text-light" v-if="page == 4">
             <div class="row mb-3 justify-content-center">
                 <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-lg btn-outline-primary w-100">Save To Track</button>
+                    <button class="btn btn-lg btn-outline-primary w-100" @mousedown="sendOSCcmd('/OPTICS/specialkb14', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb14', 0)">Save To Track</button>
                 </div>
                 <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-lg btn-outline-primary w-100">Save To Folder</button>
+                    <button class="btn btn-lg btn-outline-primary w-100" @mousedown="sendOSCcmd('/OPTICS/specialkb15', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb15', 0)">Save To Folder</button>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 text-center">
                     <h3>{{folderTrackName}}</h3>
@@ -249,59 +249,59 @@
                 Press <i>Escape</i> to erase a name.
             </div>
             <div class="text-center mb-3">
-                <button class="btn btn-secondary btn-lg me-3">Escape</button>
-                <button class="btn btn-secondary btn-lg me-3">1</button>
-                <button class="btn btn-secondary btn-lg me-3">2</button>
-                <button class="btn btn-secondary btn-lg me-3">3</button>
-                <button class="btn btn-secondary btn-lg me-3">4</button>
-                <button class="btn btn-secondary btn-lg me-3">5</button>
-                <button class="btn btn-secondary btn-lg me-3">6</button>
-                <button class="btn btn-secondary btn-lg me-3">7</button>
-                <button class="btn btn-secondary btn-lg me-3">8</button>
-                <button class="btn btn-secondary btn-lg me-3">9</button>
-                <button class="btn btn-secondary btn-lg me-3">0</button>
-                <button class="btn btn-secondary btn-lg">Delete</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb27', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb27', 0)">Escape</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb49', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb49', 0)">1</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb50', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb50', 0)">2</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb51', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb51', 0)">3</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb52', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb52', 0)">4</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb53', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb53', 0)">5</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb54', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb54', 0)">6</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb55', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb55', 0)">7</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb56', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb56', 0)">8</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb57', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb57', 0)">9</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb48', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb48', 0)">0</button>
+                <button class="btn btn-secondary btn-lg" @mousedown="sendOSCcmd('/OPTICS/specialkb8', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb8', 0)">Delete</button>
             </div>
             <div class="text-center mb-3">
-                <button class="btn btn-secondary btn-lg me-3">Q</button>
-                <button class="btn btn-secondary btn-lg me-3">W</button>
-                <button class="btn btn-secondary btn-lg me-3">E</button>
-                <button class="btn btn-secondary btn-lg me-3">R</button>
-                <button class="btn btn-secondary btn-lg me-3">T</button>
-                <button class="btn btn-secondary btn-lg me-3">Y</button>
-                <button class="btn btn-secondary btn-lg me-3">U</button>
-                <button class="btn btn-secondary btn-lg me-3">I</button>
-                <button class="btn btn-secondary btn-lg me-3">O</button>
-                <button class="btn btn-secondary btn-lg me-3">P</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb113', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb113', 0)">Q</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb119', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb119', 0)">W</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb101', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb101', 0)">E</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb114', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb114', 0)">R</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb116', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb116', 0)">T</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb121', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb121', 0)">Y</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb117', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb117', 0)">U</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb105', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb105', 0)">I</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb111', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb111', 0)">O</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb112', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb112', 0)">P</button>
             </div>
             <div class="text-center mb-3">
-                <button class="btn btn-secondary btn-lg me-3">A</button>
-                <button class="btn btn-secondary btn-lg me-3">S</button>
-                <button class="btn btn-secondary btn-lg me-3">D</button>
-                <button class="btn btn-secondary btn-lg me-3">F</button>
-                <button class="btn btn-secondary btn-lg me-3">G</button>
-                <button class="btn btn-secondary btn-lg me-3">H</button>
-                <button class="btn btn-secondary btn-lg me-3">J</button>
-                <button class="btn btn-secondary btn-lg me-3">K</button>
-                <button class="btn btn-secondary btn-lg">L</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb97', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb97', 0)">A</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb115', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb115', 0)">S</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb100', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb100', 0)">D</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb102', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb102', 0)">F</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb103', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb103', 0)">G</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb104', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb104', 0)">H</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb106', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb106', 0)">J</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb107', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb107', 0)">K</button>
+                <button class="btn btn-secondary btn-lg" @mousedown="sendOSCcmd('/OPTICS/specialkb108', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb108', 0)">L</button>
             </div>
             <div class="text-center mb-3">
-                <button class="btn btn-secondary btn-lg me-3">Z</button>
-                <button class="btn btn-secondary btn-lg me-3">X</button>
-                <button class="btn btn-secondary btn-lg me-3">C</button>
-                <button class="btn btn-secondary btn-lg me-3">V</button>
-                <button class="btn btn-secondary btn-lg me-3">B</button>
-                <button class="btn btn-secondary btn-lg me-3">N</button>
-                <button class="btn btn-secondary btn-lg me-3">M</button>
-                <button class="btn btn-secondary btn-lg">Shift</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb122', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb122', 0)">Z</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb120', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb120', 0)">X</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb99', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb99', 0)">C</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb118', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb118', 0)">V</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb98', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb98', 0)">B</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb110', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb110', 0)">N</button>
+                <button class="btn btn-secondary btn-lg me-3" @mousedown="sendOSCcmd('/OPTICS/specialkb109', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb109', 0)">M</button>
+                <button class="btn btn-secondary btn-lg" @mousedown="sendOSCcmd('/OPTICS/specialkb28', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb28', 0)">Shift</button>
             </div>  
             <div class="text-center mb-5">
-                <button class="btn btn-secondary btn-lg ps-5 pe-5">Space</button>
+                <button class="btn btn-secondary btn-lg ps-5 pe-5" @mousedown="sendOSCcmd('/OPTICS/specialkb32', 1)" @mouseup="sendOSCcmd('/OPTICS/specialkb32', 0)">Space</button>
             </div> 
             <div class="row">
                 <div class="col-6 col-md-3">
-                    <button class="btn btn-lg btn-outline-primary w-100 mb-3">Track Up</button>
-                    <button class="btn btn-lg btn-outline-primary w-100">Track Down</button>
+                    <button class="btn btn-lg btn-outline-primary w-100 mb-3" @mousedown="sendOSCcmd('/OPTICS/special2042', 1)" @mouseup="sendOSCcmd('/OPTICS/special2042', 0)">Track Up</button>
+                    <button class="btn btn-lg btn-outline-primary w-100" @mousedown="sendOSCcmd('/OPTICS/special2043', 1)" @mouseup="sendOSCcmd('/OPTICS/special2043', 0)">Track Down</button>
                 </div>
                 <div class="col-6 col-md-3 text-center">
                     <h3>{{trackNum}}</h3>
@@ -310,8 +310,8 @@
                     <h3>{{namingCurrentFolder}}</h3>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button class="btn btn-lg btn-outline-primary w-100 mb-3">Folder Up</button>
-                    <button class="btn btn-lg btn-outline-primary w-100">Folder Down</button>
+                    <button class="btn btn-lg btn-outline-primary w-100 mb-3" @mousedown="sendOSCcmd('/OPTICS/special2040', 1)" @mouseup="sendOSCcmd('/OPTICS/special2040', 0)">Folder Up</button>
+                    <button class="btn btn-lg btn-outline-primary w-100" @mousedown="sendOSCcmd('/OPTICS/special2041', 1)" @mouseup="sendOSCcmd('/OPTICS/special2041', 0)">Folder Down</button>
                 </div>
             </div>
         </div>
