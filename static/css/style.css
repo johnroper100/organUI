@@ -67,7 +67,7 @@ body {
 
 input[type=range][orient=vertical]
 {
-    -webkit-appearance: slider-vertical; /* WebKit */
+    -webkit-appearance: slider-vertical;
     width: 3em;
     height: 15em;
 }
