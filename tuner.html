@@ -208,7 +208,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[9+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(63+(n-1)*7, 63+n*7)" :id="63+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 0)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
@@ -218,7 +218,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[18+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(126+(n-1)*7, 126+n*7)" :id="126+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 0)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
@@ -228,7 +228,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[27+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(189+(n-1)*7, 189+n*7)" :id="189+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 0)">{{stop.name}}<span v-if="stop.name == ''">Empty</span></button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @mousedown="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 1)" @mouseup="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 0)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
