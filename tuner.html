@@ -19,6 +19,19 @@
 <body class="bg-dark text-light">
     <div id="app">
         <div class="container-fluid mb-3">
+            <div>
+                <button @click="startTuner">Start Tuner</button>
+                <button @click="stopTuner">Stop Tuner</button>
+                <p>Frequency: {{ frequency }} Hz</p>
+                <p>Note: {{ note }}</p>
+                <p>Difference: {{ difference }} Hz</p>
+                <select v-model="temperament">
+                  <option value="equal">Equal Temperament</option>
+                  <option value="just">Just Intonation</option>
+                  <option value="pythagorean">Pythagorean Tuning</option>
+                </select>
+                <input type="number" v-model.number="aFrequency" min="400" max="480" step="1">
+              </div>
             <div class="row mb-2">
                 <div class="col-3 d-flex p-0">
                     <button @click="page = 0" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 0, 'btn-secondary': page != 0}">Stops/Notes 1</button>
@@ -450,7 +463,20 @@
                     trackDupSrc: "",
                     trackDupTgt: "",
                     userVars: [],
-                    userVarPage: ""
+                    userVarPage: "",
+                    audioContext: null,
+                    analyser: null,
+                    tunerDataArray: null,
+                    frequency: null,
+                    note: null,
+                    difference: null,
+                    temperament: 'equal',
+                    aFrequency: 440,
+                    temperaments: {
+                        'equal': new Array(12).fill(0),
+                        'just': [0.00, 11.73, -1.96, 13.69, -3.91, 15.64, -5.87, 1.96, 13.69, -3.91, 15.64, -5.87],
+                        // Add other temperaments here
+                    }
                 }
             },
             methods: {
@@ -465,8 +491,85 @@
                 },
                 moveFader(id) {
                     socket.emit('moveFader', {id: id, value: this.expressions[id].value});
-                }
-            }
+                },
+                calculateFrequencyAndDifference(noteNumber) {
+                    // Calculate the equal tempered cent value for the note
+                    const equalTemperedCents = noteNumber * 100;
+
+                    // Calculate the adjusted cent value for the note
+                    const adjustedCents = equalTemperedCents + this.temperaments[this.temperament][noteNumber % 12];
+
+                    // Calculate the adjusted frequency for the note
+                    const adjustedFrequency = this.aFrequency * Math.pow(2, adjustedCents / 1200);
+
+                    // Calculate the difference
+                    const difference = (this.frequency - adjustedFrequency) / adjustedFrequency * 100;
+
+                    /*console.log(`noteNumber: ${noteNumber}`);
+                    console.log(`this.frequency: ${this.frequency}`);
+                    console.log(`adjustedFrequency: ${adjustedFrequency}`);
+                    console.log(`difference: ${difference}`);*/
+
+                    return { adjustedFrequency, difference };
+                },
+                startTuner() {
+                    this.audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                    navigator.mediaDevices.getUserMedia({ audio: true })
+                        .then(stream => {
+                        var source = this.audioContext.createMediaStreamSource(stream);
+                        this.analyser = this.audioContext.createAnalyser();
+                        source.connect(this.analyser);
+                        this.tunerDataArray = new Uint8Array(this.analyser.frequencyBinCount);
+                        this.updateTuner();
+                        })
+                        .catch(err => {
+                        console.log('The following error occurred: ' + err);
+                        });
+                },
+                updateTuner() {
+                    requestAnimationFrame(this.updateTuner);
+                    this.analyser.getByteTimeDomainData(this.tunerDataArray);
+
+                    // Calculate the Autocorrelation
+                    let ac = new Array(this.tunerDataArray.length).fill(0);
+                    for (let i = 0; i < this.tunerDataArray.length; i++) {
+                        for (let j = 0; j < this.tunerDataArray.length - i; j++) {
+                            ac[i] += Math.abs((this.tunerDataArray[j] - 128) / 128) * (this.tunerDataArray[j + i] - 128) / 128;
+                        }
+                    }
+
+                    // Find the maximum value and its index
+                    let maxIndex = 0;
+                    for (let i = 0; i < ac.length; i++) {
+                        if (ac[i] > ac[maxIndex]) {
+                            maxIndex = i;
+                        }
+                    }
+
+                    // Calculate the frequency
+                    this.frequency = this.audioContext.sampleRate / maxIndex;
+
+                    // Calculate the note
+                    const noteStrings = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+                    const pitch = 69 + 12 * Math.log2(this.frequency / this.aFrequency);
+                    const noteNumber = Math.round(pitch) % 12; // Modulo 12 to keep the note number within the correct range
+                    this.note = noteStrings[noteNumber % 12];
+
+                    // Use the function to calculate the frequency and difference for the selected temperament
+                    const { adjustedFrequency, difference } = this.calculateFrequencyAndDifference(noteNumber);
+
+                    // Adjust the note and the difference
+                    this.note = noteStrings[noteNumber % 12];
+                    this.difference = difference;
+                },
+                stopTuner() {
+                    // Stop the audio context
+                    this.audioContext.close();
+
+                    // Clear the data array
+                    this.tunerDataArray = null;
+                },
+            },
         }).mount('#app');
 
         socket.on('trackNum', function (num) {
