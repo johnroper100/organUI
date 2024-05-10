@@ -86,9 +86,9 @@
                     <button @touchstart="sendOSCcmd('/OPTICS/special2037', 1)" @touchend="sendOSCcmd('/OPTICS/special2037', 0, $event)" class="btn btn-lg w-100 btn-danger pt-4 pb-4">Stop</button>
                 </div>
             </div>
-            <div class="container mt-3 text-center">
+            <!--<div class="container mt-3 text-center">
                 <button class="btn btn-primary me-2" @touchstart="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 1)" @touchend="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 0, $event)" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
-            </div>
+            </div>-->
         </div>
         <div class="container-fluid text-light" v-if="page == 2">
             <div class="row mb-3">
