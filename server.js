@@ -7,7 +7,7 @@ const { Server: SocketServer } = require("socket.io");
 const io = new SocketServer(httpServer);
 const { Client, Server } = require('node-osc');
 
-const oscClient = new Client('192.168.175.12', 8000);
+const oscClient = new Client('192.168.50.78', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 
 var data = {
@@ -172,6 +172,7 @@ oscServer.on('message', (msg) => {
             if (labelNum >= 1 && labelNum <= 253) {
                 if (data.stops[labelNum-1].name != messageValue) {
                     data.stops[labelNum-1].name = messageValue;
+                    data.stops[labelNum-1].number = labelNum;
                     io.emit('stops', data.stops);
                 }
             }
