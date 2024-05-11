@@ -35,14 +35,15 @@
             </div>
             <div class="row">
                 <div class="col-3 d-flex p-0">
+                    <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
+                </div>
+                <div class="col-3 d-flex p-0">
                     <button @click="page = 4" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 4, 'btn-secondary': page != 4}">Naming</button>
                 </div>
                 <div class="col-3 d-flex p-0">
                     <button @click="page = 5" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 5, 'btn-secondary': page != 5}">Faders</button>
                 </div>
-                <div class="col-3 d-flex p-0">
-                    <button @click="page = 6" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 6, 'btn-secondary': page != 6}">Tracks</button>
-                </div>
+                
                 <div class="col-3 d-flex p-0">
                     <button @click="page = 7" type="button" class="btn rounded-0 w-100" :class="{'btn-primary': page == 7, 'btn-secondary': page != 7}">Site Specific</button>
                 </div>
@@ -234,15 +235,33 @@
             </div>
         </div>
         <div class="container-fluid text-light" v-if="page == 4">
+            <div class="row mb-3">
+                <div class="col-6 col-md-3 mb-2 mb-md-0">
+                    <button class="btn btn-sm btn-outline-primary me-1" @touchstart="sendOSCcmd('/OPTICS/special2042', 1)" @touchend="sendOSCcmd('/OPTICS/special2042', 0, $event)">Track ↑</button>
+                    <button class="btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2043', 1)" @touchend="sendOSCcmd('/OPTICS/special2043', 0, $event)">Track ↓</button>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <h3>{{trackNum}}</h3>
+                </div>
+                <hr class="d-block d-md-none mt-3">
+                <div class="col-6 col-md-3">
+                    <button class="btn btn-sm btn-outline-primary me-1" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">Folder ↑</button>
+                    <button class="btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">Folder ↓</button>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <h3>{{namingCurrentFolder}}</h3>
+                </div>
+                <hr class="d-block d-md-none mt-3">
+            </div>
             <div class="row mb-3 justify-content-center">
                 <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-lg btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb14', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb14', 0, $event)">Save To Track</button>
+                    <button class="btn btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb14', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb14', 0, $event)">Save To Track</button>
                 </div>
                 <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-lg btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb15', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb15', 0, $event)">Save To Folder</button>
+                    <button class="btn btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb15', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb15', 0, $event)">Save To Folder</button>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 text-center">
-                    <h3>{{folderTrackName}}</h3>
+                    <h3><i>New Name: </i>{{folderTrackName}}</h3>
                 </div>
             </div>
             <div class="text-danger text-center mb-2">
@@ -294,25 +313,9 @@
                 <button class="btn btn-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb110', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb110', 0, $event)">N</button>
                 <button class="btn btn-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb109', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb109', 0, $event)">M</button>
                 <button class="btn btn-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb28', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb28', 0, $event)">Shift</button>
-            </div>  
-            <div class="text-center mb-5">
+            </div>
+            <div class="text-center mb-3">
                 <button class="btn btn-secondary btn-lg ps-5 pe-5" @touchstart="sendOSCcmd('/OPTICS/specialkb32', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb32', 0, $event)">Space</button>
-            </div> 
-            <div class="row">
-                <div class="col-6 col-md-3">
-                    <button class="btn btn-lg btn-outline-primary w-100 mb-3" @touchstart="sendOSCcmd('/OPTICS/special2042', 1)" @touchend="sendOSCcmd('/OPTICS/special2042', 0, $event)">Track Up</button>
-                    <button class="btn btn-lg btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/special2043', 1)" @touchend="sendOSCcmd('/OPTICS/special2043', 0, $event)">Track Down</button>
-                </div>
-                <div class="col-6 col-md-3 text-center">
-                    <h3>{{trackNum}}</h3>
-                </div>
-                <div class="col-6 col-md-3 text-center">
-                    <h3>{{namingCurrentFolder}}</h3>
-                </div>
-                <div class="col-6 col-md-3">
-                    <button class="btn btn-lg btn-outline-primary w-100 mb-3" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">Folder Up</button>
-                    <button class="btn btn-lg btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">Folder Down</button>
-                </div>
             </div>
         </div>
         <div class="container-fluid text-light" v-if="page == 5">
@@ -323,15 +326,15 @@
             </div>
         </div>
         <div class="container-fluid" v-if="page == 6">
-            <div class="row mt-5">
+            <div class="row mt-4">
                 <div class="col-12 col-md-6 text-center">
                     <h1><b>{{ trackNum }}</b></h1>
                 </div>
-                <div class="col-12 col-md-6 text-center mt-5 mt-md-0">
+                <div class="col-12 col-md-6 text-center mt-4 mt-md-0">
                     <h1>Time: <b>{{ trackTime }}</b></h1>
                 </div>
             </div>
-            <div class="row mt-5 justify-content-center">
+            <div class="row mt-4 justify-content-center">
                 <div class="col-6 col-md-3">
                     <h4 class="text-danger" v-if="trackLocked == 1">Track Locked</h4>
                     <h4 class="text-warning" v-if="trackLocked == 0">Track Unlocked</h4>
@@ -350,16 +353,18 @@
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2033', 1)" @touchend="sendOSCcmd('/OPTICS/special2033', 0, $event)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track -10</button>
+                    <button @touchstart="sendOSCcmd('/OPTICS/special2032', 1)" @touchend="sendOSCcmd('/OPTICS/special2032', 0, $event)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Down ↓</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2032', 1)" @touchend="sendOSCcmd('/OPTICS/special2032', 0, $event)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Down</button>
+                    <button @touchstart="sendOSCcmd('/OPTICS/special2031', 1)" @touchend="sendOSCcmd('/OPTICS/special2031', 0, $event)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Up ↑</button>
                 </div>
-                <div class="col-6 col-md-3 mt-3 mt-md-0">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2031', 1)" @touchend="sendOSCcmd('/OPTICS/special2031', 0, $event)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track Up</button>
+            </div>
+            <div class="row mt-3 justify-content-center">
+                <div class="col-6 col-md-3">
+                    <button @touchstart="sendOSCcmd('/OPTICS/special2033', 1)" @touchend="sendOSCcmd('/OPTICS/special2033', 0, $event)" class="btn btn-sm w-100 btn-secondary pt-3 pb-3">Track Down ↓ 10</button>
                 </div>
-                <div class="col-6 col-md-3 mt-3 mt-md-0">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2030', 1)" @touchend="sendOSCcmd('/OPTICS/special2030', 0, $event)" class="btn btn-lg w-100 btn-secondary pt-4 pb-4">Track +10</button>
+                <div class="col-6 col-md-3">
+                    <button @touchstart="sendOSCcmd('/OPTICS/special2030', 1)" @touchend="sendOSCcmd('/OPTICS/special2030', 0, $event)" class="btn btn-sm w-100 btn-secondary pt-3 pb-3">Track Up ↑ 10</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
