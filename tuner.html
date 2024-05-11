@@ -127,14 +127,14 @@
                             <button class="w-100 btn btn-lg" :class="{'btn-primary': magicTunerStatus.active == 0, 'btn-danger': magicTunerStatus.active == 1}" @touchstart="sendOSCcmd('/OPTICS/special2012', 1)" @touchend="sendOSCcmd('/OPTICS/special2012', 0, $event)">Magic Tuner ({{ magicTunerStatus.currentNote }})</button>
                         </div>
                     </div>
-                    <div class="row mb-3">
-                        <div class="col-4">
+                    <div class="row mb-3 ">
+                        <div class="col-4 d-flex">
                             <button class="w-100 btn btn-sm btn-primary" @touchstart="sendOSCcmd('/OPTICS/special2000', 1)" @touchend="sendOSCcmd('/OPTICS/special2000', 0, $event)">OSC Cancel</button>
                         </div>
-                        <div class="col-4">
+                        <div class="col-4 d-flex">
                             <button class="w-100 btn btn-sm btn-primary" @touchstart="sendOSCcmd('/OPTICS/special2017', 1)" @touchend="sendOSCcmd('/OPTICS/special2017', 0, $event)">Tuner Release</button>
                         </div>
-                        <div class="col-4">
+                        <div class="col-4 d-flex">
                             <button class="w-100 btn btn-sm btn-primary" @touchstart="sendOSCcmd('/OPTICS/special2013', 1)" @touchend="sendOSCcmd('/OPTICS/special2013', 0, $event)">{{magicTunerStatus.pattern}}</button>
                         </div>
                     </div>
