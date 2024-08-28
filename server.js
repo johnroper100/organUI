@@ -25,7 +25,7 @@ var data = {
     expressions: [],
     keyboardStatus: [],
     folderTrackName: "",
-    namingCurrentFolder: "",
+    namingCurrentFolder: "Current Folder",
     trackDupSrc: "[source]",
     trackDupTgt: "[target]",
     userVars: [],

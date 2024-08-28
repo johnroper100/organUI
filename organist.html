@@ -16,8 +16,25 @@
     </script>
 </head>
 
-<body class="">
+<body>
     <div id="app">
+        <div class="container-fluid bg-secondary text-light">
+            <div class="row ps-3 pe-3 pt-2 pb-2 align-items-center">
+                <div class="col-12 col-md-4">
+                    <h4 class="d-none d-md-block">Faith Lutheran Church Quincy</h4>
+                </div>
+                <div class="col-12 col-md-4">
+                    <h4 class="text-md-center">{{uptime}}</h4>
+                </div>
+                <div class="col-12 col-md-4 text-md-end">
+                    <h4 class="d-inline-block">Folder: {{namingCurrentFolder}}</h4>
+                    <div class="d-inline-block">
+                        <button class="btn btn-sm btn-outline-light ms-3" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">↑</button>
+                        <button class="btn btn-sm btn-outline-light ms-3" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">↓</button>
+                    </div>
+                </div>
+            </div>
+        </div>
         <div class="container-fluid mb-3 mt-3">
             <div class="row">
                 <div class="col-4 d-flex p-0">
@@ -39,7 +56,6 @@
         </div>
         <hr>
         <div class="container-fluid" v-if="page == 0">
-            <h2 class="text-center mb-3">{{uptime}}</h2>
             <h3 class="mb-3">Stop Controls:</h3>
             <button class="btn btn-lg btn-primary w-100" :class="{'btn-outline-secondary': getStopByNum(13).active == 0, 'btn-outline-primary': getStopByNum(13).active == 1}" @touchstart="sendOSCcmd('/Stops/push13', 1)" @touchend="sendOSCcmd('/Stops/push13', 0, $event)"><h1>Swell Nazard 2 2/3'</h1></button>
             <h3 class="mt-3 mb-3">Console Controls:</h3>
