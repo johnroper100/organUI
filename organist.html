@@ -39,7 +39,7 @@
             <div class="row">
                 <div class="col-4 d-flex p-0">
                     <div class="container-fluid">
-                        <button @click="page = 0" type="button" class="btn w-100" :class="{'btn-outline-primary': page == 0, 'btn-outline-secondary': page != 0}">Organ</button>
+                        <button @click="page = 0" type="button" class="btn w-100" :class="{'btn-outline-primary': page == 0, 'btn-outline-secondary': page != 0}">Controls</button>
                     </div>
                 </div>
                 <div class="col-4 d-flex p-0">
@@ -134,10 +134,10 @@
             </div>
             <div class="row mb-3 justify-content-center">
                 <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb14', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb14', 0, $event)">Save To Track</button>
+                    <button class="btn btn-outline-success w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb14', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb14', 0, $event)">Save To Track</button>
                 </div>
                 <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-outline-primary w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb15', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb15', 0, $event)">Save To Folder</button>
+                    <button class="btn btn-outline-success w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb15', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb15', 0, $event)">Save To Folder</button>
                 </div>
                 <div class="col-12 col-md-6 col-lg-4 text-center">
                     <h3><i>New Name: </i>{{folderTrackName}}</h3>
