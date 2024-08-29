@@ -6,9 +6,13 @@ const httpServer = http.createServer(app);
 const { Server: SocketServer } = require("socket.io");
 const io = new SocketServer(httpServer);
 const { Client, Server } = require('node-osc');
+const { FSDB } = require("file-system-db");
+const fs = require('fs');
 
 const oscClient = new Client('192.168.50.78', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
+const db = new FSDB("./database.json", true);
+let conf = JSON.parse(fs.readFileSync('conf.json'));
 
 var data = {
     trackNum: "Track Name",
@@ -380,6 +384,7 @@ io.on('connection', (socket) => {
     socket.emit('trackDupTgt', data.trackDupTgt);
     socket.emit('userVars', data.userVars);
     socket.emit('userVarPage', data.userVarPage);
+    socket.emit('siteName', conf.siteName);
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
