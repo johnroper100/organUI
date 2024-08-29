@@ -11,7 +11,7 @@ const oscClient = new Client('192.168.50.78', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 
 var data = {
-    trackNum: "",
+    trackNum: "Track Name",
     trackTime: "-- : --",
     uptime: "Not Connected",
     magicTunerStatus: {active: 0, currentNote: "Off", pattern: "No Pattern"},
@@ -25,7 +25,7 @@ var data = {
     expressions: [],
     keyboardStatus: [],
     folderTrackName: "",
-    namingCurrentFolder: "",
+    namingCurrentFolder: "Current Folder",
     trackDupSrc: "[source]",
     trackDupTgt: "[target]",
     userVars: [],
