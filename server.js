@@ -9,6 +9,8 @@ const { Client, Server } = require('node-osc');
 const { FSDB } = require("file-system-db");
 const fs = require('fs');
 
+app.use(express.json());
+
 const oscClient = new Client('192.168.50.78', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 const db = new FSDB("./database.json", true);
@@ -73,6 +75,12 @@ for (let i = 1; i <= 10; i++) {
 
 function sendSubscribeMessage() {
     oscClient.send("/OPTICS/special2001", 1, (err) => {
+        if (err) console.error(err);
+    });
+}
+
+function sendOSCCommand(cmd, state) {
+    oscClient.send(cmd, state, (err) => {
         if (err) console.error(err);
     });
 }
@@ -388,9 +396,7 @@ io.on('connection', (socket) => {
 
     // Handle the client doing things
     socket.on('sendOSCcmd', (cmd) => {
-        oscClient.send(cmd.cmd, cmd.state, (err) => {
-            if (err) console.error(err);
-        });
+        sendOSCCommand(cmd.cmd, cmd.state);
     });
 
     socket.on('moveFader', (cmd) => {
@@ -402,6 +408,21 @@ io.on('connection', (socket) => {
             socket.broadcast.emit('expressions', data.expressions);
         }
     });
+});
+
+app.post('/api/osc', (req, res) => {
+    const { cmd, state } = req.body ?? {};
+
+    if (typeof cmd !== 'string' || cmd.length === 0) {
+        return res.status(400).json({ error: 'cmd must be a non-empty string' });
+    }
+
+    if (typeof state !== 'number') {
+        return res.status(400).json({ error: 'state must be a number' });
+    }
+
+    sendOSCCommand(cmd, state);
+    return res.status(202).json({ ok: true });
 });
 
 app.get('/', (req, res) => {
