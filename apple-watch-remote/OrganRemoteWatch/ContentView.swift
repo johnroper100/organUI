@@ -12,17 +12,19 @@ struct ContentView: View {
                     .minimumScaleFactor(0.65)
                     .foregroundStyle(.white.opacity(0.72))
 
-                Text(client.statusText)
-                    .font(.system(.caption, design: .rounded).weight(.semibold))
-                    .multilineTextAlignment(.center)
-                    .foregroundStyle(client.isError ? Color.red : Color.green)
+                if client.isError, !client.statusText.isEmpty {
+                    Text(client.statusText)
+                        .font(.system(.caption, design: .rounded).weight(.semibold))
+                        .multilineTextAlignment(.center)
+                        .foregroundStyle(.red)
+                }
             }
             .padding(.bottom, 2)
 
             HoldCommandButton(
                 title: "Back",
                 systemImage: "backward.fill",
-                tint: .indigo,
+                tint: .red,
                 command: RemoteConfiguration.backCommand,
                 client: client
             )
@@ -30,7 +32,7 @@ struct ContentView: View {
             HoldCommandButton(
                 title: "Next",
                 systemImage: "forward.fill",
-                tint: .teal,
+                tint: .green,
                 command: RemoteConfiguration.nextCommand,
                 client: client
             )

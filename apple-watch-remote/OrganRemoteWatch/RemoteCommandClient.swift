@@ -2,7 +2,7 @@ import Foundation
 
 @MainActor
 final class RemoteCommandClient: ObservableObject {
-    @Published private(set) var statusText = "Hold a button to send"
+    @Published private(set) var statusText = ""
     @Published private(set) var isError = false
 
     let serverInput: String
@@ -44,7 +44,7 @@ final class RemoteCommandClient: ObservableObject {
 
         do {
             try await postCommand(OSCCommandRequest(cmd: command, state: state), to: url)
-            statusText = state == 1 ? "\(title(for: command)) pressed" : "\(title(for: command)) released"
+            statusText = ""
             isError = false
         } catch {
             statusText = description(for: error)
@@ -79,18 +79,6 @@ final class RemoteCommandClient: ObservableObject {
             throw RemoteCommandError.serverStatus(httpResponse.statusCode)
         }
     }
-
-    private func title(for command: String) -> String {
-        switch command {
-        case RemoteConfiguration.backCommand:
-            return "Back"
-        case RemoteConfiguration.nextCommand:
-            return "Next"
-        default:
-            return "Command"
-        }
-    }
-
     private func description(for error: Error) -> String {
         if let remoteError = error as? RemoteCommandError,
            let description = remoteError.errorDescription {

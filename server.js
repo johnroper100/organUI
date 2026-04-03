@@ -412,6 +412,7 @@ io.on('connection', (socket) => {
 
 app.post('/api/osc', (req, res) => {
     const { cmd, state } = req.body ?? {};
+    console.log("Received OSC command via HTTP:", cmd, state);
 
     if (typeof cmd !== 'string' || cmd.length === 0) {
         return res.status(400).json({ error: 'cmd must be a non-empty string' });
