@@ -70,6 +70,25 @@ final class RemoteCommandClient: ObservableObject {
         }
     }
 
+    func sendMomentaryCommand(_ command: String, holdDuration: TimeInterval = 0.12) async {
+        let didBegin = await MainActor.run {
+            beginExclusiveCommand(command)
+        }
+
+        guard didBegin else {
+            return
+        }
+
+        await sendCommand(command, state: 1)
+
+        if holdDuration > 0 {
+            let delay = UInt64(holdDuration * 1_000_000_000)
+            try? await Task.sleep(nanoseconds: delay)
+        }
+
+        await finishExclusiveCommand(command)
+    }
+
     func sendCommand(_ command: String, state: Int) async {
         do {
             let payload = OSCCommandRequest(cmd: command, state: state)
