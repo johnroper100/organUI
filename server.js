@@ -2,11 +2,13 @@ const express = require('express');
 const app = express();
 const path = require('path');
 const http = require('http');
+const os = require('os');
 const httpServer = http.createServer(app);
 const { Server: SocketServer } = require("socket.io");
 const io = new SocketServer(httpServer);
 const { Client, Server } = require('node-osc');
 const { FSDB } = require("file-system-db");
+const { Bonjour } = require('bonjour-service');
 const fs = require('fs');
 
 app.use(express.json());
@@ -15,6 +17,8 @@ const oscClient = new Client('192.168.50.78', 8000);
 var oscServer = new Server(9000, '0.0.0.0');
 const db = new FSDB("./database.json", true);
 let conf = JSON.parse(fs.readFileSync('conf.json'));
+const httpPort = Number(process.env.PORT || 3000);
+const bonjour = new Bonjour();
 
 var data = {
     trackNum: "Track Name",
@@ -448,6 +452,16 @@ oscServer.on('listening', () => {
     console.log('OSC Server is listening on 0.0.0.0:9000');
 });
 
-httpServer.listen(3000, () => {
-    console.log('HTTP Server is listening on *:3000');
+httpServer.listen(httpPort, () => {
+    const serviceName = (conf.siteName || "").trim() || os.hostname();
+
+    bonjour.publish({
+        name: serviceName,
+        type: 'organremote',
+        protocol: 'tcp',
+        port: httpPort
+    });
+
+    console.log(`HTTP Server is listening on *:${httpPort}`);
+    console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
 });

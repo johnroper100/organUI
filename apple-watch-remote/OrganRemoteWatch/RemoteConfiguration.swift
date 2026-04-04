@@ -1,8 +1,11 @@
 import Foundation
 
 enum RemoteConfiguration {
-    // Use the same URL you already open in Safari for the tuner UI.
-    static let serverInput = "http://192.168.68.108:3000/tuner"
+    // Optional manual fallback if Bonjour discovery is unavailable.
+    static let serverInput = ""
+    static let serverDisplayName = "Organ Remote"
+    static let bonjourServiceType = "_organremote._tcp"
+    static let bonjourDomain = "local."
 
     static let backCommand = "/OPTICS/special2014"
     static let nextCommand = "/OPTICS/special2015"

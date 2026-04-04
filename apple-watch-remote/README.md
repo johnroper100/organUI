@@ -8,24 +8,29 @@ pairs as the existing tuner page:
 
 The watch app talks to the Node server over HTTP by posting JSON to
 `/api/osc`. That endpoint was added to the existing `server.js` so the web UI
-and watch UI both drive the same OSC bridge.
+and watch UI both drive the same OSC bridge. The watch now discovers that
+server automatically over Bonjour, so it does not depend on a fixed IP address.
 
 ## Build Notes
 
 1. Open [OrganRemoteWatch.xcodeproj](./OrganRemoteWatch.xcodeproj) in Xcode on
    a Mac.
 2. Set your Apple Developer team and replace the placeholder bundle ID.
-3. If your server URL is different, update `RemoteConfiguration.serverInput` in
-   `OrganRemoteWatch/RemoteConfiguration.swift`.
-4. Build and run on an Apple Watch or the watchOS simulator.
+3. Build and run on an Apple Watch or the watchOS simulator.
+4. The first launch will ask for local network access so the watch can browse
+   for `_organremote._tcp` on your LAN.
 
-`serverInput` accepts the same URL you would type into Safari, for example:
+If Bonjour is unavailable in your environment, you can still set an optional
+manual fallback in `RemoteConfiguration.serverInput`. It accepts the same URL
+you would type into Safari, for example:
 
 - `http://192.168.50.137/tuner`
 - `http://192.168.50.137:3000/tuner`
 
-The app normalizes that value down to the host origin and then posts commands
-to `/api/osc`.
+In the normal connected state the watch only shows the discovered service name.
+If a connection fails, the watch shows a diagnostic target only in the error
+state, and direct host/IP details are only surfaced when the app is using a
+manual fallback URL.
 
 ## If Xcode Regenerates The Project
 

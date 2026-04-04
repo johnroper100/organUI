@@ -8,7 +8,7 @@ struct ContentView: View {
             VStack(spacing: 3) {
                 Text(client.serverLabel)
                     .font(.system(.caption2, design: .rounded).weight(.medium))
-                    .lineLimit(1)
+                    .lineLimit(2)
                     .minimumScaleFactor(0.65)
                     .foregroundStyle(.white.opacity(0.72))
 
