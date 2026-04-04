@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(\.isLuminanceReduced) private var isLuminanceReduced
     @StateObject private var client = RemoteCommandClient()
 
     var body: some View {
@@ -10,7 +11,7 @@ struct ContentView: View {
                     .lineLimit(2)
                     .minimumScaleFactor(0.65)
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white.opacity(0.72))
+                    .foregroundStyle(.white.opacity(isLuminanceReduced ? 0.52 : 0.72))
 
                 if client.isError, !client.statusText.isEmpty {
                     Text(client.statusText)
@@ -41,6 +42,16 @@ struct ContentView: View {
         .padding(10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(
+            backgroundFill
+            .ignoresSafeArea()
+        )
+    }
+
+    @ViewBuilder
+    private var backgroundFill: some View {
+        if isLuminanceReduced {
+            Color.black
+        } else {
             LinearGradient(
                 colors: [
                     Color(red: 0.08, green: 0.11, blue: 0.17),
@@ -49,8 +60,7 @@ struct ContentView: View {
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
-            .ignoresSafeArea()
-        )
+        }
     }
 
     @ViewBuilder
@@ -72,4 +82,9 @@ struct ContentView: View {
 
 #Preview {
     ContentView()
+}
+
+#Preview("Always On") {
+    ContentView()
+        .environment(\.isLuminanceReduced, true)
 }

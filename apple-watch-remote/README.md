@@ -20,6 +20,12 @@ server automatically over Bonjour, so it does not depend on a fixed IP address.
 4. The first launch will ask for local network access so the watch can browse
    for `_organremote._tcp` on your LAN.
 
+The watch target now explicitly opts into Always On display support. On Apple
+Watch models that support Always On, the app remains visible in the dimmed
+state while it stays frontmost. The exact duration still follows the user’s
+watch settings under `Settings > General > Wake Screen > Return to Clock`, and
+Always On can also be disabled globally or per app by the user.
+
 If Bonjour is unavailable in your environment, you can still set an optional
 manual fallback in `RemoteConfiguration.serverInput`. It accepts the same URL
 you would type into Safari, for example:

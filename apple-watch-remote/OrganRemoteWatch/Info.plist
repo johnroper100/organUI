@@ -35,6 +35,8 @@
 	<true/>
 	<key>WKPrefersNetworkUponForeground</key>
 	<true/>
+	<key>WKSupportsAlwaysOnDisplay</key>
+	<true/>
 	<key>WKWatchOnly</key>
 	<true/>
 </dict>
