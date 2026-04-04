@@ -13,6 +13,7 @@ final class RemoteCommandClient: ObservableObject {
     @Published private(set) var isError = false
     @Published private(set) var serverLabel = "Searching network..."
     @Published private(set) var connectedServer: ConnectedServerDisplay?
+    @Published private(set) var canSendCommands = false
     @Published private(set) var activeCommand: String?
 
     private let serverInput: String
@@ -37,6 +38,7 @@ final class RemoteCommandClient: ObservableObject {
         if let fallbackBaseURL = Self.normalizedBaseURL(from: self.serverInput) {
             serverLabel = Self.hostLabel(for: fallbackBaseURL)
         }
+        canSendCommands = commandURL != nil
 
         startDiscovery()
     }
@@ -50,7 +52,7 @@ final class RemoteCommandClient: ObservableObject {
     @MainActor
     @discardableResult
     func beginExclusiveCommand(_ command: String) -> Bool {
-        guard activeCommand == nil else {
+        guard canSendCommands, activeCommand == nil else {
             return false
         }
 
@@ -335,7 +337,7 @@ final class RemoteCommandClient: ObservableObject {
             return
         }
 
-        if Self.isNumericHost(hostTargetString) {
+        if Self.isIPv4Host(hostTargetString) {
             completeResolution_locked(serviceID: operation.serviceID, host: hostTargetString, port: resolvedPort)
             return
         }
@@ -364,7 +366,7 @@ final class RemoteCommandClient: ObservableObject {
         )
 
         var addressRef: DNSServiceRef?
-        let protocols = DNSServiceProtocol(kDNSServiceProtocol_IPv4 | kDNSServiceProtocol_IPv6)
+        let protocols = DNSServiceProtocol(kDNSServiceProtocol_IPv4)
         let result = hostTarget.withCString { hostPointer in
             DNSServiceGetAddrInfo(
                 &addressRef,
@@ -378,7 +380,9 @@ final class RemoteCommandClient: ObservableObject {
         }
 
         guard result == kDNSServiceErr_NoError, let addressRef else {
-            completeResolution_locked(serviceID: serviceID, host: hostTarget, port: port)
+            if Self.isIPv4Host(hostTarget) {
+                completeResolution_locked(serviceID: serviceID, host: hostTarget, port: port)
+            }
             return
         }
 
@@ -389,7 +393,9 @@ final class RemoteCommandClient: ObservableObject {
         guard queueResult == kDNSServiceErr_NoError else {
             addressOperations.removeValue(forKey: serviceID)
             DNSServiceRefDeallocate(addressRef)
-            completeResolution_locked(serviceID: serviceID, host: hostTarget, port: port)
+            if Self.isIPv4Host(hostTarget) {
+                completeResolution_locked(serviceID: serviceID, host: hostTarget, port: port)
+            }
             return
         }
     }
@@ -414,7 +420,6 @@ final class RemoteCommandClient: ObservableObject {
         }
 
         if errorCode != kDNSServiceErr_NoError {
-            completeResolution_locked(serviceID: operation.serviceID, host: operation.hostTarget, port: operation.port)
             cancelAddressLookup_locked(for: operation.serviceID)
             return
         }
@@ -428,9 +433,13 @@ final class RemoteCommandClient: ObservableObject {
         let hasPreferredIPv4 = operation.candidates.contains { $0.priority == 0 }
         let moreComing = flags & DNSServiceFlags(kDNSServiceFlagsMoreComing) != 0
 
-        if hasPreferredIPv4 || !moreComing {
-            let resolvedHost = operation.bestHost ?? operation.hostTarget
+        if hasPreferredIPv4, let resolvedHost = operation.bestHost {
             completeResolution_locked(serviceID: operation.serviceID, host: resolvedHost, port: operation.port)
+            cancelAddressLookup_locked(for: operation.serviceID)
+            return
+        }
+
+        if !moreComing {
             cancelAddressLookup_locked(for: operation.serviceID)
         }
     }
@@ -470,21 +479,26 @@ final class RemoteCommandClient: ObservableObject {
     private func publishServerLabel_locked() {
         let label: String
         let connectedServer: ConnectedServerDisplay?
+        let canSendCommands: Bool
 
         if let activeDiscoveredService = activeDiscoveredService_locked {
             label = activeDiscoveredService.name
             connectedServer = activeDiscoveredService.connectedDisplay
+            canSendCommands = activeDiscoveredService.commandURL != nil || commandURL != nil
         } else if let fallbackBaseURL = fallbackBaseURL {
             label = Self.hostLabel(for: fallbackBaseURL)
             connectedServer = nil
+            canSendCommands = commandURL != nil
         } else {
             label = "Searching network..."
             connectedServer = nil
+            canSendCommands = false
         }
 
         DispatchQueue.main.async { [weak self] in
             self?.serverLabel = label
             self?.connectedServer = connectedServer
+            self?.canSendCommands = canSendCommands
         }
     }
 
@@ -621,6 +635,11 @@ final class RemoteCommandClient: ObservableObject {
         let baseHost = host.split(separator: "%", maxSplits: 1).first.map(String.init) ?? host
         var ipv6Address = in6_addr()
         return baseHost.withCString({ inet_pton(AF_INET6, $0, &ipv6Address) }) == 1
+    }
+
+    private static func isIPv4Host(_ host: String) -> Bool {
+        var ipv4Address = in_addr()
+        return host.withCString({ inet_pton(AF_INET, $0, &ipv4Address) }) == 1
     }
 
     private static func addressCandidate(from address: UnsafePointer<sockaddr>) -> AddressCandidate? {

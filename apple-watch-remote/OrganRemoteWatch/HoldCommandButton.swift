@@ -71,7 +71,9 @@ struct HoldCommandButton: View {
     }
 
     var body: some View {
+        let isResolvingServer = !client.canSendCommands
         let isBlockedByAnotherCommand = client.activeCommand != nil && client.activeCommand != command
+        let isInteractionEnabled = !isResolvingServer && !isBlockedByAnotherCommand
 
         VStack(spacing: 4) {
             Image(systemName: systemImage)
@@ -87,9 +89,10 @@ struct HoldCommandButton: View {
         .overlay(buttonOutline)
         .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .scaleEffect(isPressed ? 0.97 : 1.0)
-        .opacity(isBlockedByAnotherCommand ? 0.55 : 1.0)
+        .opacity(isResolvingServer ? 0.36 : isBlockedByAnotherCommand ? 0.55 : 1.0)
         .shadow(color: tint.opacity(isPressed ? 0.15 : 0.32), radius: 8, y: 5)
         .animation(.easeOut(duration: 0.12), value: isPressed)
+        .allowsHitTesting(isInteractionEnabled)
         .gesture(
             DragGesture(minimumDistance: 0)
                 .onChanged { _ in
@@ -100,7 +103,7 @@ struct HoldCommandButton: View {
                 }
         )
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint("Press and hold to send \(title)")
+        .accessibilityHint(isResolvingServer ? "Unavailable until the server address resolves" : "Press and hold to send \(title)")
         .onDisappear {
             endPress()
         }
