@@ -52,7 +52,6 @@ struct HoldCommandButton: View {
     @ObservedObject var client: RemoteCommandClient
 
     @State private var isPressed = false
-    @State private var pressTask: Task<Void, Never>?
 
     init(
         title: String,
@@ -135,9 +134,7 @@ struct HoldCommandButton: View {
 
         isPressed = true
         WKInterfaceDevice.current().play(.click)
-        pressTask = Task {
-            await client.sendCommand(command, state: 1)
-        }
+        client.sendCommand(command, state: 1)
     }
 
     private func endPress() {
@@ -147,15 +144,6 @@ struct HoldCommandButton: View {
 
         isPressed = false
         WKInterfaceDevice.current().play(.click)
-
-        let currentPressTask = pressTask
-        pressTask = nil
-
-        Task {
-            if let currentPressTask {
-                _ = await currentPressTask.value
-            }
-            await client.finishExclusiveCommand(command)
-        }
+        client.finishExclusiveCommand(command)
     }
 }

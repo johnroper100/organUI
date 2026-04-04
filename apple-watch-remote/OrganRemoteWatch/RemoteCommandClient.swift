@@ -18,7 +18,6 @@ final class RemoteCommandClient: ObservableObject {
 
     private let serverInput: String
     private let session: URLSession
-    private let encoder = JSONEncoder()
     private let networkQueue = DispatchQueue(label: "OrganRemoteWatch.discovery")
 
     private var browseRef: DNSServiceRef?
@@ -31,7 +30,9 @@ final class RemoteCommandClient: ObservableObject {
         self.serverInput = serverInput.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let configuration = URLSessionConfiguration.default
-        configuration.httpMaximumConnectionsPerHost = 1
+        // Allow press and release requests to overlap instead of forcing
+        // the release to wait for the press response on the same connection.
+        configuration.httpMaximumConnectionsPerHost = 2
         configuration.waitsForConnectivity = false
         self.session = URLSession(configuration: configuration)
 
@@ -60,13 +61,15 @@ final class RemoteCommandClient: ObservableObject {
         return true
     }
 
-    func finishExclusiveCommand(_ command: String) async {
-        await sendCommand(command, state: 0)
+    func finishExclusiveCommand(_ command: String) {
+        sendCommand(command, state: 0)
 
-        await MainActor.run {
-            if activeCommand == command {
-                activeCommand = nil
+        Task { @MainActor [weak self] in
+            guard let self, activeCommand == command else {
+                return
             }
+
+            activeCommand = nil
         }
     }
 
@@ -79,32 +82,31 @@ final class RemoteCommandClient: ObservableObject {
             return
         }
 
-        await sendCommand(command, state: 1)
+        sendCommand(command, state: 1)
 
         if holdDuration > 0 {
             let delay = UInt64(holdDuration * 1_000_000_000)
             try? await Task.sleep(nanoseconds: delay)
         }
 
-        await finishExclusiveCommand(command)
+        finishExclusiveCommand(command)
     }
 
-    func sendCommand(_ command: String, state: Int) async {
+    func sendCommand(_ command: String, state: Int) {
         do {
             let payload = OSCCommandRequest(cmd: command, state: state)
 
             if let url = activeDiscoveredCommandURL() ?? commandURL {
-                try await postCommand(payload, to: url)
+                try postCommand(payload, to: url)
             } else {
                 throw RemoteCommandError.noServerAvailable
             }
-
-            await MainActor.run {
-                statusText = ""
-                isError = false
-            }
         } catch {
-            await MainActor.run {
+            Task { @MainActor [weak self] in
+                guard let self else {
+                    return
+                }
+
                 statusText = description(for: error)
                 isError = true
             }
@@ -539,21 +541,51 @@ final class RemoteCommandClient: ObservableObject {
         publishStatus(message, isError: true)
     }
 
-    private func postCommand(_ payload: OSCCommandRequest, to url: URL) async throws {
+    private func postCommand(_ payload: OSCCommandRequest, to url: URL) throws {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 5
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.httpBody = try encoder.encode(payload)
+        request.httpBody = try JSONEncoder().encode(payload)
 
-        let (_, response) = try await session.data(for: request)
+        session.dataTask(with: request) { [weak self] _, response, error in
+            guard let self else {
+                return
+            }
 
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw RemoteCommandError.invalidResponse
-        }
+            if let error {
+                publishCommandResult(.failure(error))
+                return
+            }
 
-        guard (200..<300).contains(httpResponse.statusCode) else {
-            throw RemoteCommandError.serverStatus(httpResponse.statusCode)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                publishCommandResult(.failure(RemoteCommandError.invalidResponse))
+                return
+            }
+
+            guard (200..<300).contains(httpResponse.statusCode) else {
+                publishCommandResult(.failure(RemoteCommandError.serverStatus(httpResponse.statusCode)))
+                return
+            }
+
+            publishCommandResult(.success(()))
+        }.resume()
+    }
+
+    private func publishCommandResult(_ result: Result<Void, Error>) {
+        Task { @MainActor [weak self] in
+            guard let self else {
+                return
+            }
+
+            switch result {
+            case .success:
+                statusText = ""
+                isError = false
+            case .failure(let error):
+                statusText = description(for: error)
+                isError = true
+            }
         }
     }
 
