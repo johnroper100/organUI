@@ -8,7 +8,7 @@ pairs as the existing tuner page:
 
 The watch app talks to the Node server over HTTP by posting JSON to
 `/api/osc`. That endpoint was added to the existing `server.js` so the web UI
-and watch UI both drive the same OSC bridge. The watch now discovers that
+and watch UI both drive the same OSC bridge. The watch discovers that
 server automatically over Bonjour, so it does not depend on a fixed IP address.
 
 ## Build Notes
@@ -20,7 +20,7 @@ server automatically over Bonjour, so it does not depend on a fixed IP address.
 4. The first launch will ask for local network access so the watch can browse
    for `_organremote._tcp` on your LAN.
 
-The watch target now explicitly opts into Always On display support. On Apple
+The watch target explicitly opts into Always On display support. On Apple
 Watch models that support Always On, the app remains visible in the dimmed
 state while it stays frontmost. The exact duration still follows the user’s
 watch settings under `Settings > General > Wake Screen > Return to Clock`, and
