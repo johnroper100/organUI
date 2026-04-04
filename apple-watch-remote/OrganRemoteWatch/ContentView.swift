@@ -107,6 +107,7 @@ private final class WristFlickDetector: ObservableObject {
         let timestamp: TimeInterval
         let pitch: Double
         let pitchRate: Double
+        let accelerationMagnitude: Double
     }
 
     private enum FlickDirection {
@@ -124,12 +125,14 @@ private final class WristFlickDetector: ObservableObject {
     }
 
     private static let sampleInterval = 1.0 / 50.0
-    private static let baselineBlend = 0.1
-    private static let baselineWindow = 0.12
-    private static let rearmWindow = 0.08
-    private static let triggerPitchDelta = 0.30
-    private static let triggerPitchRate = 2.2
-    private static let minimumTriggerInterval: TimeInterval = 0.65
+    private static let baselineBlend = 0.08
+    private static let baselineWindow = 0.10
+    private static let rearmWindow = 0.06
+    private static let triggerPitchDelta = 0.42
+    private static let triggerPitchRate = 3.6
+    private static let triggerAcceleration = 0.55
+    private static let maximumFlickTravelTime: TimeInterval = 0.18
+    private static let minimumTriggerInterval: TimeInterval = 0.75
     private static let momentaryCommandHoldDuration: TimeInterval = 0.12
 
     private let motionManager = CMMotionManager()
@@ -146,6 +149,7 @@ private final class WristFlickDetector: ObservableObject {
     private var isMonitoring = false
     private var isArmed = true
     private var lastTriggerTime: TimeInterval = 0
+    private var lastNeutralTime: TimeInterval = 0
 
     func start(client: RemoteCommandClient) {
         self.client = client
@@ -157,16 +161,25 @@ private final class WristFlickDetector: ObservableObject {
         neutralPitch = nil
         isArmed = true
         lastTriggerTime = 0
+        lastNeutralTime = 0
         motionManager.deviceMotionUpdateInterval = Self.sampleInterval
         motionManager.startDeviceMotionUpdates(to: motionQueue) { [weak self] motion, error in
             guard error == nil, let motion else {
                 return
             }
 
+            let userAcceleration = motion.userAcceleration
+            let accelerationMagnitude = sqrt(
+                (userAcceleration.x * userAcceleration.x) +
+                (userAcceleration.y * userAcceleration.y) +
+                (userAcceleration.z * userAcceleration.z)
+            )
+
             let sample = MotionSample(
                 timestamp: motion.timestamp,
                 pitch: motion.attitude.pitch,
-                pitchRate: motion.rotationRate.x
+                pitchRate: motion.rotationRate.x,
+                accelerationMagnitude: accelerationMagnitude
             )
 
             Task { @MainActor [weak self] in
@@ -186,6 +199,7 @@ private final class WristFlickDetector: ObservableObject {
         neutralPitch = nil
         isArmed = true
         lastTriggerTime = 0
+        lastNeutralTime = 0
         isMonitoring = false
     }
 
@@ -196,6 +210,7 @@ private final class WristFlickDetector: ObservableObject {
 
         if neutralPitch == nil {
             neutralPitch = sample.pitch
+            lastNeutralTime = sample.timestamp
             return
         }
 
@@ -207,19 +222,24 @@ private final class WristFlickDetector: ObservableObject {
 
         if abs(pitchDelta) < Self.rearmWindow {
             isArmed = true
+            lastNeutralTime = sample.timestamp
         }
 
         if abs(pitchDelta) < Self.baselineWindow,
-           abs(sample.pitchRate) < Self.triggerPitchRate * 0.45 {
+           abs(sample.pitchRate) < Self.triggerPitchRate * 0.4,
+           sample.accelerationMagnitude < Self.triggerAcceleration * 0.6 {
             self.neutralPitch = neutralPitch + ((sample.pitch - neutralPitch) * Self.baselineBlend)
         }
 
         guard isArmed,
               client.activeCommand == nil,
+              sample.timestamp - lastNeutralTime <= Self.maximumFlickTravelTime,
+              sample.accelerationMagnitude >= Self.triggerAcceleration,
               sample.timestamp - lastTriggerTime >= Self.minimumTriggerInterval else {
             return
         }
 
+        // Treat the gesture as a short impulse, not a slow wrist rotation.
         if pitchDelta <= -Self.triggerPitchDelta,
            sample.pitchRate <= -Self.triggerPitchRate {
             trigger(.front, at: sample.timestamp, client: client)
