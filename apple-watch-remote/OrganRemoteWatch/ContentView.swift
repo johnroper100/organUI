@@ -110,6 +110,13 @@ private final class WristFlickDetector: ObservableObject {
         let accelerationMagnitude: Double
     }
 
+    private struct FlickTriggerProfile {
+        let pitchDelta: Double
+        let pitchRate: Double
+        let acceleration: Double
+        let maximumTravelTime: TimeInterval
+    }
+
     private enum FlickDirection {
         case front
         case back
@@ -128,12 +135,20 @@ private final class WristFlickDetector: ObservableObject {
     private static let baselineBlend = 0.08
     private static let baselineWindow = 0.10
     private static let rearmWindow = 0.06
-    private static let triggerPitchDelta = 0.42
-    private static let triggerPitchRate = 3.6
-    private static let triggerAcceleration = 0.55
-    private static let maximumFlickTravelTime: TimeInterval = 0.18
     private static let minimumTriggerInterval: TimeInterval = 0.75
     private static let momentaryCommandHoldDuration: TimeInterval = 0.12
+    private static let frontTriggerProfile = FlickTriggerProfile(
+        pitchDelta: 0.42,
+        pitchRate: 3.6,
+        acceleration: 0.55,
+        maximumTravelTime: 0.18
+    )
+    private static let backTriggerProfile = FlickTriggerProfile(
+        pitchDelta: 0.32,
+        pitchRate: 2.7,
+        acceleration: 0.40,
+        maximumTravelTime: 0.24
+    )
 
     private let motionManager = CMMotionManager()
     private let motionQueue: OperationQueue = {
@@ -226,25 +241,21 @@ private final class WristFlickDetector: ObservableObject {
         }
 
         if abs(pitchDelta) < Self.baselineWindow,
-           abs(sample.pitchRate) < Self.triggerPitchRate * 0.4,
-           sample.accelerationMagnitude < Self.triggerAcceleration * 0.6 {
+           abs(sample.pitchRate) < Self.frontTriggerProfile.pitchRate * 0.4,
+           sample.accelerationMagnitude < Self.frontTriggerProfile.acceleration * 0.6 {
             self.neutralPitch = neutralPitch + ((sample.pitch - neutralPitch) * Self.baselineBlend)
         }
 
         guard isArmed,
               client.activeCommand == nil,
-              sample.timestamp - lastNeutralTime <= Self.maximumFlickTravelTime,
-              sample.accelerationMagnitude >= Self.triggerAcceleration,
               sample.timestamp - lastTriggerTime >= Self.minimumTriggerInterval else {
             return
         }
 
-        // Treat the gesture as a short impulse, not a slow wrist rotation.
-        if pitchDelta <= -Self.triggerPitchDelta,
-           sample.pitchRate <= -Self.triggerPitchRate {
+        // Reverse flicks tend to be softer, so use a slightly looser profile.
+        if matchesFlick(sample, pitchDelta: pitchDelta, direction: .front, profile: Self.frontTriggerProfile) {
             trigger(.front, at: sample.timestamp, client: client)
-        } else if pitchDelta >= Self.triggerPitchDelta,
-                  sample.pitchRate >= Self.triggerPitchRate {
+        } else if matchesFlick(sample, pitchDelta: pitchDelta, direction: .back, profile: Self.backTriggerProfile) {
             trigger(.back, at: sample.timestamp, client: client)
         }
     }
@@ -264,6 +275,27 @@ private final class WristFlickDetector: ObservableObject {
 
     private func normalizedAngle(_ angle: Double) -> Double {
         atan2(sin(angle), cos(angle))
+    }
+
+    private func matchesFlick(
+        _ sample: MotionSample,
+        pitchDelta: Double,
+        direction: FlickDirection,
+        profile: FlickTriggerProfile
+    ) -> Bool {
+        guard sample.timestamp - lastNeutralTime <= profile.maximumTravelTime,
+              sample.accelerationMagnitude >= profile.acceleration else {
+            return false
+        }
+
+        switch direction {
+        case .front:
+            return pitchDelta <= -profile.pitchDelta &&
+                   sample.pitchRate <= -profile.pitchRate
+        case .back:
+            return pitchDelta >= profile.pitchDelta &&
+                   sample.pitchRate >= profile.pitchRate
+        }
     }
 }
 
