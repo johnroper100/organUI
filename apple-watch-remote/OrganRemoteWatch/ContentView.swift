@@ -7,8 +7,37 @@ struct ContentView: View {
     @Environment(\.scenePhase) private var scenePhase
     @StateObject private var client = RemoteCommandClient()
     @StateObject private var wristFlickDetector = WristFlickDetector()
+    @AppStorage("wristFlickBackEnabled") private var isBackWristFlickEnabled = true
+    @AppStorage("wristFlickNextEnabled") private var isNextWristFlickEnabled = true
 
     var body: some View {
+        ZStack {
+            backgroundFill
+                .ignoresSafeArea()
+
+            TabView {
+                remotePage
+                infoPage
+            }
+        }
+        .onAppear {
+            updateWristFlickMonitoring(for: scenePhase)
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            updateWristFlickMonitoring(for: newPhase)
+        }
+        .onChange(of: isBackWristFlickEnabled) { _, _ in
+            updateWristFlickMonitoring(for: scenePhase)
+        }
+        .onChange(of: isNextWristFlickEnabled) { _, _ in
+            updateWristFlickMonitoring(for: scenePhase)
+        }
+        .onDisappear {
+            wristFlickDetector.stop()
+        }
+    }
+
+    private var remotePage: some View {
         VStack(spacing: 10) {
             VStack(spacing: 3) {
                 serverStatusView
@@ -45,19 +74,32 @@ struct ContentView: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(
-            backgroundFill
-            .ignoresSafeArea()
-        )
-        .onAppear {
-            updateWristFlickMonitoring(for: scenePhase)
+    }
+
+    private var infoPage: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("About")
+                    .font(.system(.headline, design: .rounded).weight(.semibold))
+
+                infoRow(title: "Version", value: appVersionText)
+                infoRow(title: "Developer", value: "John Roper")
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Wrist Flick")
+                        .font(.system(.headline, design: .rounded).weight(.semibold))
+
+                    Text(wristFlickModeLabel)
+                        .font(.system(.caption2, design: .rounded).weight(.medium))
+                        .foregroundStyle(.white.opacity(isLuminanceReduced ? 0.5 : 0.68))
+
+                    Toggle("Back", isOn: $isBackWristFlickEnabled)
+                    Toggle("Next", isOn: $isNextWristFlickEnabled)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .onChange(of: scenePhase) { _, newPhase in
-            updateWristFlickMonitoring(for: newPhase)
-        }
-        .onDisappear {
-            wristFlickDetector.stop()
-        }
+        .padding(10)
     }
 
     @ViewBuilder
@@ -92,12 +134,60 @@ struct ContentView: View {
         }
     }
 
-    private func updateWristFlickMonitoring(for phase: ScenePhase) {
-        if phase == .active {
-            wristFlickDetector.start(client: client)
-        } else {
-            wristFlickDetector.stop()
+    private func infoRow(title: String, value: String) -> some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(title)
+                .font(.system(.caption2, design: .rounded).weight(.medium))
+                .foregroundStyle(.white.opacity(isLuminanceReduced ? 0.5 : 0.68))
+
+            Text(value)
+                .font(.system(.body, design: .rounded).weight(.semibold))
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
         }
+    }
+
+    private var appVersionText: String {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
+
+        switch (version, build) {
+        case let (version?, build?) where version != build:
+            return "\(version) (\(build))"
+        case let (version?, _):
+            return version
+        case let (_, build?):
+            return build
+        default:
+            return "Unavailable"
+        }
+    }
+
+    private var wristFlickModeLabel: String {
+        switch (isBackWristFlickEnabled, isNextWristFlickEnabled) {
+        case (true, true):
+            return "Mode: Both"
+        case (true, false):
+            return "Mode: Back"
+        case (false, true):
+            return "Mode: Next"
+        case (false, false):
+            return "Mode: None"
+        }
+    }
+
+    private func updateWristFlickMonitoring(for phase: ScenePhase) {
+        wristFlickDetector.updateConfiguration(
+            isBackCommandEnabled: isBackWristFlickEnabled,
+            isNextCommandEnabled: isNextWristFlickEnabled
+        )
+
+        guard phase == .active, isBackWristFlickEnabled || isNextWristFlickEnabled else {
+            wristFlickDetector.stop()
+            return
+        }
+
+        wristFlickDetector.start(client: client)
     }
 }
 
@@ -163,8 +253,15 @@ private final class WristFlickDetector: ObservableObject {
     private var neutralPitch: Double?
     private var isMonitoring = false
     private var isArmed = true
+    private var isBackCommandEnabled = true
+    private var isNextCommandEnabled = true
     private var lastTriggerTime: TimeInterval = 0
     private var lastNeutralTime: TimeInterval = 0
+
+    func updateConfiguration(isBackCommandEnabled: Bool, isNextCommandEnabled: Bool) {
+        self.isBackCommandEnabled = isBackCommandEnabled
+        self.isNextCommandEnabled = isNextCommandEnabled
+    }
 
     func start(client: RemoteCommandClient) {
         self.client = client
@@ -223,6 +320,10 @@ private final class WristFlickDetector: ObservableObject {
             return
         }
 
+        guard isBackCommandEnabled || isNextCommandEnabled else {
+            return
+        }
+
         if neutralPitch == nil {
             neutralPitch = sample.pitch
             lastNeutralTime = sample.timestamp
@@ -253,9 +354,11 @@ private final class WristFlickDetector: ObservableObject {
         }
 
         // Reverse flicks tend to be softer, so use a slightly looser profile.
-        if matchesFlick(sample, pitchDelta: pitchDelta, direction: .front, profile: Self.frontTriggerProfile) {
+        if isNextCommandEnabled,
+           matchesFlick(sample, pitchDelta: pitchDelta, direction: .front, profile: Self.frontTriggerProfile) {
             trigger(.front, at: sample.timestamp, client: client)
-        } else if matchesFlick(sample, pitchDelta: pitchDelta, direction: .back, profile: Self.backTriggerProfile) {
+        } else if isBackCommandEnabled,
+                  matchesFlick(sample, pitchDelta: pitchDelta, direction: .back, profile: Self.backTriggerProfile) {
             trigger(.back, at: sample.timestamp, client: client)
         }
     }
