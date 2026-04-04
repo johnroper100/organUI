@@ -27,10 +27,10 @@ you would type into Safari, for example:
 - `http://192.168.50.137/tuner`
 - `http://192.168.50.137:3000/tuner`
 
-In the normal connected state the watch only shows the discovered service name.
-If a connection fails, the watch shows a diagnostic target only in the error
-state, and direct host/IP details are only surfaced when the app is using a
-manual fallback URL.
+In the normal connected state the watch shows the resolved IP above the
+discovered service name. If a connection fails, the watch shows a diagnostic
+target only in the error state, and direct host/IP details are otherwise only
+surfaced when the app is using a manual fallback URL.
 
 ## If Xcode Regenerates The Project
 

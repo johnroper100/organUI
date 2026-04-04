@@ -6,10 +6,10 @@ struct ContentView: View {
     var body: some View {
         VStack(spacing: 10) {
             VStack(spacing: 3) {
-                Text(client.serverLabel)
-                    .font(.system(.caption2, design: .rounded).weight(.medium))
+                serverStatusView
                     .lineLimit(2)
                     .minimumScaleFactor(0.65)
+                    .multilineTextAlignment(.center)
                     .foregroundStyle(.white.opacity(0.72))
 
                 if client.isError, !client.statusText.isEmpty {
@@ -50,6 +50,22 @@ struct ContentView: View {
             )
             .ignoresSafeArea()
         )
+    }
+
+    @ViewBuilder
+    private var serverStatusView: some View {
+        if let connectedServer = client.connectedServer {
+            VStack(spacing: 1) {
+                Text(connectedServer.host)
+                    .font(.system(size: 9, weight: .medium, design: .rounded))
+
+                Text(connectedServer.siteName)
+                    .font(.system(.caption2, design: .rounded).weight(.medium))
+            }
+        } else {
+            Text(client.serverLabel)
+                .font(.system(.caption2, design: .rounded).weight(.medium))
+        }
     }
 }
 

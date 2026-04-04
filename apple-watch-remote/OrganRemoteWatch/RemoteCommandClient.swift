@@ -4,9 +4,15 @@ import Foundation
 import dnssd
 
 final class RemoteCommandClient: ObservableObject {
+    struct ConnectedServerDisplay {
+        let siteName: String
+        let host: String
+    }
+
     @Published private(set) var statusText = ""
     @Published private(set) var isError = false
     @Published private(set) var serverLabel = "Searching network..."
+    @Published private(set) var connectedServer: ConnectedServerDisplay?
     @Published private(set) var activeCommand: String?
 
     private let serverInput: String
@@ -463,17 +469,22 @@ final class RemoteCommandClient: ObservableObject {
 
     private func publishServerLabel_locked() {
         let label: String
+        let connectedServer: ConnectedServerDisplay?
 
         if let activeDiscoveredService = activeDiscoveredService_locked {
-            label = activeDiscoveredService.displayLabel
+            label = activeDiscoveredService.name
+            connectedServer = activeDiscoveredService.connectedDisplay
         } else if let fallbackBaseURL = fallbackBaseURL {
             label = Self.hostLabel(for: fallbackBaseURL)
+            connectedServer = nil
         } else {
             label = "Searching network..."
+            connectedServer = nil
         }
 
         DispatchQueue.main.async { [weak self] in
             self?.serverLabel = label
+            self?.connectedServer = connectedServer
         }
     }
 
@@ -757,8 +768,15 @@ private extension RemoteCommandClient {
             return RemoteCommandClient.commandURL(from: baseURL)
         }
 
-        var displayLabel: String {
-            resolvedHost ?? name
+        var connectedDisplay: RemoteCommandClient.ConnectedServerDisplay? {
+            guard let resolvedHost else {
+                return nil
+            }
+
+            return RemoteCommandClient.ConnectedServerDisplay(
+                siteName: name,
+                host: resolvedHost
+            )
         }
 
         var diagnosticLabel: String {

@@ -22,12 +22,12 @@ struct HoldCommandButton: View {
             Text(title)
                 .font(.system(.headline, design: .rounded).weight(.bold))
         }
-        .frame(maxWidth: .infinity, minHeight: 64)
+        .frame(maxWidth: .infinity, minHeight: 50)
         .padding(.vertical, 8)
         .foregroundStyle(.white)
         .background(buttonBackground)
         .overlay(buttonOutline)
-        .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
+        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
         .scaleEffect(isPressed ? 0.97 : 1.0)
         .opacity(isBlockedByAnotherCommand ? 0.55 : 1.0)
         .shadow(color: tint.opacity(isPressed ? 0.15 : 0.32), radius: 8, y: 5)
@@ -49,7 +49,7 @@ struct HoldCommandButton: View {
     }
 
     private var buttonBackground: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
             .fill(
                 LinearGradient(
                     colors: [
@@ -63,7 +63,7 @@ struct HoldCommandButton: View {
     }
 
     private var buttonOutline: some View {
-        RoundedRectangle(cornerRadius: 22, style: .continuous)
+        RoundedRectangle(cornerRadius: 20, style: .continuous)
             .strokeBorder(.white.opacity(isPressed ? 0.38 : 0.16), lineWidth: 1)
     }
 
