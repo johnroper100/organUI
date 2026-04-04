@@ -33,6 +33,7 @@ struct ContentView: View {
                 title: "Next",
                 systemImage: "forward.fill",
                 tint: .green,
+                size: .prominent,
                 command: RemoteConfiguration.nextCommand,
                 client: client
             )

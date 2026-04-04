@@ -2,9 +2,51 @@ import SwiftUI
 import WatchKit
 
 struct HoldCommandButton: View {
+    enum Size {
+        case regular
+        case prominent
+
+        var iconFontSize: CGFloat {
+            switch self {
+            case .regular:
+                return 15
+            case .prominent:
+                return 30
+            }
+        }
+
+        var titleFont: Font {
+            switch self {
+            case .regular:
+                return .system(.headline, design: .rounded).weight(.bold)
+            case .prominent:
+                return .system(.title3, design: .rounded).weight(.bold)
+            }
+        }
+
+        var minHeight: CGFloat {
+            switch self {
+            case .regular:
+                return 45
+            case .prominent:
+                return 65
+            }
+        }
+
+        var verticalPadding: CGFloat {
+            switch self {
+            case .regular:
+                return 8
+            case .prominent:
+                return 10
+            }
+        }
+    }
+
     let title: String
     let systemImage: String
     let tint: Color
+    let size: Size
     let command: String
 
     @ObservedObject var client: RemoteCommandClient
@@ -12,18 +54,34 @@ struct HoldCommandButton: View {
     @State private var isPressed = false
     @State private var pressTask: Task<Void, Never>?
 
+    init(
+        title: String,
+        systemImage: String,
+        tint: Color,
+        size: Size = .regular,
+        command: String,
+        client: RemoteCommandClient
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.tint = tint
+        self.size = size
+        self.command = command
+        self.client = client
+    }
+
     var body: some View {
         let isBlockedByAnotherCommand = client.activeCommand != nil && client.activeCommand != command
 
         VStack(spacing: 4) {
             Image(systemName: systemImage)
-                .font(.system(size: 20, weight: .bold))
+                .font(.system(size: size.iconFontSize, weight: .bold))
 
             Text(title)
-                .font(.system(.headline, design: .rounded).weight(.bold))
+                .font(size.titleFont)
         }
-        .frame(maxWidth: .infinity, minHeight: 50)
-        .padding(.vertical, 8)
+        .frame(maxWidth: .infinity, minHeight: size.minHeight)
+        .padding(.vertical, size.verticalPadding)
         .foregroundStyle(.white)
         .background(buttonBackground)
         .overlay(buttonOutline)
