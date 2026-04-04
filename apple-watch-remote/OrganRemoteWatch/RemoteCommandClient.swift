@@ -6,11 +6,13 @@ final class RemoteCommandClient: ObservableObject {
     @Published private(set) var statusText = ""
     @Published private(set) var isError = false
     @Published private(set) var serverLabel = "Searching network..."
+    @Published private(set) var activeCommand: String?
 
     private let serverInput: String
     private let session: URLSession
     private let encoder = JSONEncoder()
     private let browser: NWBrowser
+    private let networkQueue = DispatchQueue(label: "OrganRemoteWatch.network")
 
     private var discoveredServices: [String: DiscoveredService] = [:]
     private var activeServiceKey: String?
@@ -27,23 +29,48 @@ final class RemoteCommandClient: ObservableObject {
             type: RemoteConfiguration.bonjourServiceType,
             domain: RemoteConfiguration.bonjourDomain
         )
-        self.browser = NWBrowser(for: descriptor, using: .tcp)
+        let browserParameters = NWParameters.tcp
+        browserParameters.includePeerToPeer = true
+        self.browser = NWBrowser(for: descriptor, using: browserParameters)
 
         refreshServerLabel()
         configureBrowser()
-        browser.start(queue: .main)
+        browser.start(queue: networkQueue)
     }
 
     deinit {
         browser.cancel()
     }
 
+    @MainActor
+    @discardableResult
+    func beginExclusiveCommand(_ command: String) -> Bool {
+        guard activeCommand == nil else {
+            return false
+        }
+
+        activeCommand = command
+        return true
+    }
+
+    func finishExclusiveCommand(_ command: String) async {
+        await sendCommand(command, state: 0)
+
+        await MainActor.run {
+            if activeCommand == command {
+                activeCommand = nil
+            }
+        }
+    }
+
     func sendCommand(_ command: String, state: Int) async {
         do {
+            let payload = OSCCommandRequest(cmd: command, state: state)
+
             if let service = activeDiscoveredService {
-                try await postCommand(OSCCommandRequest(cmd: command, state: state), to: service)
+                try await postCommand(payload, to: service)
             } else if let url = commandURL {
-                try await postCommand(OSCCommandRequest(cmd: command, state: state), to: url)
+                try await postCommand(payload, to: url)
             } else {
                 throw RemoteCommandError.noServerAvailable
             }
@@ -69,13 +96,11 @@ final class RemoteCommandClient: ObservableObject {
     }
 
     private var commandURL: URL? {
-        guard let baseURL = fallbackBaseURL,
-              var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+        guard let baseURL = fallbackBaseURL else {
             return nil
         }
 
-        components.path = "/api/osc"
-        return components.url
+        return Self.commandURL(from: baseURL)
     }
 
     private var fallbackBaseURL: URL? {
@@ -129,7 +154,7 @@ final class RemoteCommandClient: ObservableObject {
         var updatedServices: [String: DiscoveredService] = [:]
 
         for result in results {
-            guard let service = Self.discoveredService(from: result.endpoint) else {
+            guard let service = Self.discoveredService(from: result) else {
                 continue
             }
 
@@ -184,10 +209,37 @@ final class RemoteCommandClient: ObservableObject {
 
     private func postCommand(_ payload: OSCCommandRequest, to service: DiscoveredService) async throws {
         let body = try encoder.encode(payload)
-        let request = try Self.httpRequestData(body: body, hostHeader: service.httpHostHeader)
+        let attempts = service.interfaces.map(Optional.some) + [nil]
+        var lastError: Error = RemoteCommandError.connectionTimeout
+
+        for requiredInterface in attempts {
+            do {
+                try await postCommand(
+                    body: body,
+                    to: service.endpoint,
+                    requiredInterface: requiredInterface,
+                    hostHeader: service.httpHostHeader
+                )
+                return
+            } catch {
+                lastError = error
+            }
+        }
+
+        throw lastError
+    }
+
+    private func postCommand(body: Data, to endpoint: NWEndpoint, requiredInterface: NWInterface?, hostHeader: String) async throws {
+        let request = try Self.httpRequestData(body: body, hostHeader: hostHeader)
+        let parameters = NWParameters.tcp
+        parameters.includePeerToPeer = true
+
+        if let requiredInterface {
+            parameters.requiredInterface = requiredInterface
+        }
 
         try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            let connection = NWConnection(to: service.endpoint, using: .tcp)
+            let connection = NWConnection(to: endpoint, using: parameters)
             var didResume = false
             var timeoutWorkItem: DispatchWorkItem?
 
@@ -246,7 +298,7 @@ final class RemoteCommandClient: ObservableObject {
                 switch state {
                 case .ready:
                     connection.send(content: request, completion: .contentProcessed { error in
-                        if let error = error {
+                        if let error {
                             finish(.failure(error))
                             return
                         }
@@ -260,10 +312,10 @@ final class RemoteCommandClient: ObservableObject {
                 }
             }
 
-            if let timeoutWorkItem = timeoutWorkItem {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 5, execute: timeoutWorkItem)
+            if let timeoutWorkItem {
+                networkQueue.asyncAfter(deadline: .now() + 5, execute: timeoutWorkItem)
             }
-            connection.start(queue: .main)
+            connection.start(queue: networkQueue)
         }
     }
 
@@ -296,8 +348,8 @@ final class RemoteCommandClient: ObservableObject {
         return error.localizedDescription
     }
 
-    private static func discoveredService(from endpoint: NWEndpoint) -> DiscoveredService? {
-        switch endpoint {
+    private static func discoveredService(from result: NWBrowser.Result) -> DiscoveredService? {
+        switch result.endpoint {
         case .service(let name, let type, let domain, _):
             let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
             let serviceName = trimmedName.isEmpty ? RemoteConfiguration.serverDisplayName : trimmedName
@@ -305,7 +357,8 @@ final class RemoteCommandClient: ObservableObject {
             return DiscoveredService(
                 id: "\(serviceName)|\(type)|\(domain)",
                 name: serviceName,
-                endpoint: endpoint,
+                endpoint: result.endpoint,
+                interfaces: sortedInterfaces(from: result.interfaces),
                 diagnosticLabel: serviceName,
                 httpHostHeader: "organremote.local"
             )
@@ -315,13 +368,38 @@ final class RemoteCommandClient: ObservableObject {
             return DiscoveredService(
                 id: hostLabel,
                 name: RemoteConfiguration.serverDisplayName,
-                endpoint: endpoint,
+                endpoint: result.endpoint,
+                interfaces: sortedInterfaces(from: result.interfaces),
                 diagnosticLabel: hostLabel,
                 httpHostHeader: String(describing: host)
             )
         default:
             return nil
         }
+    }
+
+    private static func sortedInterfaces(from interfaces: [NWInterface]) -> [NWInterface] {
+        interfaces.sorted { lhs, rhs in
+            let lhsRank = interfacePriority(lhs.type)
+            let rhsRank = interfacePriority(rhs.type)
+
+            if lhsRank != rhsRank {
+                return lhsRank < rhsRank
+            }
+
+            return lhs.name.localizedCaseInsensitiveCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    private static func commandURL(from baseURL: URL) -> URL? {
+        guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
+            return nil
+        }
+
+        components.path = "/api/osc"
+        components.query = nil
+        components.fragment = nil
+        return components.url
     }
 
     private static func httpRequestData(body: Data, hostHeader: String) throws -> Data {
@@ -351,6 +429,23 @@ final class RemoteCommandClient: ObservableObject {
         }
 
         return Int(parts[1])
+    }
+
+    private static func interfacePriority(_ type: NWInterface.InterfaceType) -> Int {
+        switch type {
+        case .wifi:
+            return 0
+        case .wiredEthernet:
+            return 1
+        case .other:
+            return 2
+        case .cellular:
+            return 3
+        case .loopback:
+            return 4
+        @unknown default:
+            return 5
+        }
     }
 
     private static func decorate(_ message: String, hostLabel: String?) -> String {
@@ -405,6 +500,7 @@ private extension RemoteCommandClient {
         let id: String
         let name: String
         let endpoint: NWEndpoint
+        let interfaces: [NWInterface]
         let diagnosticLabel: String
         let httpHostHeader: String
     }

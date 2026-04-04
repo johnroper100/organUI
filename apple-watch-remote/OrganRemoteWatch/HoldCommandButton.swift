@@ -13,6 +13,8 @@ struct HoldCommandButton: View {
     @State private var pressTask: Task<Void, Never>?
 
     var body: some View {
+        let isBlockedByAnotherCommand = client.activeCommand != nil && client.activeCommand != command
+
         VStack(spacing: 4) {
             Image(systemName: systemImage)
                 .font(.system(size: 20, weight: .bold))
@@ -27,6 +29,7 @@ struct HoldCommandButton: View {
         .overlay(buttonOutline)
         .contentShape(RoundedRectangle(cornerRadius: 22, style: .continuous))
         .scaleEffect(isPressed ? 0.97 : 1.0)
+        .opacity(isBlockedByAnotherCommand ? 0.55 : 1.0)
         .shadow(color: tint.opacity(isPressed ? 0.15 : 0.32), radius: 8, y: 5)
         .animation(.easeOut(duration: 0.12), value: isPressed)
         .gesture(
@@ -65,7 +68,7 @@ struct HoldCommandButton: View {
     }
 
     private func beginPress() {
-        guard !isPressed else {
+        guard !isPressed, client.beginExclusiveCommand(command) else {
             return
         }
 
@@ -91,7 +94,7 @@ struct HoldCommandButton: View {
             if let currentPressTask {
                 _ = await currentPressTask.value
             }
-            await client.sendCommand(command, state: 0)
+            await client.finishExclusiveCommand(command)
         }
     }
 }
