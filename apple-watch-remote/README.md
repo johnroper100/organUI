@@ -37,10 +37,3 @@ In the normal connected state the watch shows the resolved IP above the
 discovered service name. If a connection fails, the watch shows a diagnostic
 target only in the error state, and direct host/IP details are otherwise only
 surfaced when the app is using a manual fallback URL.
-
-## If Xcode Regenerates The Project
-
-This repository was edited from a non-macOS environment, so the source files are
-the important part. If you prefer, you can also create a new watchOS
-`App > Watch-only App` project in Xcode and copy in the files from the
-`OrganRemoteWatch` folder.
