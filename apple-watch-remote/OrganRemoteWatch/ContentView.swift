@@ -78,24 +78,16 @@ struct ContentView: View {
 
     private var infoPage: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 12) {
-                Text("About")
-                    .font(.system(.headline, design: .rounded).weight(.semibold))
-
-                infoRow(title: "Version", value: appVersionText)
-                infoRow(title: "Developer", value: "John Roper")
-
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Wrist Flick")
+            VStack(alignment: .leading, spacing: 15) {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Wrist Flick:")
                         .font(.system(.headline, design: .rounded).weight(.semibold))
 
-                    Text(wristFlickModeLabel)
-                        .font(.system(.caption2, design: .rounded).weight(.medium))
-                        .foregroundStyle(.white.opacity(isLuminanceReduced ? 0.5 : 0.68))
-
-                    Toggle("Back", isOn: $isBackWristFlickEnabled)
                     Toggle("Next", isOn: $isNextWristFlickEnabled)
+                    Toggle("Back", isOn: $isBackWristFlickEnabled)
                 }
+                
+                infoRow(title: "Version:", value: appVersionText)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -160,19 +152,6 @@ struct ContentView: View {
             return build
         default:
             return "Unavailable"
-        }
-    }
-
-    private var wristFlickModeLabel: String {
-        switch (isBackWristFlickEnabled, isNextWristFlickEnabled) {
-        case (true, true):
-            return "Mode: Both"
-        case (true, false):
-            return "Mode: Back"
-        case (false, true):
-            return "Mode: Next"
-        case (false, false):
-            return "Mode: None"
         }
     }
 

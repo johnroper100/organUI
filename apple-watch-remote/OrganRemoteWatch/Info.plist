@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
-	<string>Organ Remote</string>
+	<string>Plenum Tuning Remote</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -30,7 +30,7 @@
 		<string>_organremote._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
-	<string>The watch browses your local network to find the Organ Remote server automatically.</string>
+	<string>The watch browses your local network to find the Organ Tuning Remote server automatically.</string>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKPrefersNetworkUponForeground</key>
