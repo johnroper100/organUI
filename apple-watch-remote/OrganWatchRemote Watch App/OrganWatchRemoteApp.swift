@@ -1,10 +1,3 @@
-//
-//  OrganWatchRemoteApp.swift
-//  OrganWatchRemote Watch App
-//
-//  Created by John Roper on 4/6/26.
-//
-
 import SwiftUI
 
 @main
