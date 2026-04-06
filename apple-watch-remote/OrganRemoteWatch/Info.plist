@@ -20,17 +20,17 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
 	<key>NSBonjourServices</key>
 	<array>
 		<string>_organremote._tcp</string>
 	</array>
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>The watch browses your local network to find the Organ Remote server automatically.</string>
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
 	<key>WKApplication</key>
 	<true/>
 	<key>WKPrefersNetworkUponForeground</key>
