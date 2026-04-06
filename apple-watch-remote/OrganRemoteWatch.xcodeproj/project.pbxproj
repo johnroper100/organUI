@@ -3,7 +3,7 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 60;
+	objectVersion = 90;
 	objects = {
 
 /* Begin PBXBuildFile section */
@@ -27,10 +27,8 @@
 /* Begin PBXFrameworksBuildPhase section */
 		A10A20010000000000000001 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
@@ -77,8 +75,6 @@
 			);
 			buildRules = (
 			);
-			dependencies = (
-			);
 			name = OrganRemoteWatch;
 			productName = OrganRemoteWatch;
 			productReference = A10A10000000000000000001 /* OrganRemoteWatch.app */;
@@ -101,7 +97,6 @@
 				};
 			};
 			buildConfigurationList = A10A50000000000000000001 /* Build configuration list for PBXProject "OrganRemoteWatch" */;
-			compatibilityVersion = "Xcode 15.0";
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
@@ -109,6 +104,7 @@
 				Base,
 			);
 			mainGroup = A10A30000000000000000001;
+			preferredProjectObjectVersion = 90;
 			productRefGroup = A10A30020000000000000001 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
@@ -121,17 +117,14 @@
 /* Begin PBXResourcesBuildPhase section */
 		A10A20030000000000000001 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		A10A20020000000000000001 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
 			files = (
 				A10A00010000000000000001 /* OrganRemoteWatchApp.swift in Sources */,
 				A10A00020000000000000001 /* ContentView.swift in Sources */,
@@ -139,12 +132,11 @@
 				A10A00040000000000000001 /* RemoteCommandClient.swift in Sources */,
 				A10A00050000000000000001 /* RemoteConfiguration.swift in Sources */,
 			);
-			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		A10A70000000000000000001 /* Debug */ = {
+		A10A70000000000000000001 /* Debug configuration for PBXProject "OrganRemoteWatch" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -203,7 +195,7 @@
 			};
 			name = Debug;
 		};
-		A10A70010000000000000001 /* Release */ = {
+		A10A70010000000000000001 /* Release configuration for PBXProject "OrganRemoteWatch" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -255,7 +247,7 @@
 			};
 			name = Release;
 		};
-		A10A70020000000000000001 /* Debug */ = {
+		A10A70020000000000000001 /* Debug configuration for PBXNativeTarget "OrganRemoteWatch" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -282,7 +274,7 @@
 			};
 			name = Debug;
 		};
-		A10A70030000000000000001 /* Release */ = {
+		A10A70030000000000000001 /* Release configuration for PBXNativeTarget "OrganRemoteWatch" */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_INCLUDE_ALL_APPICON_ASSETS = YES;
@@ -315,19 +307,17 @@
 		A10A50000000000000000001 /* Build configuration list for PBXProject "OrganRemoteWatch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10A70000000000000000001 /* Debug */,
-				A10A70010000000000000001 /* Release */,
+				A10A70000000000000000001 /* Debug configuration for PBXProject "OrganRemoteWatch" */,
+				A10A70010000000000000001 /* Release configuration for PBXProject "OrganRemoteWatch" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 		A10A50010000000000000001 /* Build configuration list for PBXNativeTarget "OrganRemoteWatch" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				A10A70020000000000000001 /* Debug */,
-				A10A70030000000000000001 /* Release */,
+				A10A70020000000000000001 /* Debug configuration for PBXNativeTarget "OrganRemoteWatch" */,
+				A10A70030000000000000001 /* Release configuration for PBXNativeTarget "OrganRemoteWatch" */,
 			);
-			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
