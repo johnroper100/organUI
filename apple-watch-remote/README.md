@@ -21,7 +21,7 @@ over Bonjour, so it does not depend on a fixed IP address.
 4. The first launch will ask for local network access so the watch can browse
    for `_organremote._tcp` on your LAN.
 
-The watch target now explicitly opts into Always On display support. On Apple
+The watch target explicitly opts into Always On display support. On Apple
 Watch models that support Always On, the app remains visible in the dimmed
 state while it stays frontmost. The exact duration still follows the user’s
 watch settings under `Settings > General > Wake Screen > Return to Clock`, and
@@ -38,10 +38,3 @@ In the normal connected state the watch shows the resolved IP above the
 discovered service name. If a connection fails, the watch shows a diagnostic
 target only in the error state, and direct host/IP details are otherwise only
 surfaced when the app is using a manual fallback URL.
-
-## If Xcode Regenerates The Project
-
-This repository was edited from a non-macOS environment, so the source files are
-the important part. If you prefer, you can also create a new watchOS
-`App > Watch-only App` project in Xcode and copy in the files from the
-`OrganRemoteWatch` folder.
