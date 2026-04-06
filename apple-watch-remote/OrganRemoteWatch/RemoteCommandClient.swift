@@ -13,8 +13,7 @@ final class RemoteCommandClient: ObservableObject {
     @Published private(set) var isError = false
     @Published private(set) var serverLabel = "Searching network..."
     @Published private(set) var connectedServer: ConnectedServerDisplay?
-    @Published private(set) var canSendCommands = false
-    @Published private(set) var activeCommand: String?
+    @Published private(set) var canSendActions = false
 
     private let serverInput: String
     private let session: URLSession
@@ -30,16 +29,13 @@ final class RemoteCommandClient: ObservableObject {
         self.serverInput = serverInput.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let configuration = URLSessionConfiguration.default
-        // Allow press and release requests to overlap instead of forcing
-        // the release to wait for the press response on the same connection.
-        configuration.httpMaximumConnectionsPerHost = 2
         configuration.waitsForConnectivity = false
         self.session = URLSession(configuration: configuration)
 
         if let fallbackBaseURL = Self.normalizedBaseURL(from: self.serverInput) {
             serverLabel = Self.hostLabel(for: fallbackBaseURL)
         }
-        canSendCommands = commandURL != nil
+        canSendActions = actionURL != nil
 
         startDiscovery()
     }
@@ -50,54 +46,12 @@ final class RemoteCommandClient: ObservableObject {
         }
     }
 
-    @MainActor
-    @discardableResult
-    func beginExclusiveCommand(_ command: String) -> Bool {
-        guard canSendCommands, activeCommand == nil else {
-            return false
-        }
-
-        activeCommand = command
-        return true
-    }
-
-    func finishExclusiveCommand(_ command: String) {
-        sendCommand(command, state: 0)
-
-        Task { @MainActor [weak self] in
-            guard let self, activeCommand == command else {
-                return
-            }
-
-            activeCommand = nil
-        }
-    }
-
-    func sendMomentaryCommand(_ command: String, holdDuration: TimeInterval = 0.12) async {
-        let didBegin = await MainActor.run {
-            beginExclusiveCommand(command)
-        }
-
-        guard didBegin else {
-            return
-        }
-
-        sendCommand(command, state: 1)
-
-        if holdDuration > 0 {
-            let delay = UInt64(holdDuration * 1_000_000_000)
-            try? await Task.sleep(nanoseconds: delay)
-        }
-
-        finishExclusiveCommand(command)
-    }
-
-    func sendCommand(_ command: String, state: Int) {
+    func sendAction(_ action: RemoteAction) {
         do {
-            let payload = OSCCommandRequest(cmd: command, state: state)
+            let payload = RemoteActionRequest(action: action)
 
-            if let url = activeDiscoveredCommandURL() ?? commandURL {
-                try postCommand(payload, to: url)
+            if let url = activeDiscoveredActionURL() ?? actionURL {
+                try postAction(payload, to: url)
             } else {
                 throw RemoteCommandError.noServerAvailable
             }
@@ -113,12 +67,12 @@ final class RemoteCommandClient: ObservableObject {
         }
     }
 
-    private var commandURL: URL? {
+    private var actionURL: URL? {
         guard let baseURL = fallbackBaseURL else {
             return nil
         }
 
-        return Self.commandURL(from: baseURL)
+        return Self.remoteActionURL(from: baseURL)
     }
 
     private var fallbackBaseURL: URL? {
@@ -195,9 +149,9 @@ final class RemoteCommandClient: ObservableObject {
         addressOperations.removeAll()
     }
 
-    private func activeDiscoveredCommandURL() -> URL? {
+    private func activeDiscoveredActionURL() -> URL? {
         networkQueue.sync {
-            activeDiscoveredService_locked?.commandURL
+            activeDiscoveredService_locked?.actionURL
         }
     }
 
@@ -500,26 +454,26 @@ final class RemoteCommandClient: ObservableObject {
     private func publishServerLabel_locked() {
         let label: String
         let connectedServer: ConnectedServerDisplay?
-        let canSendCommands: Bool
+        let canSendActions: Bool
 
         if let activeDiscoveredService = activeDiscoveredService_locked {
             label = activeDiscoveredService.name
             connectedServer = activeDiscoveredService.connectedDisplay
-            canSendCommands = activeDiscoveredService.commandURL != nil || commandURL != nil
+            canSendActions = activeDiscoveredService.actionURL != nil || actionURL != nil
         } else if let fallbackBaseURL = fallbackBaseURL {
             label = Self.hostLabel(for: fallbackBaseURL)
             connectedServer = nil
-            canSendCommands = commandURL != nil
+            canSendActions = actionURL != nil
         } else {
             label = "Searching network..."
             connectedServer = nil
-            canSendCommands = false
+            canSendActions = false
         }
 
         DispatchQueue.main.async { [weak self] in
             self?.serverLabel = label
             self?.connectedServer = connectedServer
-            self?.canSendCommands = canSendCommands
+            self?.canSendActions = canSendActions
         }
     }
 
@@ -541,7 +495,7 @@ final class RemoteCommandClient: ObservableObject {
         publishStatus(message, isError: true)
     }
 
-    private func postCommand(_ payload: OSCCommandRequest, to url: URL) throws {
+    private func postAction(_ payload: RemoteActionRequest, to url: URL) throws {
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.timeoutInterval = 5
@@ -742,12 +696,12 @@ final class RemoteCommandClient: ObservableObject {
         return trimmedName.isEmpty ? RemoteConfiguration.serverDisplayName : trimmedName
     }
 
-    private static func commandURL(from baseURL: URL) -> URL? {
+    private static func remoteActionURL(from baseURL: URL) -> URL? {
         guard var components = URLComponents(url: baseURL, resolvingAgainstBaseURL: false) else {
             return nil
         }
 
-        components.path = "/api/osc"
+        components.path = RemoteConfiguration.remoteActionPath
         components.query = nil
         components.fragment = nil
         return components.url
@@ -815,7 +769,7 @@ private extension RemoteCommandClient {
         }
 
         var isResolved: Bool {
-            commandURL != nil
+            actionURL != nil
         }
 
         var baseURL: URL? {
@@ -830,12 +784,12 @@ private extension RemoteCommandClient {
             return components.url
         }
 
-        var commandURL: URL? {
+        var actionURL: URL? {
             guard let baseURL else {
                 return nil
             }
 
-            return RemoteCommandClient.commandURL(from: baseURL)
+            return RemoteCommandClient.remoteActionURL(from: baseURL)
         }
 
         var connectedDisplay: RemoteCommandClient.ConnectedServerDisplay? {
@@ -900,9 +854,8 @@ private extension RemoteCommandClient {
         let priority: Int
     }
 
-    struct OSCCommandRequest: Encodable {
-        let cmd: String
-        let state: Int
+    struct RemoteActionRequest: Encodable {
+        let action: RemoteAction
     }
 
     enum RemoteCommandError: LocalizedError {

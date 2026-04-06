@@ -1,15 +1,16 @@
 # Organ Remote Watch App
 
-This folder contains a small watchOS SwiftUI app that sends the same `cmd/state`
-pairs as the existing tuner page:
+This folder contains a small watchOS SwiftUI app that sends high-level remote
+actions to the Node server:
 
-- `Back` sends `/OPTICS/special2014`
-- `Next` sends `/OPTICS/special2015`
+- `Back` sends `back`
+- `Next` sends `next`
 
 The watch app talks to the Node server over HTTP by posting JSON to
-`/api/osc`. That endpoint was added to the existing `server.js` so the web UI
-and watch UI both drive the same OSC bridge. The watch now discovers that
-server automatically over Bonjour, so it does not depend on a fixed IP address.
+`/api/remote-action`. The server maps those actions to the right OSC command
+and handles the momentary press/release timing, so the watch app no longer
+needs OSC-specific wiring. The watch now discovers that server automatically
+over Bonjour, so it does not depend on a fixed IP address.
 
 ## Build Notes
 

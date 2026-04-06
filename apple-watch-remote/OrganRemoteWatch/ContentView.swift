@@ -55,20 +55,20 @@ struct ContentView: View {
             }
             .padding(.bottom, 2)
 
-            HoldCommandButton(
+            RemoteActionButton(
                 title: "Back",
                 systemImage: "backward.fill",
                 tint: .red,
-                command: RemoteConfiguration.backCommand,
+                action: .back,
                 client: client
             )
 
-            HoldCommandButton(
+            RemoteActionButton(
                 title: "Next",
                 systemImage: "forward.fill",
                 tint: .green,
                 size: .prominent,
-                command: RemoteConfiguration.nextCommand,
+                action: .next,
                 client: client
             )
         }
@@ -211,12 +211,12 @@ private final class WristFlickDetector: ObservableObject {
         case front
         case back
 
-        var command: String {
+        var action: RemoteAction {
             switch self {
             case .front:
-                return RemoteConfiguration.nextCommand
+                return .next
             case .back:
-                return RemoteConfiguration.backCommand
+                return .back
             }
         }
     }
@@ -226,7 +226,6 @@ private final class WristFlickDetector: ObservableObject {
     private static let baselineWindow = 0.10
     private static let rearmWindow = 0.06
     private static let minimumTriggerInterval: TimeInterval = 0.75
-    private static let momentaryCommandHoldDuration: TimeInterval = 0.12
     private static let frontTriggerProfile = FlickTriggerProfile(
         pitchDelta: 0.42,
         pitchRate: 3.6,
@@ -348,7 +347,6 @@ private final class WristFlickDetector: ObservableObject {
         }
 
         guard isArmed,
-              client.activeCommand == nil,
               sample.timestamp - lastTriggerTime >= Self.minimumTriggerInterval else {
             return
         }
@@ -367,13 +365,7 @@ private final class WristFlickDetector: ObservableObject {
         lastTriggerTime = timestamp
         isArmed = false
         WKInterfaceDevice.current().play(.click)
-
-        Task {
-            await client.sendMomentaryCommand(
-                direction.command,
-                holdDuration: Self.momentaryCommandHoldDuration
-            )
-        }
+        client.sendAction(direction.action)
     }
 
     private func normalizedAngle(_ angle: Double) -> Double {

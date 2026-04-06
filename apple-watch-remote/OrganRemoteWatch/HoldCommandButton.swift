@@ -1,7 +1,7 @@
 import SwiftUI
 import WatchKit
 
-struct HoldCommandButton: View {
+struct RemoteActionButton: View {
     enum Size {
         case regular
         case prominent
@@ -47,68 +47,71 @@ struct HoldCommandButton: View {
     let systemImage: String
     let tint: Color
     let size: Size
-    let command: String
+    let action: RemoteAction
 
     @ObservedObject var client: RemoteCommandClient
-
-    @State private var isPressed = false
 
     init(
         title: String,
         systemImage: String,
         tint: Color,
         size: Size = .regular,
-        command: String,
+        action: RemoteAction,
         client: RemoteCommandClient
     ) {
         self.title = title
         self.systemImage = systemImage
         self.tint = tint
         self.size = size
-        self.command = command
+        self.action = action
         self.client = client
     }
 
     var body: some View {
-        let isResolvingServer = !client.canSendCommands
-        let isBlockedByAnotherCommand = client.activeCommand != nil && client.activeCommand != command
-        let isInteractionEnabled = !isResolvingServer && !isBlockedByAnotherCommand
+        Button(action: triggerAction) {
+            VStack(spacing: 4) {
+                Image(systemName: systemImage)
+                    .font(.system(size: size.iconFontSize, weight: .bold))
 
-        VStack(spacing: 4) {
-            Image(systemName: systemImage)
-                .font(.system(size: size.iconFontSize, weight: .bold))
-
-            Text(title)
-                .font(size.titleFont)
+                Text(title)
+                    .font(size.titleFont)
+            }
+            .frame(maxWidth: .infinity, minHeight: size.minHeight)
+            .padding(.vertical, size.verticalPadding)
         }
-        .frame(maxWidth: .infinity, minHeight: size.minHeight)
-        .padding(.vertical, size.verticalPadding)
-        .foregroundStyle(.white)
-        .background(buttonBackground)
-        .overlay(buttonOutline)
-        .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .scaleEffect(isPressed ? 0.97 : 1.0)
-        .opacity(isResolvingServer ? 0.36 : isBlockedByAnotherCommand ? 0.55 : 1.0)
-        .shadow(color: tint.opacity(isPressed ? 0.15 : 0.32), radius: 8, y: 5)
-        .animation(.easeOut(duration: 0.12), value: isPressed)
-        .allowsHitTesting(isInteractionEnabled)
-        .gesture(
-            DragGesture(minimumDistance: 0)
-                .onChanged { _ in
-                    beginPress()
-                }
-                .onEnded { _ in
-                    endPress()
-                }
-        )
+        .buttonStyle(RemoteActionButtonStyle(tint: tint, isEnabled: client.canSendActions))
+        .disabled(!client.canSendActions)
         .accessibilityAddTraits(.isButton)
-        .accessibilityHint(isResolvingServer ? "Unavailable until the server address resolves" : "Press and hold to send \(title)")
-        .onDisappear {
-            endPress()
-        }
+        .accessibilityHint(client.canSendActions ? "Double tap to send \(title)" : "Unavailable until the server address resolves")
     }
 
-    private var buttonBackground: some View {
+    private func triggerAction() {
+        guard client.canSendActions else {
+            return
+        }
+
+        WKInterfaceDevice.current().play(.click)
+        client.sendAction(action)
+    }
+}
+
+private struct RemoteActionButtonStyle: ButtonStyle {
+    let tint: Color
+    let isEnabled: Bool
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .foregroundStyle(.white)
+            .background(buttonBackground(isPressed: configuration.isPressed))
+            .overlay(buttonOutline(isPressed: configuration.isPressed))
+            .contentShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .scaleEffect(configuration.isPressed ? 0.97 : 1.0)
+            .opacity(isEnabled ? 1.0 : 0.36)
+            .shadow(color: tint.opacity(configuration.isPressed ? 0.15 : 0.32), radius: 8, y: 5)
+            .animation(.easeOut(duration: 0.12), value: configuration.isPressed)
+    }
+
+    private func buttonBackground(isPressed: Bool) -> some View {
         RoundedRectangle(cornerRadius: 20, style: .continuous)
             .fill(
                 LinearGradient(
@@ -122,28 +125,8 @@ struct HoldCommandButton: View {
             )
     }
 
-    private var buttonOutline: some View {
+    private func buttonOutline(isPressed: Bool) -> some View {
         RoundedRectangle(cornerRadius: 20, style: .continuous)
             .strokeBorder(.white.opacity(isPressed ? 0.38 : 0.16), lineWidth: 1)
-    }
-
-    private func beginPress() {
-        guard !isPressed, client.beginExclusiveCommand(command) else {
-            return
-        }
-
-        isPressed = true
-        WKInterfaceDevice.current().play(.click)
-        client.sendCommand(command, state: 1)
-    }
-
-    private func endPress() {
-        guard isPressed else {
-            return
-        }
-
-        isPressed = false
-        WKInterfaceDevice.current().play(.click)
-        client.finishExclusiveCommand(command)
     }
 }

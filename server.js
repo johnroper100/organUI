@@ -19,6 +19,12 @@ const db = new FSDB("./database.json", true);
 let conf = JSON.parse(fs.readFileSync('conf.json'));
 const httpPort = Number(process.env.PORT || 3000);
 const bonjour = new Bonjour();
+const remoteActionCommands = {
+    back: "/OPTICS/special2014",
+    next: "/OPTICS/special2015"
+};
+const remoteActionHoldDurationMs = 120;
+const pendingMomentaryReleases = new Map();
 
 var data = {
     trackNum: "Track Name",
@@ -87,6 +93,33 @@ function sendOSCCommand(cmd, state) {
     oscClient.send(cmd, state, (err) => {
         if (err) console.error(err);
     });
+}
+
+function sendMomentaryOSCCommand(cmd, holdDurationMs = remoteActionHoldDurationMs) {
+    sendOSCCommand(cmd, 1);
+
+    const existingRelease = pendingMomentaryReleases.get(cmd);
+    if (existingRelease) {
+        clearTimeout(existingRelease);
+    }
+
+    const releaseTimeout = setTimeout(() => {
+        pendingMomentaryReleases.delete(cmd);
+        sendOSCCommand(cmd, 0);
+    }, holdDurationMs);
+
+    pendingMomentaryReleases.set(cmd, releaseTimeout);
+}
+
+function triggerRemoteAction(action) {
+    const cmd = remoteActionCommands[action];
+
+    if (!cmd) {
+        return false;
+    }
+
+    sendMomentaryOSCCommand(cmd);
+    return true;
 }
 
 sendSubscribeMessage();
@@ -427,6 +460,22 @@ app.post('/api/osc', (req, res) => {
     }
 
     sendOSCCommand(cmd, state);
+    return res.status(202).json({ ok: true });
+});
+
+app.post('/api/remote-action', (req, res) => {
+    const rawAction = req.body?.action;
+    const action = typeof rawAction === 'string' ? rawAction.trim().toLowerCase() : "";
+    console.log("Received remote action via HTTP:", action);
+
+    if (!action) {
+        return res.status(400).json({ error: 'action must be a non-empty string' });
+    }
+
+    if (!triggerRemoteAction(action)) {
+        return res.status(400).json({ error: 'unsupported action' });
+    }
+
     return res.status(202).json({ ok: true });
 });
 
