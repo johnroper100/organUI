@@ -1,7 +1,9 @@
 const express = require('express');
 const path = require('path');
 const http = require('http');
+const os = require('os');
 const fs = require('fs');
+const { Bonjour } = require('bonjour-service');
 const { Server: SocketServer } = require('socket.io');
 const { Client: OSCClient, Server: OSCServer } = require('node-osc');
 const {
@@ -49,6 +51,13 @@ const httpPort = readPort('ORGANUI_HTTP_PORT', 'httpPort', 3000);
 
 const oscClient = new OSCClient(oscTargetHost, oscTargetPort);
 const oscServer = new OSCServer(oscListenPort, '0.0.0.0');
+const bonjour = new Bonjour();
+const remoteActionCommands = {
+    back: '/OPTICS/special2014',
+    next: '/OPTICS/special2015'
+};
+const remoteActionHoldDurationMs = 120;
+const pendingMomentaryReleases = new Map();
 
 const data = {
     trackNum: 'Track Name',
@@ -144,6 +153,31 @@ function sendOSCCommand(cmd, state) {
     });
 
     return true;
+}
+
+function sendMomentaryOSCCommand(cmd, holdDurationMs = remoteActionHoldDurationMs) {
+    if (!sendOSCCommand(cmd, 1)) {
+        return false;
+    }
+
+    const existingRelease = pendingMomentaryReleases.get(cmd);
+    if (existingRelease) {
+        clearTimeout(existingRelease);
+    }
+
+    const releaseTimeout = setTimeout(() => {
+        pendingMomentaryReleases.delete(cmd);
+        sendOSCCommand(cmd, 0);
+    }, holdDurationMs);
+    releaseTimeout.unref();
+
+    pendingMomentaryReleases.set(cmd, releaseTimeout);
+    return true;
+}
+
+function triggerRemoteAction(action) {
+    const command = remoteActionCommands[action];
+    return command !== undefined && sendMomentaryOSCCommand(command);
 }
 
 function sendSubscribeMessage() {
@@ -452,6 +486,23 @@ app.post('/api/osc', (req, res) => {
     return res.status(202).json({ ok: true });
 });
 
+app.post('/api/remote-action', (req, res) => {
+    const rawAction = req.body?.action;
+    const action = typeof rawAction === 'string'
+        ? rawAction.trim().toLowerCase()
+        : '';
+
+    if (action.length === 0) {
+        return res.status(400).json({ error: 'action must be a non-empty string' });
+    }
+
+    if (!triggerRemoteAction(action)) {
+        return res.status(400).json({ error: 'unsupported action' });
+    }
+
+    return res.status(202).json({ ok: true });
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'landing.html'));
 });
@@ -480,8 +531,23 @@ httpServer.on('error', (error) => {
 });
 
 httpServer.listen(httpPort, () => {
+    const serviceName = typeof conf.siteName === 'string' && conf.siteName.trim()
+        ? conf.siteName.trim()
+        : os.hostname();
+
+    const service = bonjour.publish({
+        name: serviceName,
+        type: 'organremote',
+        protocol: 'tcp',
+        port: httpPort
+    });
+    service.on('error', (error) => {
+        console.error('Bonjour service error:', error);
+    });
+
     console.log(`HTTP Server is listening on *:${httpPort}`);
     console.log(`OSC commands are being sent to ${oscTargetHost}:${oscTargetPort}`);
+    console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
 });
 
 sendSubscribeMessage();
@@ -498,7 +564,19 @@ function shutdown(exitCode = 0) {
     shuttingDown = true;
     clearInterval(subscribeInterval);
 
+    for (const [command, releaseTimeout] of pendingMomentaryReleases) {
+        clearTimeout(releaseTimeout);
+        sendOSCCommand(command, 0);
+    }
+    pendingMomentaryReleases.clear();
+
     io.close();
+
+    try {
+        bonjour.destroy();
+    } catch (error) {
+        console.error('Failed to stop Bonjour service:', error);
+    }
 
     try {
         oscClient.close();
