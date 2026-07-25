@@ -16,6 +16,13 @@ const {
 const {
     OSCControllerTransport
 } = require('./lib/osc-controller-transport');
+const {
+    buildRemoteCommands,
+    mapOSCCommandToRemote
+} = require('./lib/opus-udp-protocol');
+const {
+    OpusUDPTransport
+} = require('./lib/opus-udp-transport');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -54,6 +61,7 @@ function readOptionalHost(environmentName, configName) {
 const configuredOscTargetHost = readOptionalHost('OPUS_OSC_HOST', 'oscHost');
 const oscTargetPort = readPort('OPUS_OSC_SEND_PORT', 'oscSendPort', 8000);
 const oscListenPort = readPort('OPUS_OSC_LISTEN_PORT', 'oscListenPort', 9000);
+const opusUdpPort = readPort('OPUS_UDP_PORT', 'udpPort', 5005);
 const httpPort = readPort('ORGANUI_HTTP_PORT', 'httpPort', 3000);
 
 const oscServer = new OSCServer(oscListenPort, '0.0.0.0');
@@ -96,7 +104,11 @@ const data = {
     trackDupSrc: '[source]',
     trackDupTgt: '[target]',
     userVars: Array.from({ length: 10 }, () => ({ name: '', value: '' })),
-    userVarPage: ''
+    userVarPage: '',
+    remoteReply: '',
+    remoteTarget: 'Discovering controller',
+    queriedFolderNames: {},
+    oledLines: ['', '', '', '']
 };
 
 for (let index = 1; index <= 10; index += 1) {
@@ -104,21 +116,51 @@ for (let index = 1; index <= 10; index += 1) {
 }
 
 const oscTransport = new OSCControllerTransport({
-    configuredHost: configuredOscTargetHost,
+    // A configured address is deliberately not installed here: both SSDP and
+    // OSC discovery get the first opportunity to identify the controller.
     port: oscTargetPort,
     onControllerDiscovered: (host) => {
         console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
+        updateRemoteTarget();
     },
     onControllerLost: (host) => {
         console.warn(
             `OSC controller at ${host} stopped responding; resuming discovery`
         );
         updateScalar('uptime', 'uptime', 'Not Connected');
+        updateRemoteTarget();
     },
     onError: (error) => {
         console.error('OSC transport error:', error);
     }
 });
+
+const remoteLimits = {
+    numFolders: conf.numFolders,
+    numLevels: conf.numLevels,
+    numTracks: conf.numTracks
+};
+
+const opusUdpTransport = new OpusUDPTransport({
+    port: opusUdpPort,
+    fallbackHost: configuredOscTargetHost,
+    fallbackHostProvider: () => oscTransport.targetHost,
+    onControllerDiscovered: (host) => {
+        console.log(`Discovered Opus-Two UDP controller at ${host}:${opusUdpPort}`);
+        updateScalar('remoteTarget', 'remoteTarget', `${host} (SSDP)`);
+    },
+    onControllerLost: (host) => {
+        console.warn(
+            `Opus-Two UDP controller at ${host} stopped announcing; using discovery fallbacks`
+        );
+        updateRemoteTarget();
+    },
+    onReply: handleRemoteReply,
+    onError: (error) => {
+        console.error('Opus-Two UDP transport error:', error);
+    }
+});
+setImmediate(updateRemoteTarget);
 
 // Coalesce repeated refresh updates into at most one Socket.IO event of each
 // type per event-loop turn. Event names and payload shapes remain unchanged.
@@ -171,6 +213,57 @@ function updateArrayValue(eventName, values, index, value) {
     emitState(eventName, values);
 }
 
+function updateRemoteTarget() {
+    const host = opusUdpTransport.targetHost;
+    const source = opusUdpTransport.targetSource;
+    const label = host === null
+        ? 'Discovering controller'
+        : `${host} (${source})`;
+    updateScalar('remoteTarget', 'remoteTarget', label);
+}
+
+function sendRawOSCCommand(cmd, state) {
+    const validation = validateOSCCommand({ cmd, state });
+    if (!validation.ok) {
+        console.warn(`Rejected OSC command ${String(cmd)}: ${validation.error}`);
+        return false;
+    }
+
+    const preferredHost = opusUdpTransport.targetHost;
+    const sent = preferredHost === null
+        ? oscTransport.send(cmd, state)
+        : oscTransport.sendTo(cmd, state, preferredHost);
+    if (!sent) {
+        console.warn(`No OSC controller is available for command ${cmd}`);
+        return false;
+    }
+
+    return true;
+}
+
+const oscFallbackPresses = new Set();
+
+function sendUDPRequest(request) {
+    let commands;
+    try {
+        commands = buildRemoteCommands(request, remoteLimits);
+    } catch (error) {
+        return { ok: false, error: error.message };
+    }
+
+    for (const command of commands) {
+        if (!opusUdpTransport.send(command)) {
+            return {
+                ok: false,
+                error: 'no controller has been discovered'
+            };
+        }
+    }
+
+    updateRemoteTarget();
+    return { ok: true, commands };
+}
+
 function sendOSCCommand(cmd, state) {
     const validation = validateOSCCommand({ cmd, state });
     if (!validation.ok) {
@@ -178,12 +271,70 @@ function sendOSCCommand(cmd, state) {
         return false;
     }
 
-    if (!oscTransport.send(cmd, state)) {
-        console.warn(`No OSC controller is available for command ${cmd}`);
-        return false;
+    const mapping = mapOSCCommandToRemote(validation.value);
+    if (mapping === null) {
+        return sendRawOSCCommand(cmd, state);
     }
 
+    if (state === 0 && oscFallbackPresses.has(cmd)) {
+        oscFallbackPresses.delete(cmd);
+        return sendRawOSCCommand(cmd, state);
+    }
+
+    for (const request of mapping.requests) {
+        const result = sendUDPRequest(request);
+        if (!result.ok) {
+            // Preserve control if discovery has not completed yet. The release
+            // is remembered so momentary OSC controls cannot remain pressed.
+            if (state !== 0 && sendRawOSCCommand(cmd, state)) {
+                oscFallbackPresses.add(cmd);
+                return true;
+            }
+            return false;
+        }
+    }
     return true;
+}
+
+function handleRemoteReply(reply, rinfo) {
+    if (typeof reply !== 'string') {
+        return;
+    }
+
+    updateScalar('remoteReply', 'remoteReply', reply);
+    if (netAddressIsUseful(rinfo?.address)) {
+        updateScalar(
+            'remoteTarget',
+            'remoteTarget',
+            `${rinfo.address} (${opusUdpTransport.targetSource ?? 'udp'})`
+        );
+    }
+
+    const track = /^Tk(\d{3})(.*)$/u.exec(reply);
+    if (track) {
+        const number = Number(track[1]);
+        data.trackNames[number] = track[2].trim();
+        emitState('trackNames', data.trackNames);
+        return;
+    }
+
+    const folder = /^Fldr(\d{3})(.*)$/u.exec(reply);
+    if (folder) {
+        const number = Number(folder[1]);
+        data.queriedFolderNames[number] = folder[2].trim();
+        emitState('queriedFolderNames', data.queriedFolderNames);
+        return;
+    }
+
+    const oled = /^LDSL([1-4])([\s\S]*)$/u.exec(reply);
+    if (oled) {
+        data.oledLines[Number(oled[1]) - 1] = oled[2];
+        emitState('oledLines', data.oledLines);
+    }
+}
+
+function netAddressIsUseful(address) {
+    return typeof address === 'string' && address.length > 0;
 }
 
 function sendMomentaryOSCCommand(cmd, holdDurationMs = remoteActionHoldDurationMs) {
@@ -465,6 +616,12 @@ io.on('connection', (socket) => {
         trackDupTgt: data.trackDupTgt,
         userVars: data.userVars,
         userVarPage: data.userVarPage,
+        remoteReply: data.remoteReply,
+        remoteTarget: data.remoteTarget,
+        queriedFolderNames: data.queriedFolderNames,
+        oledLines: data.oledLines,
+        numTracks: conf.numTracks,
+        numFolders: conf.numFolders,
         siteName: conf.siteName
     };
 
@@ -479,6 +636,18 @@ io.on('connection', (socket) => {
         }
 
         sendOSCCommand(command.cmd, command.state);
+    });
+
+    socket.on('sendUDPcmd', (command, acknowledge = () => {}) => {
+        const result = sendUDPRequest(command);
+        if (!result.ok) {
+            console.warn(
+                `Rejected UDP command from socket ${socket.id}: ${result.error}`
+            );
+        }
+        if (typeof acknowledge === 'function') {
+            acknowledge(result);
+        }
     });
 
     socket.on('moveFader', (command) => {
@@ -551,6 +720,21 @@ app.post('/api/remote-action', (req, res) => {
     return res.status(202).json({ ok: true });
 });
 
+app.post('/api/udp', (req, res) => {
+    const result = sendUDPRequest(req.body);
+    if (!result.ok) {
+        const status = result.error === 'no controller has been discovered'
+            ? 503
+            : 400;
+        return res.status(status).json({ error: result.error });
+    }
+
+    return res.status(202).json({
+        ok: true,
+        commands: result.commands
+    });
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'landing.html'));
 });
@@ -595,10 +779,12 @@ httpServer.listen(httpPort, () => {
 
     console.log(`HTTP Server is listening on *:${httpPort}`);
     if (configuredOscTargetHost === null) {
-        console.log(`Discovering OSC controllers on UDP port ${oscTargetPort}`);
+        console.log(
+            `Discovering controllers with SSDP and OSC on ports ${opusUdpPort}/${oscTargetPort}`
+        );
     } else {
         console.log(
-            `OSC controller override is ${configuredOscTargetHost}:${oscTargetPort}`
+            `Controller address fallback is ${configuredOscTargetHost}`
         );
     }
     console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
@@ -636,6 +822,12 @@ function shutdown(exitCode = 0) {
         oscTransport.close();
     } catch (error) {
         console.error('Failed to close OSC transport:', error);
+    }
+
+    try {
+        opusUdpTransport.close();
+    } catch (error) {
+        console.error('Failed to close Opus-Two UDP transport:', error);
     }
 
     try {

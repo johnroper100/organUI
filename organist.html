@@ -62,6 +62,10 @@
             <button class="btn btn-lg btn-primary w-100" :class="{'btn-outline-secondary': getStopByNum(22).active == 0, 'btn-outline-primary': getStopByNum(22).active == 1}" @touchstart="sendOSCcmd('/Stops/push22', 1)" @touchend="sendOSCcmd('/Stops/push22', 0, $event)"><h2>Crescendo B</h2></button>
         </div>
         <div class="container-fluid" v-if="page == 1">
+            <div class="alert alert-secondary py-2 text-center">
+                UDP target: {{remoteTarget}}
+                <span v-if="remoteReply"> · Last reply: {{remoteReply}}</span>
+            </div>
             <div class="row mt-4">
                 <div class="col-12 col-md-6 text-center">
                     <h1><b>{{ trackNum }}</b></h1>
@@ -81,34 +85,51 @@
             </div>
             <div class="row mt-1 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2034', 1)" @touchend="sendOSCcmd('/OPTICS/special2034', 0, $event)" class="btn btn-lg w-100 btn-outline-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
+                    <button @click="sendUDPcmd('toggleTrackLock')" class="btn btn-lg w-100 btn-outline-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2035', 1)" @touchend="sendOSCcmd('/OPTICS/special2035', 0, $event)" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Record</button>
-                </div>
-            </div>
-            <div class="row mt-3 justify-content-center">
-                <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2032', 1)" @touchend="sendOSCcmd('/OPTICS/special2032', 0, $event)" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Down ↓</button>
-                </div>
-                <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2031', 1)" @touchend="sendOSCcmd('/OPTICS/special2031', 0, $event)" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Up ↑</button>
+                    <button @click="sendUDPcmd('recordToggle')" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Record</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2033', 1)" @touchend="sendOSCcmd('/OPTICS/special2033', 0, $event)" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Down ↓ 10</button>
+                    <button @click="sendUDPcmd('trackDown')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Down ↓</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2030', 1)" @touchend="sendOSCcmd('/OPTICS/special2030', 0, $event)" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Up ↑ 10</button>
+                    <button @click="sendUDPcmd('trackUp')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Up ↑</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2036', 1)" @touchend="sendOSCcmd('/OPTICS/special2036', 0, $event)" class="btn btn-lg w-100 btn-outline-success pt-4 pb-4">Play</button>
+                    <button @click="sendUDPcmd('trackDown', {count: 10})" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Down ↓ 10</button>
+                </div>
+                <div class="col-6 col-md-3">
+                    <button @click="sendUDPcmd('trackUp', {count: 10})" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Up ↑ 10</button>
+                </div>
+            </div>
+            <div class="row mt-3 justify-content-center">
+                <div class="col-6 col-md-3">
+                    <button @click="sendUDPcmd('playToggle')" class="btn btn-lg w-100 btn-outline-success pt-4 pb-4">Play / Toggle</button>
                 </div>
                 <div class="col-6 col-md-3">
                     <button @touchstart="sendOSCcmd('/OPTICS/special2037', 1)" @touchend="sendOSCcmd('/OPTICS/special2037', 0, $event)" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Stop</button>
+                </div>
+            </div>
+            <div class="row mt-3 justify-content-center align-items-end">
+                <div class="col-7 col-md-3">
+                    <label class="form-label" for="jump-track">Jump directly to track</label>
+                    <input id="jump-track" class="form-control form-control-lg"
+                        type="number" min="1" :max="numTracks"
+                        v-model.number="jumpTrackNumber">
+                </div>
+                <div class="col-5 col-md-3">
+                    <button class="btn btn-lg btn-primary w-100"
+                        @click="sendUDPcmd('playTrack', {number: jumpTrackNumber})">
+                        Select &amp; Play
+                    </button>
+                </div>
+                <div class="col-12 text-center mt-2 text-muted">
+                    The controller's direct-track command selects the track and starts playback.
                 </div>
             </div>
             <!--<div class="container mt-3 text-center">
@@ -116,7 +137,71 @@
             </div>-->
         </div>
         <div class="container-fluid" v-if="page == 2">
-            <div class="row mb-3">
+            <div class="alert alert-secondary py-2 text-center">
+                UDP target: {{remoteTarget}}
+                <span v-if="remoteReply"> · Last reply: {{remoteReply}}</span>
+            </div>
+            <div class="row g-3 justify-content-center align-items-end mb-4">
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="rename-track">Track number</label>
+                    <input id="rename-track" class="form-control" type="number"
+                        min="1" :max="numTracks" v-model.number="renameTrackNumber">
+                </div>
+                <div class="col-6 col-md-2">
+                    <label class="form-label" for="rename-folder">Folder number</label>
+                    <input id="rename-folder" class="form-control" type="number"
+                        min="1" :max="numFolders" v-model.number="renameFolderNumber">
+                </div>
+                <div class="col-12 col-md-4">
+                    <label class="form-label" for="rename-text">New name</label>
+                    <input id="rename-text" class="form-control" type="text"
+                        maxlength="15" v-model="renameText"
+                        placeholder="Type the complete name">
+                </div>
+            </div>
+            <div class="row g-2 justify-content-center mb-3">
+                <div class="col-6 col-md-2">
+                    <button class="btn btn-success w-100"
+                        @click="renameItem('renameTrack', renameTrackNumber)">
+                        Rename Track
+                    </button>
+                </div>
+                <div class="col-6 col-md-2">
+                    <button class="btn btn-success w-100"
+                        @click="renameItem('renameFolder', renameFolderNumber)">
+                        Rename Folder
+                    </button>
+                </div>
+                <div class="col-6 col-md-2">
+                    <button class="btn btn-outline-primary w-100"
+                        @click="sendUDPcmd('getTrackName', {number: renameTrackNumber})">
+                        Read Track Name
+                    </button>
+                </div>
+                <div class="col-6 col-md-2">
+                    <button class="btn btn-outline-primary w-100"
+                        @click="sendUDPcmd('getFolderName', {number: renameFolderNumber})">
+                        Read Folder Name
+                    </button>
+                </div>
+            </div>
+            <div class="row g-2 justify-content-center align-items-end mb-4">
+                <div class="col-6 col-md-3 text-center">
+                    <span class="d-block text-muted">Track {{renameTrackNumber}}</span>
+                    <strong>{{trackNames[renameTrackNumber] || '—'}}</strong>
+                </div>
+                <div class="col-6 col-md-3 text-center">
+                    <span class="d-block text-muted">Folder {{renameFolderNumber}}</span>
+                    <strong>{{queriedFolderNames[renameFolderNumber] || '—'}}</strong>
+                </div>
+                <div class="col-8 col-md-2">
+                    <button class="btn btn-outline-secondary w-100"
+                        @click="sendUDPcmd('gotoFolder', {number: renameFolderNumber})">
+                        Go to Folder
+                    </button>
+                </div>
+            </div>
+            <div class="row mb-3" v-if="false">
                 <div class="col-6 col-md-3 mb-2 mb-md-0">
                     <button class="btn btn-sm btn-outline-secondary me-1" @touchstart="sendOSCcmd('/OPTICS/special2042', 1)" @touchend="sendOSCcmd('/OPTICS/special2042', 0, $event)">Track ↑</button>
                     <button class="btn btn-sm btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2043', 1)" @touchend="sendOSCcmd('/OPTICS/special2043', 0, $event)">Track ↓</button>
@@ -132,7 +217,7 @@
                     <h3>{{namingCurrentFolder}}</h3>
                 </div>
             </div>
-            <div class="row mb-3 justify-content-center">
+            <div class="row mb-3 justify-content-center" v-if="false">
                 <div class="col-6 col-md-2 mb-3">
                     <button class="btn btn-outline-success w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb14', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb14', 0, $event)">Save To Track</button>
                 </div>
@@ -143,10 +228,10 @@
                     <h3><i>New Name: </i>{{folderTrackName}}</h3>
                 </div>
             </div>
-            <div class="text-danger text-center mb-2">
+            <div class="text-danger text-center mb-2" v-if="false">
                 Press <i>Escape</i> to erase a name.
             </div>
-            <div class="text-center mb-3">
+            <div class="text-center mb-3" v-if="false">
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb27', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb27', 0, $event)">Escape</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb49', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb49', 0, $event)">1</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb50', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb50', 0, $event)">2</button>
@@ -160,7 +245,7 @@
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb48', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb48', 0, $event)">0</button>
                 <button class="btn btn-outline-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb8', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb8', 0, $event)">Delete</button>
             </div>
-            <div class="text-center mb-3">
+            <div class="text-center mb-3" v-if="false">
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb113', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb113', 0, $event)">Q</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb119', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb119', 0, $event)">W</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb101', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb101', 0, $event)">E</button>
@@ -172,7 +257,7 @@
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb111', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb111', 0, $event)">O</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb112', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb112', 0, $event)">P</button>
             </div>
-            <div class="text-center mb-3">
+            <div class="text-center mb-3" v-if="false">
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb97', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb97', 0, $event)">A</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb115', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb115', 0, $event)">S</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb100', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb100', 0, $event)">D</button>
@@ -183,7 +268,7 @@
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb107', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb107', 0, $event)">K</button>
                 <button class="btn btn-outline-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb108', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb108', 0, $event)">L</button>
             </div>
-            <div class="text-center mb-3">
+            <div class="text-center mb-3" v-if="false">
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb122', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb122', 0, $event)">Z</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb120', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb120', 0, $event)">X</button>
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb99', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb99', 0, $event)">C</button>
@@ -193,7 +278,7 @@
                 <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb109', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb109', 0, $event)">M</button>
                 <button class="btn btn-outline-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb28', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb28', 0, $event)">Shift</button>
             </div>  
-            <div class="text-center mb-3">
+            <div class="text-center mb-3" v-if="false">
                 <button class="btn btn-outline-secondary btn-lg ps-5 pe-5" @touchstart="sendOSCcmd('/OPTICS/specialkb32', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb32', 0, $event)">Space</button>
             </div>
         </div>
@@ -271,6 +356,15 @@
                     userVars: [],
                     userVarPage: "",
                     stops: [],
+                    remoteReply: "",
+                    remoteTarget: "Discovering controller",
+                    queriedFolderNames: {},
+                    numTracks: 900,
+                    numFolders: 100,
+                    jumpTrackNumber: 1,
+                    renameTrackNumber: 1,
+                    renameFolderNumber: 1,
+                    renameText: "",
                 }
             },
             methods: {
@@ -279,9 +373,27 @@
                 },
                 sendOSCcmd(cmd, state = 1, event = null) {
                     socket.emit('sendOSCcmd', {cmd: cmd, state: state});
-                    if (state == 0) {
+                    if (state == 0 && event) {
                         event.target.blur();
                     }
+                },
+                sendUDPcmd(action, values = {}) {
+                    socket.emit(
+                        'sendUDPcmd',
+                        {action: action, ...values},
+                        (result) => {
+                            if (!result?.ok) {
+                                this.remoteReply =
+                                    result?.error || 'UDP command was not accepted';
+                            }
+                        }
+                    );
+                },
+                renameItem(action, number) {
+                    this.sendUDPcmd(action, {
+                        number: number,
+                        name: this.renameText
+                    });
                 },
                 moveFader(id) {
                     socket.emit('moveFader', {id: id, value: this.expressions[id].value});
@@ -350,6 +462,26 @@
 
         socket.on('userVarPage', function (page) {
             app.userVarPage = page;
+        });
+
+        socket.on('remoteReply', function (reply) {
+            app.remoteReply = reply;
+        });
+
+        socket.on('remoteTarget', function (target) {
+            app.remoteTarget = target;
+        });
+
+        socket.on('queriedFolderNames', function (names) {
+            app.queriedFolderNames = names;
+        });
+
+        socket.on('numTracks', function (count) {
+            app.numTracks = count;
+        });
+
+        socket.on('numFolders', function (count) {
+            app.numFolders = count;
         });
     </script>
 </body>

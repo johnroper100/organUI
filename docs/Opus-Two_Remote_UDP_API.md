@@ -326,10 +326,12 @@ L D S L d <20 characters>
   `Fldr`/`Tk` replies are formatted as exactly three digits (000–999). Numbers
   ≥ 1000 will render a non-digit in the hundreds position, even though the
   command parser itself accepts larger values.
-- **Name lengths.** Names in query replies are bounded by the 30-byte send
-  buffer (≈21 chars for folders, ≈23 for tracks). Inbound rename names are
-  additionally bounded by the 50-byte receive buffer, leaving roughly 26
-  characters after the command text and quotes.
+- **Name lengths.** Track and folder names have 15 visible characters. The
+  native setters use a 16-byte array including the `0X` terminator, so clients
+  must right-pad shorter quoted rename values with spaces to exactly 15
+  characters. Sending a variable-length value can trip the controller's
+  checked array assignment. Query replies are additionally bounded by the
+  30-byte send buffer.
 - **Rename is pointer-safe.** Both rename commands save the current
   track/folder pointer (and, for folders, the exact memory level), apply the
   change, and force the pointer back — so renaming never leaves the console

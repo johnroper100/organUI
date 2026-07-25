@@ -104,6 +104,11 @@ test('discovers a controller by broadcast and directs later commands to it', asy
     assert.equal(socket.sent.at(-1).message.address, '/Stops/push1');
 
     assert.equal(transport.observeFeedback('10.20.30.13', 1001), false);
+    assert.equal(
+        transport.sendTo('/OPTICS/special2037', 1, '10.20.30.99'),
+        true
+    );
+    assert.equal(socket.sent.at(-1).host, '10.20.30.99');
     transport.close();
     assert.equal(socket.closed, true);
 });
