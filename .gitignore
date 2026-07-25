@@ -132,3 +132,23 @@ dist
 # other
 
 database.json
+
+.DS_Store
+
+# Xcode
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+**/xcuserdata/
+*.xccheckout
+*.xcscmblueprint
+
+# Xcode
+DerivedData/
+.build/
+.swiftpm/
+*.xcuserstate
+**/xcuserdata/
+*.xccheckout
+*.xcscmblueprint

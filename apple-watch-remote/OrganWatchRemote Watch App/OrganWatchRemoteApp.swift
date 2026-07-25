@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct OrganRemoteWatchApp: App {
+struct OrganWatchRemote_Watch_AppApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
