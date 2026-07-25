@@ -622,6 +622,7 @@ io.on('connection', (socket) => {
         oledLines: data.oledLines,
         numTracks: conf.numTracks,
         numFolders: conf.numFolders,
+        numLevels: conf.numLevels ?? 9999,
         siteName: conf.siteName
     };
 
@@ -673,7 +674,7 @@ io.on('connection', (socket) => {
             return;
         }
 
-        if (!sendOSCCommand(`/faders/fader${id}`, value)) {
+        if (!sendOSCCommand(`/faders/fader${id + 1}`, value)) {
             return;
         }
 
@@ -745,6 +746,10 @@ app.get('/tuner', (req, res) => {
 
 app.get('/organist', (req, res) => {
     res.sendFile(path.join(__dirname, 'organist.html'));
+});
+
+app.get('/advanced', (req, res) => {
+    res.sendFile(path.join(__dirname, 'advanced.html'));
 });
 
 app.get('/sequencer', (req, res) => {

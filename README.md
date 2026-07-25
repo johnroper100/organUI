@@ -56,6 +56,15 @@ goes offline.
 npm test
 ```
 
+The browser UI is available at:
+
+- `/organist` for performance controls
+- `/tuner` for tuning, stops, naming, and recorder controls
+- `/advanced` for complete OSC-family and remote UDP command coverage
+
+The Advanced page is intentionally a direct protocol test surface. Its
+controls can change stops, memory, playback, recording, and console state.
+
 The backend validates both transports before sending. Unsupported or malformed
 requests to `POST /api/osc` or `POST /api/udp` return HTTP 400. The UDP endpoint
 accepts high-level actions rather than arbitrary controller strings, for

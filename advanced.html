@@ -1,0 +1,677 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Organ Control UI - Advanced Protocol Controls</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script type="importmap">
+        {
+            "imports": {
+                "vue": "/static/js/vue.esm-browser.js"
+            }
+        }
+    </script>
+    <style>
+        .protocol-card {
+            height: 100%;
+        }
+
+        .command-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(9rem, 1fr));
+            gap: .5rem;
+        }
+
+        .status-line {
+            min-height: 1.5rem;
+        }
+
+        .oled {
+            min-height: 7rem;
+            font-family: monospace;
+            white-space: pre-wrap;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="app">
+        <header class="container-fluid bg-secondary text-light py-3">
+            <div class="row align-items-center">
+                <div class="col-12 col-lg-4">
+                    <a class="btn btn-sm btn-outline-light me-2" href="/">Home</a>
+                    <a class="btn btn-sm btn-outline-light me-2" href="/tuner">Tuner</a>
+                    <a class="btn btn-sm btn-outline-light" href="/organist">Organist</a>
+                </div>
+                <div class="col-12 col-lg-4 text-lg-center mt-3 mt-lg-0">
+                    <h1 class="h3 mb-0">Advanced OSC / UDP</h1>
+                    <div>{{siteName}}</div>
+                </div>
+                <div class="col-12 col-lg-4 text-lg-end mt-3 mt-lg-0">
+                    <div>Controller: {{remoteTarget}}</div>
+                    <div class="small status-line">{{commandStatus}}</div>
+                </div>
+            </div>
+        </header>
+
+        <main class="container-fluid py-4">
+            <div class="alert alert-warning">
+                These controls address the controller protocol directly. Use them only
+                when it is safe for stops, playback, and recording state to change.
+            </div>
+
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <button class="nav-link" :class="{active: protocol == 'udp'}"
+                        @click="protocol = 'udp'">UDP commands</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" :class="{active: protocol == 'osc'}"
+                        @click="protocol = 'osc'">OSC commands</button>
+                </li>
+            </ul>
+
+            <section v-if="protocol == 'udp'">
+                <div class="row g-3">
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Console assistance</h2>
+                                <div class="command-grid mb-3">
+                                    <button class="btn btn-outline-danger"
+                                        @click="sendUDPcmd('generalCancel')">General Cancel</button>
+                                    <button class="btn btn-outline-primary"
+                                        @click="sendUDPcmd('queryOLED')">Query OLED</button>
+                                </div>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-6">
+                                        <label class="form-label" for="udp-piston">Piston number</label>
+                                        <input id="udp-piston" class="form-control" type="number"
+                                            min="1" v-model.number="pistonNumber">
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('showPiston', {number: pistonNumber})">
+                                            Show Piston
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label" for="udp-folder">Folder number</label>
+                                        <input id="udp-folder" class="form-control" type="number"
+                                            min="1" :max="numFolders" v-model.number="folderNumber">
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('gotoFolder', {number: folderNumber})">
+                                            Go to Folder
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('getFolderName', {number: folderNumber})">
+                                            Get Folder Name
+                                        </button>
+                                    </div>
+                                    <div class="col-6 pt-2">
+                                        <strong>{{queriedFolderNames[folderNumber] || 'No folder reply'}}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Memory levels</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-6">
+                                        <label class="form-label" for="udp-level">Level number</label>
+                                        <input id="udp-level" class="form-control" type="number"
+                                            min="1" :max="numLevels" v-model.number="levelNumber">
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('gotoLevel', {number: levelNumber})">
+                                            Go Global
+                                        </button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('gotoLocalLevel', {number: levelNumber})">
+                                            Go Local
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <label class="form-label" for="udp-repeat">Repeat (1–10)</label>
+                                        <input id="udp-repeat" class="form-control" type="number"
+                                            min="1" max="10" v-model.number="repeatCount">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('memoryLevelDown', {count: repeatCount})">
+                                            Global Down
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('memoryLevelUp', {count: repeatCount})">
+                                            Global Up
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('localMemoryLevelDown', {count: repeatCount})">
+                                            Local Down
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('localMemoryLevelUp', {count: repeatCount})">
+                                            Local Up
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Stops and general I/O buttons</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-6">
+                                        <label class="form-label" for="udp-stop">Stop number</label>
+                                        <input id="udp-stop" class="form-control" type="number"
+                                            min="1" max="253" v-model.number="stopNumber">
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('toggleStop', {number: stopNumber})">
+                                            Toggle Stop
+                                        </button>
+                                    </div>
+                                    <div class="col-12">
+                                        <label class="form-label" for="udp-button">General I/O button number</label>
+                                        <input id="udp-button" class="form-control" type="number"
+                                            min="1" v-model.number="buttonNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('clearButton', {number: buttonNumber})">
+                                            Clear
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('toggleButton', {number: buttonNumber})">
+                                            Toggle
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('setButton', {number: buttonNumber})">
+                                            Set
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Transposer</h2>
+                                <div class="command-grid">
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendUDPcmd('transposerDown', {count: repeatCount})">
+                                        Down
+                                    </button>
+                                    <button class="btn btn-outline-primary"
+                                        @click="sendUDPcmd('transposerNeutral')">Neutral</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendUDPcmd('transposerUp', {count: repeatCount})">
+                                        Up
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Rename tracks and folders</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-12">
+                                        <label class="form-label" for="udp-name">New name (15 characters)</label>
+                                        <input id="udp-name" class="form-control" type="text"
+                                            maxlength="15" v-model="renameText">
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-success w-100"
+                                            @click="sendUDPcmd('renameTrack', {number: trackNumber, name: renameText})">
+                                            Rename Track {{trackNumber}}
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-success w-100"
+                                            @click="sendUDPcmd('renameFolder', {number: folderNumber, name: renameText})">
+                                            Rename Folder {{folderNumber}}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Recorder / player</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-8">
+                                        <label class="form-label" for="udp-track">Track number</label>
+                                        <input id="udp-track" class="form-control" type="number"
+                                            min="1" :max="numTracks" v-model.number="trackNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-primary w-100"
+                                            @click="sendUDPcmd('playTrack', {number: trackNumber})">
+                                            Select &amp; Play
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendUDPcmd('getTrackName', {number: trackNumber})">
+                                            Get Track Name
+                                        </button>
+                                    </div>
+                                    <div class="col-6 pt-2">
+                                        <strong>{{trackNames[trackNumber] || 'No track reply'}}</strong>
+                                    </div>
+                                </div>
+                                <div class="command-grid mt-3">
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendUDPcmd('trackDown', {count: repeatCount})">Track Down</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendUDPcmd('trackUp', {count: repeatCount})">Track Up</button>
+                                    <button class="btn btn-outline-success"
+                                        @click="sendUDPcmd('playToggle')">Play / Toggle</button>
+                                    <button class="btn btn-outline-warning"
+                                        @click="sendUDPcmd('pause')">Pause</button>
+                                    <button class="btn btn-outline-danger"
+                                        @click="sendUDPcmd('recordToggle')">Record / Toggle</button>
+                                    <button class="btn btn-outline-primary"
+                                        @click="sendUDPcmd('toggleTrackLock')">Toggle Track Lock</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12">
+                        <div class="card">
+                            <div class="card-body">
+                                <h2 class="h5">OLED reply</h2>
+                                <div class="oled bg-dark text-light p-3">
+                                    <div v-for="(line, index) in oledLines" :key="index">
+                                        {{line || '—'}}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <section v-if="protocol == 'osc'">
+                <div class="row g-3">
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Stops</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-6">
+                                        <label class="form-label" for="osc-stop">Stop/button (1–253)</label>
+                                        <input id="osc-stop" class="form-control" type="number"
+                                            min="1" max="253" v-model.number="stopNumber">
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="tapOSC('/Stops/push' + stopNumber)">
+                                            Toggle Latch
+                                        </button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @touchstart="sendOSC('/Stops/trigger' + stopNumber, 1)"
+                                            @touchend="sendOSC('/Stops/trigger' + stopNumber, 0, $event)">
+                                            Hold Trigger
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Musical keyboard</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-note">Key/note (1–25)</label>
+                                        <input id="osc-note" class="form-control" type="number"
+                                            min="1" max="25" v-model.number="noteNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-success w-100"
+                                            @touchstart="sendOSC('/keyboard/key' + noteNumber, 1)"
+                                            @touchend="sendOSC('/keyboard/key' + noteNumber, 0, $event)">
+                                            Hold Note
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Pistons and special controls</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-piston">Piston (1–99)</label>
+                                        <input id="osc-piston" class="form-control" type="number"
+                                            min="1" max="99" v-model.number="pistonNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="tapOSC('/OPTICS/special' + (1899 + Number(pistonNumber)))">
+                                            Recall / Store
+                                        </button>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-special">Special selector</label>
+                                        <input id="osc-special" class="form-control" type="number"
+                                            min="1898" :max="2100 + numTracks"
+                                            v-model.number="specialNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @touchstart="sendOSC('/OPTICS/special' + specialNumber, 1)"
+                                            @touchend="sendOSC('/OPTICS/special' + specialNumber, 0, $event)">
+                                            Hold Special
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="command-grid mt-3">
+                                    <button class="btn btn-outline-danger"
+                                        @click="tapOSC('/OPTICS/special1999')">Piston Set</button>
+                                    <button class="btn btn-outline-danger"
+                                        @click="tapOSC('/OPTICS/special2000')">Cancel</button>
+                                    <button class="btn btn-outline-primary"
+                                        @click="tapOSC('/OPTICS/special2001')">Refresh Buttons</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="tapOSC('/OPTICS/special2038')">Memory Up</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="tapOSC('/OPTICS/special2039')">Memory Down</button>
+                                    <button class="btn btn-outline-danger"
+                                        @click="tapOSC('/OPTICS/special2037')">Stop Playback</button>
+                                </div>
+                                <details class="mt-3">
+                                    <summary>Documented selector reference</summary>
+                                    <div class="small mt-2">
+                                        1898 coupler; 1900–1998 pistons; 1999 Set; 2000 Cancel;
+                                        2001 refresh; 2010–2017 tuner/sostenuto; 2020–2029 couplers;
+                                        2030–2043 recorder, memory, folder, and track controls;
+                                        2044–2052 copy controls; 2101+ direct track play.
+                                    </div>
+                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Text-entry keyboard</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-text">Printable text</label>
+                                        <input id="osc-text" class="form-control" type="text"
+                                            v-model="oscText" placeholder="ASCII space through z">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendOSCText">Send Text</button>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-key-code">Raw key code (8–122)</label>
+                                        <input id="osc-key-code" class="form-control" type="number"
+                                            min="8" max="122" v-model.number="keyCode">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="sendOSCKey(keyCode)">Send Code</button>
+                                    </div>
+                                </div>
+                                <div class="command-grid mt-3">
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendOSCKey(8)">Delete</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendOSCKey(13)">Enter</button>
+                                    <button class="btn btn-outline-success"
+                                        @click="sendOSCKey(14)">Save Track</button>
+                                    <button class="btn btn-outline-success"
+                                        @click="sendOSCKey(15)">Save Folder</button>
+                                    <button class="btn btn-outline-danger"
+                                        @click="sendOSCKey(27)">Escape / Clear</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendOSCKey(28)">Shift</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="sendOSCKey(32)">Space</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Faders</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-4">
+                                        <label class="form-label" for="osc-fader">Fader (1–32)</label>
+                                        <input id="osc-fader" class="form-control" type="number"
+                                            min="1" max="32" v-model.number="faderNumber">
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-fader-value">
+                                            Value: {{Number(faderValue).toFixed(3)}}
+                                        </label>
+                                        <input id="osc-fader-value" class="form-range" type="range"
+                                            min="0" max="1" step="0.001" v-model.number="faderValue">
+                                    </div>
+                                    <div class="col-12">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendFader">Send Fader Value</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">User variables</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-6">
+                                        <label class="form-label" for="osc-user-slot">Bank slot (1–10)</label>
+                                        <input id="osc-user-slot" class="form-control" type="number"
+                                            min="1" max="10" v-model.number="userSlot">
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="tapOSC('/UserDef/dec' + userSlot)">Decrease</button>
+                                    </div>
+                                    <div class="col-3">
+                                        <button class="btn btn-outline-secondary w-100"
+                                            @click="tapOSC('/UserDef/inc' + userSlot)">Increase</button>
+                                    </div>
+                                </div>
+                                <div class="command-grid mt-3">
+                                    <button class="btn btn-outline-secondary"
+                                        @click="tapOSC('/UserDef/dec999')">Previous Page</button>
+                                    <button class="btn btn-outline-secondary"
+                                        @click="tapOSC('/UserDef/inc999')">Next Page</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script src="/static/js/osc-pointer-bridge.js"></script>
+    <script type="module">
+        import { createApp } from 'vue'
+
+        const socket = io();
+        const app = createApp({
+            data() {
+                return {
+                    protocol: "udp",
+                    siteName: "",
+                    remoteTarget: "Discovering controller",
+                    remoteReply: "",
+                    commandStatus: "",
+                    numTracks: 900,
+                    numFolders: 100,
+                    numLevels: 9999,
+                    trackNames: {},
+                    queriedFolderNames: {},
+                    oledLines: ["", "", "", ""],
+                    pistonNumber: 1,
+                    folderNumber: 1,
+                    levelNumber: 1,
+                    repeatCount: 1,
+                    stopNumber: 1,
+                    buttonNumber: 1,
+                    trackNumber: 1,
+                    renameText: "",
+                    noteNumber: 1,
+                    specialNumber: 2001,
+                    oscText: "",
+                    keyCode: 13,
+                    faderNumber: 1,
+                    faderValue: 0,
+                    userSlot: 1
+                };
+            },
+            methods: {
+                sendUDPcmd(action, values = {}) {
+                    this.commandStatus = "Sending UDP " + action + "…";
+                    socket.emit(
+                        "sendUDPcmd",
+                        {action: action, ...values},
+                        result => {
+                            this.commandStatus = result?.ok
+                                ? "Sent: " + result.commands.join(" · ")
+                                : result?.error || "UDP command was not accepted";
+                        }
+                    );
+                },
+                sendOSC(cmd, state = 1, event = null) {
+                    socket.emit("sendOSCcmd", {cmd: cmd, state: Number(state)});
+                    this.commandStatus = "Sent OSC " + cmd + " = " + state;
+                    if (state == 0 && event?.target) {
+                        event.target.blur();
+                    }
+                },
+                tapOSC(cmd) {
+                    this.sendOSC(cmd, 1);
+                    window.setTimeout(() => this.sendOSC(cmd, 0), 80);
+                },
+                sendOSCKey(code) {
+                    const numericCode = Number(code);
+                    const isControlCode = [8, 13, 14, 15, 27, 28, 32]
+                        .includes(numericCode);
+                    const isPrintableCode =
+                        numericCode >= 33 && numericCode <= 122;
+                    if (
+                        !Number.isInteger(numericCode)
+                        || (!isControlCode && !isPrintableCode)
+                    ) {
+                        this.commandStatus =
+                            "Unsupported OSC key code; use a named control or 33–122";
+                        return;
+                    }
+                    this.tapOSC("/OPTICS/specialkb" + numericCode);
+                },
+                sendOSCText() {
+                    const codes = Array.from(this.oscText, character =>
+                        character.charCodeAt(0)
+                    );
+                    if (codes.some(code => code < 32 || code > 122)) {
+                        this.commandStatus =
+                            "OSC text supports ASCII characters from space through z";
+                        return;
+                    }
+                    codes.forEach((code, index) => {
+                        window.setTimeout(() => this.sendOSCKey(code), index * 100);
+                    });
+                },
+                sendFader() {
+                    const number = Number(this.faderNumber);
+                    const value = Number(this.faderValue);
+                    if (
+                        !Number.isInteger(number)
+                        || number < 1
+                        || number > 32
+                        || !Number.isFinite(value)
+                        || value < 0
+                        || value > 1
+                    ) {
+                        this.commandStatus = "OSC fader or value is out of range";
+                        return;
+                    }
+                    this.sendOSC("/faders/fader" + number, value);
+                }
+            }
+        }).mount("#app");
+
+        const stateEvents = {
+            siteName: "siteName",
+            remoteTarget: "remoteTarget",
+            remoteReply: "remoteReply",
+            numTracks: "numTracks",
+            numFolders: "numFolders",
+            numLevels: "numLevels",
+            trackNames: "trackNames",
+            queriedFolderNames: "queriedFolderNames",
+            oledLines: "oledLines"
+        };
+
+        for (const [eventName, property] of Object.entries(stateEvents)) {
+            socket.on(eventName, value => {
+                app[property] = value;
+                if (eventName == "remoteReply") {
+                    app.commandStatus = value;
+                }
+            });
+        }
+    </script>
+</body>
+
+</html>
