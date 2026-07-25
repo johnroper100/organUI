@@ -1,0 +1,291 @@
+# Opus-Two OSC Interface — Client Developer Reference
+
+Derived from `OSC.mod` (module `OSC`, version `2.0.2`).
+
+This document describes the OSC control surface exposed by the Opus-Two
+console so that a developer can build a controller client (e.g. a TouchOSC /
+custom-app style panel) that drives the console and receives live feedback
+from it.
+
+---
+
+## 1. Transport and connection model
+
+- **Protocol:** UDP, carrying standard OSC 1.0 packets.
+- **Client → controller:** send OSC messages to the organ controller on
+  **UDP port 8000**.
+- **Controller → client:** the controller sends feedback on **UDP port 9000**.
+  Your client must **listen on UDP 9000** to receive button colors, labels,
+  etc.
+- **Client discovery:** the controller does **not** need to be pre-told client
+  addresses. On every inbound OSC packet it records the sender into an
+  8-entry client table. Outbound feedback is then sent to every live entry.
+  A client "registers" simply by **sending any OSC message** to the
+  controller.
+- **Keep-alive / aging:** client table entries age out after roughly
+  **15 minutes** of silence. To keep receiving feedback, send traffic
+  periodically (any registered address works as a ping).
+- **One message per packet:** send exactly **one OSC message per UDP packet**.
+  Do **not** use OSC bundles.
+- **Keep messages small:** the effective limit is on the order of **~48 bytes
+  per OSC message**, so keep addresses short. Large/blob payloads are not
+  supported.
+
+---
+
+## 2. OSC message wire format
+
+The controller expects conventional OSC 1.0 framing. A message is:
+
+```
+<address>  <null padding to 4-byte boundary>  <typetag string>  <null pad>  <argument>
+```
+
+### 2.1 Address + embedded object number
+
+The controller matches an inbound address against a fixed set of base paths
+(Section 3). The **object number is appended directly to the base path as
+ASCII digits** — there is no separator.
+
+```
+/Stops/push42       -> base "/Stops/push",      object 42
+/faders/fader3      -> base "/faders/fader",     object 3
+/OPTICS/special2036 -> base "/OPTICS/special",   object 2036
+```
+
+Follow the exact base-path forms in Section 3, with the number appended
+directly.
+
+### 2.2 Type tag and argument
+
+Use one of two argument types:
+
+- `,i` — 32-bit **big-endian** integer
+- `,f` — 32-bit **big-endian** IEEE float
+
+Arguments sit at the next 4-byte-aligned offset after the type tag; standard
+OSC alignment satisfies this.
+
+### 2.3 How the argument becomes a "press"
+
+For every style, the raw argument is reduced to a boolean **`state`**:
+
+- `,i` → `state = (value > 0)`
+- `,f` → `state = (value > 0.0)` (except Fader, which keeps the float)
+
+So a typical momentary button sends `,i 1` on press and `,i 0` on release; a
+fader sends `,f` with a value in **0.0 – 1.0**.
+
+---
+
+## 3. Inbound command reference (client → controller)
+
+These are the address bases the controller listens for, with the dispatch
+"style" each is bound to.
+
+| Base address          | Style       | Argument | Object number meaning                  |
+|-----------------------|-------------|----------|----------------------------------------|
+| `/Stops/push`         | Latch       | `,i`/`,f`| Stop/button index (toggles on press)   |
+| `/Stops/trigger`      | Momentary   | `,i`/`,f`| Stop/button index (follows arg state)  |
+| `/keyboard/key`       | Note        | `,i`/`,f`| Key/note index (note on/off)           |
+| `/OPTICS/specialkb`   | Specialkb   | `,i`/`,f`| Virtual-keyboard key code (see 3.4)    |
+| `/OPTICS/special`     | Special     | `,i`/`,f`| Special-control number (see 3.5 table) |
+| `/faders/fader`       | Fader       | `,f`     | Fader index (1-based); value 0.0–1.0   |
+| `/UserDef/inc`        | UserDef     | `,i`/`,f`| User-variable slot (increment)         |
+| `/UserDef/dec`        | UserDef     | `,i`/`,f`| User-variable slot (decrement)         |
+
+### 3.1 Latch — `/Stops/push<n>`
+
+Toggles button state for `<n>` **only on the press edge** (fires when `state`
+is true; ignores release). Each toggle echoes a color update back to all
+clients (Section 4). Use this for stop tabs / pistons drawn as on/off.
+
+### 3.2 Momentary — `/Stops/trigger<n>`
+
+Sets button `<n>` state directly to the incoming `state` (press → on,
+release → off). Use for controls that should hold only while pressed.
+
+### 3.3 Note — `/keyboard/key<n>`
+
+Sets note `<n>` on/off and records it into the live key buffer. Note state is
+tracked separately from button state and colored differently in feedback
+(Section 4.2).
+
+### 3.4 Specialkb — `/OPTICS/specialkb<n>`
+
+A **text-entry keyboard** used for naming (tracks/folders), not a musical
+keyboard. `<n>` is a key code, processed only on the press edge:
+
+- `28` — Shift (toggles shift for the next character)
+- `8`  — Backspace/Delete
+- `13` — Enter (no-op in current build)
+- `14` — Commit current text as the **Track name**
+- `15` — Commit current text as the **Folder name**
+- `27` — Escape (clears the in-progress name)
+- `32` — Space
+- `33`–`122` — Printable ASCII (`!` through `z`); with Shift active the code
+  is offset to produce the shifted character.
+
+Characters accumulate into an internal name buffer that auto-stops at its last
+position.
+
+### 3.5 Special — `/OPTICS/special<n>`
+
+Most actions fire on the press edge only. `<n>` is a function selector:
+
+| `<n>`        | Action                                                            |
+|--------------|-------------------------------------------------------------------|
+| `1898`       | Coupler toggle (treated with the 2020–2029 coupler group)         |
+| `1900`–`1998`| **Piston** `<n>−1899` (1–99): recall it; or **store** it if Set is armed |
+| `1999`       | Piston **Set** arm/disarm (toggles; echoes red when armed, blue when not) |
+| `2000`       | Cancel / general clear                                            |
+| `2001`       | Force button refresh                                              |
+| `2010`       | Sostenuto toggle                                                  |
+| `2011`       | Sostenuto release                                                 |
+| `2012`       | Magic Tuner toggle                                                |
+| `2013`       | Tuner pattern advance (cycles 0–5)                                |
+| `2014`       | Tuner "Back" (flashes; see feedback)                              |
+| `2015`       | Tuner "Next" (flashes; see feedback)                              |
+| `2016`       | Held bit (acts on both press and release)                        |
+| `2017`       | Reset Magic Tuner note                                            |
+| `2020`–`2029`| Coupler toggles                                                   |
+| `2030`       | Track +10                                                         |
+| `2031`       | Track +1                                                          |
+| `2032`       | Track −1                                                          |
+| `2033`       | Track −10                                                         |
+| `2034`       | Record-protect toggle                                            |
+| `2035`       | Record (go/stop logic)                                            |
+| `2036`       | Play (toggle)                                                     |
+| `2037`       | Stop (cancels record/play/pause)                                  |
+| `2038`       | Memory level **up**                                              |
+| `2039`       | Memory level **down**                                            |
+| `2040`       | Folder (organist) up                                             |
+| `2041`       | Folder (organist) down                                           |
+| `2042`       | Track up                                                          |
+| `2043`       | Track down                                                        |
+| `2044`/`2045`| Copy **source** +1 / −1                                          |
+| `2046`/`2047`| Copy **target** +1 / −1                                          |
+| `2048`/`2049`| Copy **source** +10 / −10                                        |
+| `2050`/`2051`| Copy **target** +10 / −10                                        |
+| `2052`       | Fire track copy (only if record/write enabled)                   |
+| `> 2100`     | Jump to track `<n>−2100` and start playing                       |
+
+### 3.6 Fader — `/faders/fader<n>`
+
+`<n>` is **1-based**. The float argument is stored as the live fader value
+(range **0.0–1.0**); consumers scale it as needed.
+
+### 3.7 UserDef — `/UserDef/inc<n>` / `/UserDef/dec<n>`
+
+Increments/decrements a user variable. Variables are **paged in banks of 10**:
+
+```
+effective slot = (current page - 1) * 10 + <n>
+```
+
+- Sending `<n> = 999` is a **page sentinel**: `/UserDef/inc999` advances the
+  page (max 50), `/UserDef/dec999` retreats it (min 0).
+- The current page is reported back on `/UserDef/page` (Section 4).
+
+---
+
+## 4. Outbound feedback reference (controller → client)
+
+The controller pushes UI state to every registered client (on UDP 9000). A
+client should listen for these and update its display.
+
+### 4.1 Button/label color — `<base><number>/color`, `,s <color>`
+
+The base path with the object number appended, then the literal suffix
+`/color`, with a single string argument naming the color. Example:
+`/Stops/push42/color` arg `,s "green"`.
+
+Color strings used: `red`, `orange`, `blue`, `green`, `purple`, `brown`,
+`gray`.
+
+State→color conventions:
+
+- **Keyboard keys** (`/keyboard/key<n>/color`): on = `green`; off = `purple`
+  (even `<n>`) or `brown` (odd `<n>`).
+- **Tuner Back/Next** (`/OPTICS/special2014`, `…2015`): active = `red`,
+  idle = `orange`; they also **flash** red/orange while their timers run.
+- **Other `/OPTICS/special<n>`**: on = `red`, off = `blue`.
+- **Transport:** Play `2036` = `green`/`gray`, Record `2035` = `red`/`gray`.
+- **Everything else** (e.g. `/Stops/push<n>`): on = `green`, off = `purple`.
+
+### 4.2 Text labels — `<base><number>`, `,s <text>`
+
+A single string argument carrying display text. These are pushed on a rotating
+"burst" cycle. Known label targets:
+
+| Address + number          | Content                                   |
+|---------------------------|-------------------------------------------|
+| `/Stops/label300`         | Uptime (`Uptime: H:MM:SS`)                |
+| `/Stops/label301`         | Magic Tuner note (e.g. `C4 - #61`, or `Off`) |
+| `/Stops/label305`         | Current track name                        |
+| `/Stops/label306`         | Current folder/organist name              |
+| `/Stops/label307`         | In-progress name buffer                   |
+| `/Stops/LabelSpecial4`    | Tuner pattern name (Chromatic, Diatonic, Tierce C/C#/D/D#) |
+| `/RP/label328`            | Organist (folder) number                  |
+| `/RP/label329`            | Reserved memory level                     |
+| `/RP/label330`/`331`/`332`| Play/record minutes / seconds / `MM:SS`   |
+| `/RP/label340`            | Transposer (semitones, or `Off`)          |
+| `/RP/label350`            | Write-protect state (`0` = enabled, `1` = protected) |
+| `/TrackDup/SrcTrk1`       | Copy source track                         |
+| `/TrackDup/TgtTrk1`       | Copy target track                         |
+| `/UserDef/page1`          | Current user-var page (or `Off`)          |
+| `/UserDef/label<1..10>`   | User-variable names for the current page  |
+| `/UserDef/value<1..10>`   | User-variable values for the current page |
+| `/UserDef/label991`       | Cycles-since-keypress seconds             |
+| `/UserDef/label992`       | Uptime seconds                            |
+
+### 4.3 Device vibrate — `/vibrate` (no argument)
+
+A bare `/vibrate` address with no arguments (intended to buzz a controller).
+
+---
+
+## 5. Worked examples
+
+The byte layouts below assume standard OSC padding; `··` marks null padding to
+the next 4-byte boundary. All are sent to the controller on **UDP 8000**.
+
+**Press stop 42 (latching tab):**
+```
+address : "/Stops/push42\0··"
+typetag : ",i\0\0"
+arg     : 00 00 00 01           (big-endian int 1)
+```
+For Latch, the release edge is ignored; sending an int `0` release is harmless.
+
+**Momentary trigger of stop 7, held then released:**
+```
+press   : "/Stops/trigger7\0"  ",i\0\0"  00 00 00 01
+release : "/Stops/trigger7\0"  ",i\0\0"  00 00 00 00
+```
+
+**Note-on for key 13:**
+```
+"/keyboard/key13\0"  ",i\0\0"  00 00 00 01
+```
+
+**Expression fader 1 to 75%:**
+```
+"/faders/fader1\0··"  ",f\0\0"  3F 40 00 00   (big-endian float 0.75)
+```
+
+**Recall piston 5 (special 1904):**
+```
+"/OPTICS/special1904\0"  ",i\0\0"  00 00 00 01
+```
+
+**Arm Set, then store piston 5:**
+```
+"/OPTICS/special1999\0"  ",i\0\0"  00 00 00 01    (arm Set; expect red echo)
+"/OPTICS/special1904\0"  ",i\0\0"  00 00 00 01    (stores current to piston 5)
+```
+
+**Advance user-variable page:**
+```
+"/UserDef/inc999\0"  ",i\0\0"  00 00 00 01
+```
