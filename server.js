@@ -5,7 +5,7 @@ const os = require('os');
 const fs = require('fs');
 const { Bonjour } = require('bonjour-service');
 const { Server: SocketServer } = require('socket.io');
-const { Client: OSCClient, Server: OSCServer } = require('node-osc');
+const { Server: OSCServer } = require('node-osc');
 const {
     colorToBinary,
     labelToBinary,
@@ -13,6 +13,9 @@ const {
     parseOSCMessage,
     validateOSCCommand
 } = require('./lib/osc-protocol');
+const {
+    OSCControllerTransport
+} = require('./lib/osc-controller-transport');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -34,8 +37,12 @@ function readPort(environmentName, configName, fallback) {
     return port;
 }
 
-function readHost(environmentName, configName, fallback) {
-    const candidate = process.env[environmentName] ?? conf[configName] ?? fallback;
+function readOptionalHost(environmentName, configName) {
+    const candidate = process.env[environmentName] ?? conf[configName];
+
+    if (candidate === undefined || candidate === null) {
+        return null;
+    }
 
     if (typeof candidate !== 'string' || candidate.trim().length === 0) {
         throw new Error(`${environmentName}/${configName} must be a non-empty host`);
@@ -44,12 +51,11 @@ function readHost(environmentName, configName, fallback) {
     return candidate.trim();
 }
 
-const oscTargetHost = readHost('OPUS_OSC_HOST', 'oscHost', '192.168.175.12');
+const configuredOscTargetHost = readOptionalHost('OPUS_OSC_HOST', 'oscHost');
 const oscTargetPort = readPort('OPUS_OSC_SEND_PORT', 'oscSendPort', 8000);
 const oscListenPort = readPort('OPUS_OSC_LISTEN_PORT', 'oscListenPort', 9000);
 const httpPort = readPort('ORGANUI_HTTP_PORT', 'httpPort', 3000);
 
-const oscClient = new OSCClient(oscTargetHost, oscTargetPort);
 const oscServer = new OSCServer(oscListenPort, '0.0.0.0');
 const bonjour = new Bonjour();
 const remoteActionCommands = {
@@ -58,6 +64,15 @@ const remoteActionCommands = {
 };
 const remoteActionHoldDurationMs = 120;
 const pendingMomentaryReleases = new Map();
+const feedbackFamilies = new Set([
+    'RP',
+    'TrackDup',
+    'faders',
+    'keyboard',
+    'Stops',
+    'UserDef',
+    'OPTICS'
+]);
 
 const data = {
     trackNum: 'Track Name',
@@ -87,6 +102,23 @@ const data = {
 for (let index = 1; index <= 10; index += 1) {
     data.trackNames[index] = '';
 }
+
+const oscTransport = new OSCControllerTransport({
+    configuredHost: configuredOscTargetHost,
+    port: oscTargetPort,
+    onControllerDiscovered: (host) => {
+        console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
+    },
+    onControllerLost: (host) => {
+        console.warn(
+            `OSC controller at ${host} stopped responding; resuming discovery`
+        );
+        updateScalar('uptime', 'uptime', 'Not Connected');
+    },
+    onError: (error) => {
+        console.error('OSC transport error:', error);
+    }
+});
 
 // Coalesce repeated refresh updates into at most one Socket.IO event of each
 // type per event-loop turn. Event names and payload shapes remain unchanged.
@@ -146,11 +178,10 @@ function sendOSCCommand(cmd, state) {
         return false;
     }
 
-    oscClient.send(cmd, state, (error) => {
-        if (error) {
-            console.error(`Failed to send OSC command ${cmd}:`, error);
-        }
-    });
+    if (!oscTransport.send(cmd, state)) {
+        console.warn(`No OSC controller is available for command ${cmd}`);
+        return false;
+    }
 
     return true;
 }
@@ -181,7 +212,7 @@ function triggerRemoteAction(action) {
 }
 
 function sendSubscribeMessage() {
-    sendOSCCommand('/OPTICS/special2001', 1);
+    oscTransport.refresh();
 }
 
 function isText(value) {
@@ -364,13 +395,19 @@ function handleOPTICSMessage(parts, value) {
     }
 }
 
-function handleOSCMessage(message) {
+function handleOSCMessage(message, rinfo) {
     const parsed = parseOSCMessage(message);
     if (parsed === null) {
         return;
     }
 
     const { parts, value } = parsed;
+    if (
+        !feedbackFamilies.has(parts[0])
+        || !oscTransport.observeFeedback(rinfo?.address)
+    ) {
+        return;
+    }
 
     try {
         if (parts[0] === 'RP') {
@@ -482,7 +519,12 @@ app.post('/api/osc', (req, res) => {
         return res.status(400).json({ error: validation.error });
     }
 
-    sendOSCCommand(validation.value.cmd, validation.value.state);
+    if (!sendOSCCommand(validation.value.cmd, validation.value.state)) {
+        return res.status(503).json({
+            error: 'no OSC controller has been discovered'
+        });
+    }
+
     return res.status(202).json({ ok: true });
 });
 
@@ -496,8 +538,14 @@ app.post('/api/remote-action', (req, res) => {
         return res.status(400).json({ error: 'action must be a non-empty string' });
     }
 
-    if (!triggerRemoteAction(action)) {
+    if (!Object.hasOwn(remoteActionCommands, action)) {
         return res.status(400).json({ error: 'unsupported action' });
+    }
+
+    if (!triggerRemoteAction(action)) {
+        return res.status(503).json({
+            error: 'no OSC controller has been discovered'
+        });
     }
 
     return res.status(202).json({ ok: true });
@@ -546,7 +594,13 @@ httpServer.listen(httpPort, () => {
     });
 
     console.log(`HTTP Server is listening on *:${httpPort}`);
-    console.log(`OSC commands are being sent to ${oscTargetHost}:${oscTargetPort}`);
+    if (configuredOscTargetHost === null) {
+        console.log(`Discovering OSC controllers on UDP port ${oscTargetPort}`);
+    } else {
+        console.log(
+            `OSC controller override is ${configuredOscTargetHost}:${oscTargetPort}`
+        );
+    }
     console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
 });
 
@@ -579,9 +633,9 @@ function shutdown(exitCode = 0) {
     }
 
     try {
-        oscClient.close();
+        oscTransport.close();
     } catch (error) {
-        console.error('Failed to close OSC client:', error);
+        console.error('Failed to close OSC transport:', error);
     }
 
     try {
