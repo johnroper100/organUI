@@ -35,6 +35,9 @@ const {
 const {
     CapacityDiscovery
 } = require('./lib/capacity-discovery');
+const {
+    persistDiscoveredCapacity
+} = require('./lib/config-capacity');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -328,6 +331,13 @@ function applyDiscoveredCapacity(limits) {
     }
 
     applyRuntimeCapacity(limits);
+    try {
+        persistDiscoveredCapacity(confPath, conf, limits);
+    } catch (error) {
+        console.warn(
+            `Could not save discovered capacity to conf.json: ${error.message}`
+        );
+    }
     console.log(
         `Discovered controller capacity: ${limits.numTracks} tracks, `
         + `${limits.numFolders} folders, and ${limits.numLevels} levels`

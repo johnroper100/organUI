@@ -32,6 +32,8 @@ commands and the range-checked local-level command to discover the controller's
 capacities. The prior local memory level is restored after the bounded probes.
 The `numTracks`, `numFolders`, and `numLevels` values in `conf.json` are retained
 as fallbacks when those probes time out or the controller is unavailable.
+Successful discovery writes the current values back to `conf.json`, keeping
+those fallbacks synchronized with the most recently connected controller.
 
 - Opus-Two remote UDP command/reply port: `5005`
 - SSDP discovery port/group: `1900` / `239.255.255.250`
