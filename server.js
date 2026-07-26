@@ -29,6 +29,9 @@ const {
 const {
     buildNameInventoryRequests
 } = require('./lib/name-inventory');
+const {
+    CapacityDiscovery
+} = require('./lib/capacity-discovery');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -80,6 +83,8 @@ const remoteActionHoldDurationMs = 120;
 const nameInventoryQueryIntervalMs = 50;
 const nameInventoryRefreshIntervalMs = 5 * 60 * 1000;
 const pendingMomentaryReleases = new Map();
+let capacityDiscovery = null;
+let capacityDiscoveryAttempted = false;
 const feedbackFamilies = new Set([
     'RP',
     'TrackDup',
@@ -160,6 +165,8 @@ const oscTransport = new OSCControllerTransport({
         console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
         updateRemoteTarget();
         if (
+            !beginCapacityDiscovery()
+            &&
             nameInventoryEnabled
             && data.nameInventoryStatus.phase === 'unavailable'
         ) {
@@ -172,6 +179,10 @@ const oscTransport = new OSCControllerTransport({
         );
         updateScalar('uptime', 'uptime', 'Not Connected');
         updateRemoteTarget();
+        if (opusUdpTransport.discoveredHost === null) {
+            resetCapacityDiscovery();
+            beginCapacityDiscovery();
+        }
     },
     onError: (error) => {
         console.error('OSC transport error:', error);
@@ -196,6 +207,8 @@ const opusUdpTransport = new OpusUDPTransport({
         console.log(`Discovered Opus-Two UDP controller at ${host}:${opusUdpPort}`);
         updateScalar('remoteTarget', 'remoteTarget', `${host} (SSDP)`);
         if (
+            !beginCapacityDiscovery()
+            &&
             nameInventoryEnabled
             && data.nameInventoryStatus.phase === 'unavailable'
         ) {
@@ -207,13 +220,137 @@ const opusUdpTransport = new OpusUDPTransport({
             `Opus-Two UDP controller at ${host} stopped announcing; using discovery fallbacks`
         );
         updateRemoteTarget();
+        resetCapacityDiscovery();
+        beginCapacityDiscovery();
     },
     onReply: handleRemoteReply,
     onError: (error) => {
         console.error('Opus-Two UDP transport error:', error);
     }
 });
+
+capacityDiscovery = new CapacityDiscovery({
+    sendProbe: (kind, number) => opusUdpTransport.send(
+        kind === 'track'
+            ? `Query Get Track Name ${number}`
+            : `CA Get Folder Name ${number}`
+    ),
+    onComplete: applyDiscoveredCapacity,
+    onFailure: handleCapacityDiscoveryFailure
+});
 setImmediate(updateRemoteTarget);
+
+function beginCapacityDiscovery() {
+    if (
+        capacityDiscovery === null
+        || capacityDiscovery.running
+        || capacityDiscoveryAttempted
+        || opusUdpTransport.targetHost === null
+    ) {
+        return false;
+    }
+
+    capacityDiscoveryAttempted = true;
+    updateNameInventoryStatus({
+        phase: 'discovering',
+        sent: 0,
+        message: 'Discovering track and folder capacity'
+    });
+    return capacityDiscovery.start();
+}
+
+function resetCapacityDiscovery() {
+    capacityDiscovery?.cancel();
+    capacityDiscoveryAttempted = false;
+}
+
+function pruneInventoryAbove(names, maximum) {
+    let changed = false;
+    for (const key of Object.keys(names)) {
+        if (Number(key) > maximum) {
+            delete names[key];
+            changed = true;
+        }
+    }
+    return changed;
+}
+
+function applyRuntimeCapacity(limits) {
+    remoteLimits.numTracks = limits.numTracks;
+    remoteLimits.numFolders = limits.numFolders;
+
+    const trackNamesChanged = pruneInventoryAbove(
+        data.udpTrackNames,
+        limits.numTracks
+    );
+    pruneInventoryAbove(data.trackNames, limits.numTracks);
+    const folderNamesChanged = pruneInventoryAbove(
+        data.queriedFolderNames,
+        limits.numFolders
+    );
+
+    data.nameInventoryStatus.total = limits.numTracks + limits.numFolders;
+    emitState('numTracks', limits.numTracks);
+    emitState('numFolders', limits.numFolders);
+    if (trackNamesChanged) {
+        emitState('trackNames', data.trackNames);
+        emitState('udpTrackNames', data.udpTrackNames);
+    }
+    if (folderNamesChanged) {
+        emitState('queriedFolderNames', data.queriedFolderNames);
+    }
+}
+
+function applyDiscoveredCapacity(limits) {
+    if (
+        !Number.isInteger(limits.numTracks)
+        || limits.numTracks < 1
+        || !Number.isInteger(limits.numFolders)
+        || limits.numFolders < 1
+    ) {
+        handleCapacityDiscoveryFailure(
+            new Error('controller reported an empty track or folder range')
+        );
+        return;
+    }
+
+    applyRuntimeCapacity(limits);
+    console.log(
+        `Discovered controller capacity: ${limits.numTracks} tracks, `
+        + `${limits.numFolders} folders`
+    );
+    updateNameInventoryStatus({
+        phase: 'idle',
+        sent: 0,
+        total: limits.numTracks + limits.numFolders,
+        message: `Discovered ${limits.numTracks} tracks and `
+            + `${limits.numFolders} folders`
+    });
+
+    if (nameInventoryEnabled) {
+        refreshNameInventory();
+    }
+}
+
+function handleCapacityDiscoveryFailure(error) {
+    console.warn(
+        `Capacity discovery failed; using configured limits: ${error.message}`
+    );
+    applyRuntimeCapacity({
+        numTracks: conf.numTracks,
+        numFolders: conf.numFolders
+    });
+    updateNameInventoryStatus({
+        phase: 'idle',
+        sent: 0,
+        total: conf.numTracks + conf.numFolders,
+        message: 'Using configured track and folder capacity'
+    });
+
+    if (nameInventoryEnabled) {
+        refreshNameInventory();
+    }
+}
 
 // Coalesce repeated refresh updates into at most one Socket.IO event of each
 // type per event-loop turn. Event names and payload shapes remain unchanged.
@@ -297,6 +434,13 @@ function sendRawOSCCommand(cmd, state) {
 const oscFallbackPresses = new Set();
 
 function sendUDPRequest(request) {
+    if (capacityDiscovery?.running) {
+        return {
+            ok: false,
+            error: 'controller capacity discovery is in progress'
+        };
+    }
+
     let commands;
     try {
         commands = buildRemoteCommands(request, remoteLimits);
@@ -338,7 +482,9 @@ function updateNameInventoryStatus(values) {
 }
 
 function updateInventoryName(kind, number, name) {
-    const limit = kind === 'track' ? conf.numTracks : conf.numFolders;
+    const limit = kind === 'track'
+        ? remoteLimits.numTracks
+        : remoteLimits.numFolders;
     if (
         !Number.isInteger(number)
         || number < 1
@@ -388,6 +534,22 @@ function finishNameInventoryRefresh(values) {
 
 function refreshNameInventory() {
     nameInventoryEnabled = true;
+    if (capacityDiscovery?.running) {
+        return {
+            ok: true,
+            started: true,
+            discovering: true,
+            status: { ...data.nameInventoryStatus }
+        };
+    }
+    if (beginCapacityDiscovery()) {
+        return {
+            ok: true,
+            started: true,
+            discovering: true,
+            status: { ...data.nameInventoryStatus }
+        };
+    }
     if (nameInventoryTimer !== null) {
         return {
             ok: true,
@@ -397,8 +559,8 @@ function refreshNameInventory() {
     }
 
     nameInventoryQueue = buildNameInventoryRequests(
-        conf.numTracks,
-        conf.numFolders
+        remoteLimits.numTracks,
+        remoteLimits.numFolders
     );
     updateNameInventoryStatus({
         phase: 'refreshing',
@@ -481,6 +643,7 @@ function handleRemoteReply(reply, rinfo) {
     }
 
     updateScalar('remoteReply', 'remoteReply', reply);
+    capacityDiscovery?.handleReply(reply);
     if (netAddressIsUseful(rinfo?.address)) {
         updateScalar(
             'remoteTarget',
@@ -903,8 +1066,8 @@ io.on('connection', (socket) => {
         nameInventoryStatus: data.nameInventoryStatus,
         oledDisplays: data.oledDisplays,
         oledLines: data.oledLines,
-        numTracks: conf.numTracks,
-        numFolders: conf.numFolders,
+        numTracks: remoteLimits.numTracks,
+        numFolders: remoteLimits.numFolders,
         numLevels: conf.numLevels ?? 9999,
         siteName: conf.siteName
     };
@@ -1083,6 +1246,7 @@ httpServer.listen(httpPort, () => {
         );
     }
     console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
+    beginCapacityDiscovery();
 });
 
 sendSubscribeMessage();
@@ -1109,6 +1273,7 @@ function shutdown(exitCode = 0) {
         clearInterval(nameInventoryTimer);
         nameInventoryTimer = null;
     }
+    capacityDiscovery?.cancel();
 
     for (const [command, releaseTimeout] of pendingMomentaryReleases) {
         clearTimeout(releaseTimeout);

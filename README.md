@@ -27,6 +27,11 @@ Discovery does not require a fixed controller address:
 If a discovered controller stops announcing/responding, discovery resumes
 automatically.
 
+After connecting, organUI probes the read-only track-name and folder-name
+commands to discover the controller's capacities. The `numTracks` and
+`numFolders` values in `conf.json` are retained as fallbacks when those probes
+time out or the controller is unavailable.
+
 - Opus-Two remote UDP command/reply port: `5005`
 - SSDP discovery port/group: `1900` / `239.255.255.250`
 - OSC command port: `8000`

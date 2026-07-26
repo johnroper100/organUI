@@ -224,7 +224,8 @@
                                         <div class="small text-muted">{{nameInventorySummary}}</div>
                                     </div>
                                     <button class="btn btn-sm btn-outline-primary"
-                                        :disabled="nameInventoryStatus.phase == 'refreshing'"
+                                        :disabled="nameInventoryStatus.phase == 'refreshing'
+                                            || nameInventoryStatus.phase == 'discovering'"
                                         @click="refreshNameInventory">
                                         Refresh names
                                     </button>
@@ -1163,7 +1164,9 @@
                     this.commandStatus = "Starting console name refresh…";
                     socket.emit("refreshNameInventory", result => {
                         this.commandStatus = result?.ok
-                            ? (result.started
+                            ? (result.discovering
+                                ? "Discovering track and folder capacity"
+                                : result.started
                                 ? "Reading names from the console"
                                 : "Name refresh is already running")
                             : result?.error || "Name refresh could not start";
