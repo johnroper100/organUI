@@ -17,8 +17,11 @@ const {
     OSCControllerTransport
 } = require('./lib/osc-controller-transport');
 const {
+    OLED_DISPLAY_COUNT,
+    OLED_LINE_COUNT,
     buildRemoteCommands,
-    mapOSCCommandToRemote
+    mapOSCCommandToRemote,
+    parseOLEDReply
 } = require('./lib/opus-udp-protocol');
 const {
     OpusUDPTransport
@@ -108,8 +111,14 @@ const data = {
     remoteReply: '',
     remoteTarget: 'Discovering controller',
     queriedFolderNames: {},
-    oledLines: ['', '', '', '']
+    oledDisplays: Array.from(
+        { length: OLED_DISPLAY_COUNT },
+        () => Array.from({ length: OLED_LINE_COUNT }, () => '')
+    )
 };
+// Preserve the original primary-display event/state for existing pages and
+// third-party Socket.IO clients.
+data.oledLines = data.oledDisplays[0];
 
 for (let index = 1; index <= 10; index += 1) {
     data.trackNames[index] = '';
@@ -326,10 +335,14 @@ function handleRemoteReply(reply, rinfo) {
         return;
     }
 
-    const oled = /^LDSL([1-4])([\s\S]*)$/u.exec(reply);
+    const oled = parseOLEDReply(reply);
     if (oled) {
-        data.oledLines[Number(oled[1]) - 1] = oled[2];
-        emitState('oledLines', data.oledLines);
+        const display = data.oledDisplays[oled.display - 1];
+        display[oled.line - 1] = oled.text;
+        emitState('oledDisplays', data.oledDisplays);
+        if (oled.display === 1) {
+            emitState('oledLines', data.oledLines);
+        }
     }
 }
 
@@ -619,6 +632,7 @@ io.on('connection', (socket) => {
         remoteReply: data.remoteReply,
         remoteTarget: data.remoteTarget,
         queriedFolderNames: data.queriedFolderNames,
+        oledDisplays: data.oledDisplays,
         oledLines: data.oledLines,
         numTracks: conf.numTracks,
         numFolders: conf.numFolders,

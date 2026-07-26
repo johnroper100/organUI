@@ -84,7 +84,9 @@
                                     <button class="btn btn-outline-danger"
                                         @click="sendUDPcmd('generalCancel')">General Cancel</button>
                                     <button class="btn btn-outline-primary"
-                                        @click="sendUDPcmd('queryOLED')">Query OLED</button>
+                                        @click="sendUDPcmd('queryAllOLEDs')">
+                                        Query All OLEDs
+                                    </button>
                                 </div>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-6">
@@ -315,11 +317,27 @@
                     </div>
 
                     <div class="col-12">
+                        <div class="alert alert-info mb-0">
+                            Display 1 works with the legacy controller API. Displays 2–4
+                            require firmware support for the indexed OLED query described
+                            in the UDP API documentation.
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-lg-6"
+                        v-for="(lines, displayIndex) in oledDisplays"
+                        :key="displayIndex">
                         <div class="card">
                             <div class="card-body">
-                                <h2 class="h5">OLED reply</h2>
+                                <div class="d-flex align-items-center justify-content-between mb-2">
+                                    <h2 class="h5 mb-0">OLED display {{displayIndex + 1}}</h2>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                        @click="queryOLEDDisplay(displayIndex + 1)">
+                                        Query
+                                    </button>
+                                </div>
                                 <div class="oled bg-dark text-light p-3">
-                                    <div v-for="(line, index) in oledLines" :key="index">
+                                    <div v-for="(line, index) in lines" :key="index">
                                         {{line || '—'}}
                                     </div>
                                 </div>
@@ -561,7 +579,10 @@
                     numLevels: 9999,
                     trackNames: {},
                     queriedFolderNames: {},
-                    oledLines: ["", "", "", ""],
+                    oledDisplays: Array.from(
+                        {length: 4},
+                        () => ["", "", "", ""]
+                    ),
                     pistonNumber: 1,
                     folderNumber: 1,
                     levelNumber: 1,
@@ -591,6 +612,10 @@
                                 : result?.error || "UDP command was not accepted";
                         }
                     );
+                },
+                queryOLEDDisplay(display) {
+                    this.sendUDPcmd('queryOLED',
+                        display == 1 ? {} : {display: display});
                 },
                 sendOSC(cmd, state = 1, event = null) {
                     socket.emit("sendOSCcmd", {cmd: cmd, state: Number(state)});
@@ -660,7 +685,7 @@
             numLevels: "numLevels",
             trackNames: "trackNames",
             queriedFolderNames: "queriedFolderNames",
-            oledLines: "oledLines"
+            oledDisplays: "oledDisplays"
         };
 
         for (const [eventName, property] of Object.entries(stateEvents)) {

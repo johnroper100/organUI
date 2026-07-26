@@ -5,10 +5,12 @@ const assert = require('node:assert/strict');
 const {
     MAX_COMMAND_BYTES,
     MAX_RENAME_CHARS,
+    OLED_DISPLAY_COUNT,
     buildRemoteCommands,
     decodeEframe,
     encodeEframe,
-    mapOSCCommandToRemote
+    mapOSCCommandToRemote,
+    parseOLEDReply
 } = require('../lib/opus-udp-protocol');
 
 test('encodes and decodes chamber-108 RTP/Eframe datagrams', () => {
@@ -74,6 +76,18 @@ test('builds bounded high-level UDP commands', () => {
         buildRemoteCommands({ action: 'gotoFolder', number: 7 }, limits),
         ['CA Goto Folder 7']
     );
+    assert.deepEqual(
+        buildRemoteCommands({ action: 'queryOLED' }, limits),
+        ['Query OLED']
+    );
+    assert.deepEqual(
+        buildRemoteCommands({ action: 'queryOLED', display: 3 }, limits),
+        ['Query OLED 3']
+    );
+    assert.deepEqual(
+        buildRemoteCommands({ action: 'queryAllOLEDs' }, limits),
+        ['Query OLED', 'Query OLED 2', 'Query OLED 3', 'Query OLED 4']
+    );
 });
 
 test('rejects unsafe or out-of-range high-level UDP commands', () => {
@@ -103,6 +117,31 @@ test('rejects unsafe or out-of-range high-level UDP commands', () => {
         () => buildRemoteCommands({ action: 'reset' }, limits),
         /unsupported UDP action/u
     );
+    assert.throws(
+        () => buildRemoteCommands({
+            action: 'queryOLED',
+            display: OLED_DISPLAY_COUNT + 1
+        }, limits),
+        /display must be an integer from 1 to 4/u
+    );
+});
+
+test('parses legacy and indexed OLED replies without display ambiguity', () => {
+    assert.deepEqual(parseOLEDReply('LDSL2Primary line'), {
+        display: 1,
+        line: 2,
+        text: 'Primary line',
+        legacy: true
+    });
+    assert.deepEqual(parseOLEDReply('LDSD3L4Fourth line'), {
+        display: 3,
+        line: 4,
+        text: 'Fourth line',
+        legacy: false
+    });
+    assert.equal(parseOLEDReply('LDSD5L1Out of range'), null);
+    assert.equal(parseOLEDReply('OK'), null);
+    assert.equal(parseOLEDReply(null), null);
 });
 
 test('maps UDP-covered OSC controls and leaves other controls for OSC', () => {

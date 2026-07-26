@@ -261,8 +261,16 @@ Example: `LDS Buttons 20` → 20 = binary `010100` → Play (bit 4) and Trans
 
 | Command | Arg | Action | Replies |
 |---------|-----|--------|---------|
-| `Query OLED` | — | Dump the 80-character display. | four `LDSL`-payloads (see below) |
+| `Query OLED` | — | Dump primary display 1 (legacy form). | four `LDSL`-payloads (see below) |
+| `Query OLED N` | display, 1–4 | Dump display N. **Requires the multi-display firmware extension described below.** | four indexed `LDSD`-payloads · `Value Out of Range` |
 | `Query Get Track Name NNN` | track, 1-based | Return track NNN's name. | `Tk`-payload · `Value Out of Range` |
+
+> **Controller firmware status (verified 2026-07-25):** the tested controller
+> build implements only unnumbered `Query OLED`, which reads the primary
+> display. It does not expose displays 2–4. The indexed command and reply format
+> below define the missing wire contract implemented by organUI, but the
+> controller's `Decode_Remote_UDP_Cmds` handler and OLED read-back routine must
+> also implement it before those displays can return data.
 
 ### Dev — device control
 
@@ -303,10 +311,10 @@ T k N N N <name...>
 
 Example: `Tk007Sunday Postlude`
 
-### OLED dump — reply to `Query OLED`
+### Primary OLED dump — reply to legacy `Query OLED`
 
-The 80-character display is returned as **four** separate datagrams, one per
-20-character line:
+The primary 80-character display is returned as **four** separate datagrams,
+one per 20-character line:
 
 ```
 L D S L d <20 characters>
@@ -316,7 +324,33 @@ L D S L d <20 characters>
 - Byte 4: line digit `1`–`4`
 - Bytes 5–24: 20 characters of display content
 - A client should collect all four lines (`LDSL1`…`LDSL4`) to reconstruct the
-  full display.
+  primary display.
+
+This legacy reply has no display number. It cannot identify or safely
+reconstruct more than one physical display.
+
+### Indexed OLED dump — multi-display extension
+
+`Query OLED N` returns four datagrams whose payloads identify both the physical
+display and its line:
+
+```
+L D S D d L l <20 characters>
+```
+
+- Bytes 0–3: literal `LDSD`
+- Byte 4: display digit `1`–`4`
+- Byte 5: literal `L`
+- Byte 6: line digit `1`–`4`
+- Bytes 7–26: 20 characters of display content
+
+Example: `LDSD3L2Great: Swell` is line 2 of display 3.
+
+The display digit is required because UDP datagrams may be reordered and
+because a client may query multiple displays without waiting for each preceding
+four-datagram response. organUI's **Query All OLEDs** action sends legacy
+`Query OLED` for display 1, followed by `Query OLED 2`, `Query OLED 3`, and
+`Query OLED 4`; it accepts both the legacy and indexed reply formats.
 
 ---
 
