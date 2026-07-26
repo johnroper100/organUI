@@ -121,9 +121,9 @@ byte = 108**, not the RTP payload type (which is always 100).
   is sent back to it, wrapped in the **same** Eframe envelope (chamber 108). A
   client must build the envelope to send and unwrap it to read replies.
 - **Payload size limit:** the decoded payload lands in a 50-byte buffer, so keep
-  the command text to **≤ 49 bytes** and follow it with `0x00`. The terminator
-  is included in the payload length. Ad-hoc payloads are always < 256, so the
-  length is a single byte (see below).
+  the command text to **≤ 49 bytes**. Clients should transmit the complete
+  50-byte payload, filling every byte after the command with `0x00`. Ad-hoc
+  payloads are always < 256, so the length is a single byte (see below).
 - **Side effect:** every inbound message is echoed to the console's corner
   display (`Corner_Message`), recognized or not.
 
@@ -137,14 +137,15 @@ byte = 108**, not the RTP payload type (which is always 100).
 | 4 | 4 | Timestamp, big-endian | tick count (`low32`) |
 | 8 | 4 | SSRC, big-endian | `0x76543210` |
 | 12 | 1 | Eframe chamber | **108** (`0x6C`) — ad-hoc marker |
-| 13 | 1 | Payload length | command bytes + one `0x00` — one byte for ad-hoc |
-| 14 | N | Payload | the ASCII command text followed by `0x00` |
+| 13 | 1 | Payload length | `50` — one byte for ad-hoc |
+| 14 | 50 | Payload | ASCII command, then `0x00` in every unused byte |
 
 All multi-byte integer fields are **big-endian** (MSB sent first, LSB last). The
 payload begins in the byte immediately after the length and is the remainder of
-the datagram. There is no sub-opcode. Clients should send an explicit `0x00`
-after the command because the Oberon string parser uses it as its end marker;
-some controller builds do not reliably append a missing marker.
+the datagram. There is no sub-opcode. Clients should zero-fill every payload
+byte that does not contain a command character. The Oberon string parser uses
+the first `0x00` as its end marker, and some controller builds do not reliably
+append a missing marker.
 
 > The single length byte is specific to ad-hoc frames. The generator writes a
 > high length byte only when the payload exceeds 255 **or** the chamber is a real
@@ -364,9 +365,9 @@ four-datagram response. organUI's **Query All OLEDs** action sends legacy
   command parser itself accepts larger values.
 - **Name lengths.** Track and folder names have at most 15 visible characters.
   Send the quoted name at its natural length; do not space-pad it. The complete
-  command payload must end in `0x00`, which gives the Oberon parser an explicit
-  end-of-string marker. Query replies are additionally bounded by the 30-byte
-  send buffer.
+  50-byte command payload must be zero-filled after the command, which gives
+  the Oberon parser an explicit end-of-string marker. Query replies are
+  additionally bounded by the 30-byte send buffer.
 - **Rename is pointer-safe.** Both rename commands save the current
   track/folder pointer (and, for folders, the exact memory level), apply the
   change, and force the pointer back — so renaming never leaves the console
