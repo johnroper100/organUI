@@ -234,11 +234,16 @@ const opusUdpTransport = new OpusUDPTransport({
 });
 
 capacityDiscovery = new CapacityDiscovery({
-    sendProbe: (kind, number) => opusUdpTransport.send(
-        kind === 'track'
-            ? `Query Get Track Name ${number}`
-            : `CA Get Folder Name ${number}`
-    ),
+    sendProbe: (kind, number) => {
+        if (kind === 'track') {
+            return opusUdpTransport.send(`Query Get Track Name ${number}`);
+        }
+        if (kind === 'folder') {
+            return opusUdpTransport.send(`CA Get Folder Name ${number}`);
+        }
+        return opusUdpTransport.send(`CA Goto Local Level ${number}`);
+    },
+    restoreLevel: () => data.localMemoryLevel || data.memoryLevel || 1,
     onComplete: applyDiscoveredCapacity,
     onFailure: handleCapacityDiscoveryFailure
 });
@@ -258,7 +263,7 @@ function beginCapacityDiscovery() {
     updateNameInventoryStatus({
         phase: 'discovering',
         sent: 0,
-        message: 'Discovering track and folder capacity'
+        message: 'Discovering track, folder, and level capacity'
     });
     return capacityDiscovery.start();
 }
@@ -282,6 +287,7 @@ function pruneInventoryAbove(names, maximum) {
 function applyRuntimeCapacity(limits) {
     remoteLimits.numTracks = limits.numTracks;
     remoteLimits.numFolders = limits.numFolders;
+    remoteLimits.numLevels = limits.numLevels;
 
     const trackNamesChanged = pruneInventoryAbove(
         data.udpTrackNames,
@@ -296,6 +302,7 @@ function applyRuntimeCapacity(limits) {
     data.nameInventoryStatus.total = limits.numTracks + limits.numFolders;
     emitState('numTracks', limits.numTracks);
     emitState('numFolders', limits.numFolders);
+    emitState('numLevels', limits.numLevels);
     if (trackNamesChanged) {
         emitState('trackNames', data.trackNames);
         emitState('udpTrackNames', data.udpTrackNames);
@@ -311,9 +318,11 @@ function applyDiscoveredCapacity(limits) {
         || limits.numTracks < 1
         || !Number.isInteger(limits.numFolders)
         || limits.numFolders < 1
+        || !Number.isInteger(limits.numLevels)
+        || limits.numLevels < 1
     ) {
         handleCapacityDiscoveryFailure(
-            new Error('controller reported an empty track or folder range')
+            new Error('controller reported an empty capacity range')
         );
         return;
     }
@@ -321,14 +330,14 @@ function applyDiscoveredCapacity(limits) {
     applyRuntimeCapacity(limits);
     console.log(
         `Discovered controller capacity: ${limits.numTracks} tracks, `
-        + `${limits.numFolders} folders`
+        + `${limits.numFolders} folders, and ${limits.numLevels} levels`
     );
     updateNameInventoryStatus({
         phase: 'idle',
         sent: 0,
         total: limits.numTracks + limits.numFolders,
         message: `Discovered ${limits.numTracks} tracks and `
-            + `${limits.numFolders} folders`
+            + `${limits.numFolders} folders; ${limits.numLevels} levels`
     });
 
     if (nameInventoryEnabled) {
@@ -342,13 +351,14 @@ function handleCapacityDiscoveryFailure(error) {
     );
     applyRuntimeCapacity({
         numTracks: conf.numTracks,
-        numFolders: conf.numFolders
+        numFolders: conf.numFolders,
+        numLevels: conf.numLevels
     });
     updateNameInventoryStatus({
         phase: 'idle',
         sent: 0,
         total: conf.numTracks + conf.numFolders,
-        message: 'Using configured track and folder capacity'
+        message: 'Using configured track, folder, and level capacity'
     });
 
     if (nameInventoryEnabled) {
@@ -1087,7 +1097,7 @@ io.on('connection', (socket) => {
         oledLines: data.oledLines,
         numTracks: remoteLimits.numTracks,
         numFolders: remoteLimits.numFolders,
-        numLevels: conf.numLevels ?? 9999,
+        numLevels: remoteLimits.numLevels,
         siteName: conf.siteName
     };
 

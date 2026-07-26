@@ -28,9 +28,10 @@ If a discovered controller stops announcing/responding, discovery resumes
 automatically.
 
 After connecting, organUI probes the read-only track-name and folder-name
-commands to discover the controller's capacities. The `numTracks` and
-`numFolders` values in `conf.json` are retained as fallbacks when those probes
-time out or the controller is unavailable.
+commands and the range-checked local-level command to discover the controller's
+capacities. The prior local memory level is restored after the bounded probes.
+The `numTracks`, `numFolders`, and `numLevels` values in `conf.json` are retained
+as fallbacks when those probes time out or the controller is unavailable.
 
 - Opus-Two remote UDP command/reply port: `5005`
 - SSDP discovery port/group: `1900` / `239.255.255.250`
