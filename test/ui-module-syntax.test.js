@@ -42,6 +42,23 @@ test('advanced protocol controls have valid module syntax and expose every UDP a
     );
     assert.doesNotThrow(() => new Function(source));
 
+    assert.doesNotMatch(html, /nav-tabs|protocol ==/u);
+    for (const group of [
+        'tracks',
+        'folders',
+        'console',
+        'stops',
+        'tuner',
+        'system'
+    ]) {
+        assert.match(
+            html,
+            new RegExp(`<section id="${group}"`, 'u'),
+            `missing unified advanced group ${group}`
+        );
+    }
+    assert.match(html, />Organist display</u);
+
     const protocolSource = fs.readFileSync(
         path.join(__dirname, '..', 'lib', 'opus-udp-protocol.js'),
         'utf8'
