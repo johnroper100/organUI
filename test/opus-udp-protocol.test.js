@@ -77,6 +77,22 @@ test('builds bounded high-level UDP commands', () => {
         ['CA Goto Folder 7']
     );
     assert.deepEqual(
+        buildRemoteCommands({ action: 'showRange', number: 12 }, limits),
+        ['CA Show Range 12']
+    );
+    assert.deepEqual(
+        buildRemoteCommands({ action: 'setFlag', number: 0 }, limits),
+        ['Flag 0']
+    );
+    assert.deepEqual(
+        buildRemoteCommands({ action: 'setFlag', number: 31 }, limits),
+        ['Flag 31']
+    );
+    assert.deepEqual(
+        buildRemoteCommands({ action: 'setTransportLamps', bitmask: 20 }, limits),
+        ['LDS Buttons 20']
+    );
+    assert.deepEqual(
         buildRemoteCommands({ action: 'queryOLED' }, limits),
         ['Query OLED']
     );
@@ -123,6 +139,17 @@ test('rejects unsafe or out-of-range high-level UDP commands', () => {
             display: OLED_DISPLAY_COUNT + 1
         }, limits),
         /display must be an integer from 1 to 4/u
+    );
+    assert.throws(
+        () => buildRemoteCommands({ action: 'setFlag', number: 32 }, limits),
+        /number must be an integer from 0 to 31/u
+    );
+    assert.throws(
+        () => buildRemoteCommands({
+            action: 'setTransportLamps',
+            bitmask: 64
+        }, limits),
+        /bitmask must be an integer from 0 to 63/u
     );
 });
 

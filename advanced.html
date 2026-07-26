@@ -89,15 +89,21 @@
                                     </button>
                                 </div>
                                 <div class="row g-2 align-items-end">
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <label class="form-label" for="udp-piston">Piston number</label>
                                         <input id="udp-piston" class="form-control" type="number"
                                             min="1" v-model.number="pistonNumber">
                                     </div>
-                                    <div class="col-6">
+                                    <div class="col-4">
                                         <button class="btn btn-outline-primary w-100"
                                             @click="sendUDPcmd('showPiston', {number: pistonNumber})">
                                             Show Piston
+                                        </button>
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('showRange', {number: pistonNumber})">
+                                            Show Range
                                         </button>
                                     </div>
                                     <div class="col-6">
@@ -248,6 +254,46 @@
                     <div class="col-12 col-xl-6">
                         <div class="card protocol-card">
                             <div class="card-body">
+                                <h2 class="h5">Configuration flags and transport lamps</h2>
+                                <div class="row g-2 align-items-end">
+                                    <div class="col-8">
+                                        <label class="form-label" for="udp-flag">
+                                            Configuration flag (0–31)
+                                        </label>
+                                        <input id="udp-flag" class="form-control" type="number"
+                                            min="0" max="31" v-model.number="flagNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('setFlag', {number: flagNumber})">
+                                            Set Flag
+                                        </button>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label" for="udp-lamps">
+                                            Lamp bitmask (0–63)
+                                        </label>
+                                        <input id="udp-lamps" class="form-control" type="number"
+                                            min="0" max="63" v-model.number="transportLampBitmask">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendUDPcmd('setTransportLamps',
+                                                {bitmask: transportLampBitmask})">
+                                            Set Lamps
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    Bits 0–5: Down, Up, Trans, Track, Play, Record.
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
                                 <h2 class="h5">Rename tracks and folders</h2>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-12">
@@ -348,24 +394,24 @@
             </section>
 
             <section v-if="protocol == 'osc'">
+                <div class="alert alert-info">
+                    Commands with a UDP equivalent are intentionally available only
+                    on the UDP tab.
+                </div>
                 <div class="row g-3">
                     <div class="col-12 col-xl-6">
                         <div class="card protocol-card">
                             <div class="card-body">
-                                <h2 class="h5">Stops</h2>
+                                <h2 class="h5">Momentary buttons</h2>
                                 <div class="row g-2 align-items-end">
-                                    <div class="col-6">
-                                        <label class="form-label" for="osc-stop">Stop/button (1–253)</label>
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-stop">
+                                            Stop/button (1–65535)
+                                        </label>
                                         <input id="osc-stop" class="form-control" type="number"
-                                            min="1" max="253" v-model.number="stopNumber">
+                                            min="1" max="65535" v-model.number="stopNumber">
                                     </div>
-                                    <div class="col-3">
-                                        <button class="btn btn-outline-primary w-100"
-                                            @click="tapOSC('/Stops/push' + stopNumber)">
-                                            Toggle Latch
-                                        </button>
-                                    </div>
-                                    <div class="col-3">
+                                    <div class="col-4">
                                         <button class="btn btn-outline-primary w-100"
                                             @touchstart="sendOSC('/Stops/trigger' + stopNumber, 1)"
                                             @touchend="sendOSC('/Stops/trigger' + stopNumber, 0, $event)">
@@ -383,9 +429,9 @@
                                 <h2 class="h5">Musical keyboard</h2>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-8">
-                                        <label class="form-label" for="osc-note">Key/note (1–25)</label>
+                                        <label class="form-label" for="osc-note">Key/note (1–255)</label>
                                         <input id="osc-note" class="form-control" type="number"
-                                            min="1" max="25" v-model.number="noteNumber">
+                                            min="1" max="255" v-model.number="noteNumber">
                                     </div>
                                     <div class="col-4">
                                         <button class="btn btn-outline-success w-100"
@@ -402,56 +448,82 @@
                     <div class="col-12 col-xl-6">
                         <div class="card protocol-card">
                             <div class="card-body">
-                                <h2 class="h5">Pistons and special controls</h2>
+                                <h2 class="h5">Piston storage and couplers</h2>
+                                <p class="small text-muted">
+                                    Piston recall uses UDP. OSC remains here for the Set/store
+                                    workflow, which has no UDP equivalent.
+                                </p>
                                 <div class="row g-2 align-items-end">
-                                    <div class="col-8">
+                                    <div class="col-4">
                                         <label class="form-label" for="osc-piston">Piston (1–99)</label>
                                         <input id="osc-piston" class="form-control" type="number"
                                             min="1" max="99" v-model.number="pistonNumber">
                                     </div>
                                     <div class="col-4">
-                                        <button class="btn btn-outline-primary w-100"
-                                            @click="tapOSC('/OPTICS/special' + (1899 + Number(pistonNumber)))">
-                                            Recall / Store
+                                        <button class="btn btn-outline-danger w-100"
+                                            @click="tapOSC('/OPTICS/special1999')">
+                                            Toggle Set Arm
                                         </button>
-                                    </div>
-                                    <div class="col-8">
-                                        <label class="form-label" for="osc-special">Special selector</label>
-                                        <input id="osc-special" class="form-control" type="number"
-                                            min="1898" :max="2100 + numTracks"
-                                            v-model.number="specialNumber">
                                     </div>
                                     <div class="col-4">
                                         <button class="btn btn-outline-primary w-100"
-                                            @touchstart="sendOSC('/OPTICS/special' + specialNumber, 1)"
-                                            @touchend="sendOSC('/OPTICS/special' + specialNumber, 0, $event)">
-                                            Hold Special
+                                            @click="sendPistonStoreSelector">
+                                            Send Store Piston
+                                        </button>
+                                    </div>
+                                    <div class="col-8">
+                                        <label class="form-label" for="osc-coupler">
+                                            Coupler selector (2020–2029)
+                                        </label>
+                                        <input id="osc-coupler" class="form-control" type="number"
+                                            min="2020" max="2029" v-model.number="couplerNumber">
+                                    </div>
+                                    <div class="col-4">
+                                        <button class="btn btn-outline-primary w-100"
+                                            @click="sendCoupler">
+                                            Toggle Coupler
                                         </button>
                                     </div>
                                 </div>
                                 <div class="command-grid mt-3">
-                                    <button class="btn btn-outline-danger"
-                                        @click="tapOSC('/OPTICS/special1999')">Piston Set</button>
-                                    <button class="btn btn-outline-danger"
-                                        @click="tapOSC('/OPTICS/special2000')">Cancel</button>
                                     <button class="btn btn-outline-primary"
-                                        @click="tapOSC('/OPTICS/special2001')">Refresh Buttons</button>
-                                    <button class="btn btn-outline-secondary"
-                                        @click="tapOSC('/OPTICS/special2038')">Memory Up</button>
-                                    <button class="btn btn-outline-secondary"
-                                        @click="tapOSC('/OPTICS/special2039')">Memory Down</button>
-                                    <button class="btn btn-outline-danger"
-                                        @click="tapOSC('/OPTICS/special2037')">Stop Playback</button>
+                                        @click="tapOSC('/OPTICS/special1898')">
+                                        Toggle Coupler 1898
+                                    </button>
                                 </div>
-                                <details class="mt-3">
-                                    <summary>Documented selector reference</summary>
-                                    <div class="small mt-2">
-                                        1898 coupler; 1900–1998 pistons; 1999 Set; 2000 Cancel;
-                                        2001 refresh; 2010–2017 tuner/sostenuto; 2020–2029 couplers;
-                                        2030–2043 recorder, memory, folder, and track controls;
-                                        2044–2052 copy controls; 2101+ direct track play.
-                                    </div>
-                                </details>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Controller-only special controls</h2>
+                                <div class="command-grid">
+                                    <button v-for="control in oscSpecialControls"
+                                        :key="control.cmd"
+                                        class="btn"
+                                        :class="control.className"
+                                        @click="tapOSC(control.cmd)">
+                                        {{control.label}}
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-12 col-xl-6">
+                        <div class="card protocol-card">
+                            <div class="card-body">
+                                <h2 class="h5">Track copy controls</h2>
+                                <div class="command-grid">
+                                    <button v-for="control in oscCopyControls"
+                                        :key="control.cmd"
+                                        class="btn btn-outline-secondary"
+                                        @click="tapOSC(control.cmd)">
+                                        {{control.label}}
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -460,6 +532,10 @@
                         <div class="card protocol-card">
                             <div class="card-body">
                                 <h2 class="h5">Text-entry keyboard</h2>
+                                <p class="small text-muted">
+                                    Track/folder commit codes 14 and 15 are omitted; use
+                                    the UDP rename controls instead.
+                                </p>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-8">
                                         <label class="form-label" for="osc-text">Printable text</label>
@@ -471,7 +547,9 @@
                                             @click="sendOSCText">Send Text</button>
                                     </div>
                                     <div class="col-8">
-                                        <label class="form-label" for="osc-key-code">Raw key code (8–122)</label>
+                                        <label class="form-label" for="osc-key-code">
+                                            Raw key code (8–122, except 14/15)
+                                        </label>
                                         <input id="osc-key-code" class="form-control" type="number"
                                             min="8" max="122" v-model.number="keyCode">
                                     </div>
@@ -485,10 +563,6 @@
                                         @click="sendOSCKey(8)">Delete</button>
                                     <button class="btn btn-outline-secondary"
                                         @click="sendOSCKey(13)">Enter</button>
-                                    <button class="btn btn-outline-success"
-                                        @click="sendOSCKey(14)">Save Track</button>
-                                    <button class="btn btn-outline-success"
-                                        @click="sendOSCKey(15)">Save Folder</button>
                                     <button class="btn btn-outline-danger"
                                         @click="sendOSCKey(27)">Escape / Clear</button>
                                     <button class="btn btn-outline-secondary"
@@ -506,9 +580,11 @@
                                 <h2 class="h5">Faders</h2>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-4">
-                                        <label class="form-label" for="osc-fader">Fader (1–32)</label>
+                                        <label class="form-label" for="osc-fader">
+                                            Fader (0–255)
+                                        </label>
                                         <input id="osc-fader" class="form-control" type="number"
-                                            min="1" max="32" v-model.number="faderNumber">
+                                            min="0" max="255" v-model.number="faderNumber">
                                     </div>
                                     <div class="col-8">
                                         <label class="form-label" for="osc-fader-value">
@@ -589,15 +665,90 @@
                     repeatCount: 1,
                     stopNumber: 1,
                     buttonNumber: 1,
+                    flagNumber: 0,
+                    transportLampBitmask: 0,
                     trackNumber: 1,
                     renameText: "",
                     noteNumber: 1,
-                    specialNumber: 2001,
+                    couplerNumber: 2020,
                     oscText: "",
                     keyCode: 13,
                     faderNumber: 1,
                     faderValue: 0,
-                    userSlot: 1
+                    userSlot: 1,
+                    oscSpecialControls: [
+                        {
+                            cmd: "/OPTICS/special2001",
+                            label: "Refresh Buttons",
+                            className: "btn-outline-primary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2010",
+                            label: "Sostenuto Toggle",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2011",
+                            label: "Sostenuto Release",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2012",
+                            label: "Magic Tuner Toggle",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2013",
+                            label: "Tuner Pattern Next",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2014",
+                            label: "Tuner Back",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2015",
+                            label: "Tuner Next",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2016",
+                            label: "Touch / Held Bit",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2017",
+                            label: "Reset Magic Tuner Note",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2037",
+                            label: "Stop Playback",
+                            className: "btn-outline-danger"
+                        },
+                        {
+                            cmd: "/OPTICS/special2040",
+                            label: "Folder Up",
+                            className: "btn-outline-secondary"
+                        },
+                        {
+                            cmd: "/OPTICS/special2041",
+                            label: "Folder Down",
+                            className: "btn-outline-secondary"
+                        }
+                    ],
+                    oscCopyControls: [
+                        {cmd: "/OPTICS/special2044", label: "Source +1"},
+                        {cmd: "/OPTICS/special2045", label: "Source −1"},
+                        {cmd: "/OPTICS/special2046", label: "Target +1"},
+                        {cmd: "/OPTICS/special2047", label: "Target −1"},
+                        {cmd: "/OPTICS/special2048", label: "Source +10"},
+                        {cmd: "/OPTICS/special2049", label: "Source −10"},
+                        {cmd: "/OPTICS/special2050", label: "Target +10"},
+                        {cmd: "/OPTICS/special2051", label: "Target −10"},
+                        {cmd: "/OPTICS/special2052", label: "Copy Track"}
+                    ]
                 };
             },
             methods: {
@@ -628,9 +779,34 @@
                     this.sendOSC(cmd, 1);
                     window.setTimeout(() => this.sendOSC(cmd, 0), 80);
                 },
+                sendPistonStoreSelector() {
+                    const piston = Number(this.pistonNumber);
+                    if (
+                        !Number.isInteger(piston)
+                        || piston < 1
+                        || piston > 99
+                    ) {
+                        this.commandStatus = "OSC piston must be from 1 to 99";
+                        return;
+                    }
+                    this.tapOSC("/OPTICS/special" + (1899 + piston));
+                },
+                sendCoupler() {
+                    const selector = Number(this.couplerNumber);
+                    if (
+                        !Number.isInteger(selector)
+                        || selector < 2020
+                        || selector > 2029
+                    ) {
+                        this.commandStatus =
+                            "OSC coupler selector must be from 2020 to 2029";
+                        return;
+                    }
+                    this.tapOSC("/OPTICS/special" + selector);
+                },
                 sendOSCKey(code) {
                     const numericCode = Number(code);
-                    const isControlCode = [8, 13, 14, 15, 27, 28, 32]
+                    const isControlCode = [8, 13, 27, 28, 32]
                         .includes(numericCode);
                     const isPrintableCode =
                         numericCode >= 33 && numericCode <= 122;
@@ -639,7 +815,7 @@
                         || (!isControlCode && !isPrintableCode)
                     ) {
                         this.commandStatus =
-                            "Unsupported OSC key code; use a named control or 33–122";
+                            "Unsupported OSC key code; use UDP for rename commits";
                         return;
                     }
                     this.tapOSC("/OPTICS/specialkb" + numericCode);
@@ -662,8 +838,8 @@
                     const value = Number(this.faderValue);
                     if (
                         !Number.isInteger(number)
-                        || number < 1
-                        || number > 32
+                        || number < 0
+                        || number > 255
                         || !Number.isFinite(value)
                         || value < 0
                         || value > 1
