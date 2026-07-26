@@ -22,7 +22,10 @@ test('encodes and decodes chamber-108 RTP/Eframe datagrams', () => {
     assert.equal(frame.readUInt32BE(4), 0x89abcdef);
     assert.equal(frame.readUInt32BE(8), 0x76543210);
     assert.equal(frame[12], 108);
-    assert.equal(frame[13], 11);
+    assert.equal(frame[13], 12);
+    assert.equal(frame.length, 26);
+    assert.equal(frame.at(-1), 0);
+    assert.equal(frame.subarray(14, -1).toString('ascii'), 'RP Track Up');
     assert.deepEqual(decodeEframe(frame), {
         sequence: 0x1234,
         timestamp: 0x89abcdef,
@@ -43,6 +46,16 @@ test('rejects malformed frames and oversized or non-ASCII payloads', () => {
         /at most 49 bytes/u
     );
     assert.throws(() => encodeEframe('café'), /must be ASCII/u);
+});
+
+test('zero-terminates a maximum-length command inside the declared payload', () => {
+    const command = 'x'.repeat(MAX_COMMAND_BYTES);
+    const frame = encodeEframe(command);
+
+    assert.equal(frame[13], MAX_COMMAND_BYTES + 1);
+    assert.equal(frame.length, 14 + MAX_COMMAND_BYTES + 1);
+    assert.equal(frame.at(-1), 0);
+    assert.equal(decodeEframe(frame).payload, command);
 });
 
 test('builds bounded high-level UDP commands', () => {
@@ -70,7 +83,7 @@ test('builds bounded high-level UDP commands', () => {
             number: 7,
             name: 'Choir'
         }, limits),
-        ['CA Rename Folder 7 "Choir          "']
+        ['CA Rename Folder 7 "Choir"']
     );
     assert.deepEqual(
         buildRemoteCommands({ action: 'gotoFolder', number: 7 }, limits),
