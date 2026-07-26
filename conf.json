@@ -3,5 +3,9 @@
     "numFolders": 999,
     "numLevels": 999,
     "numTracks": 999,
-    "udpPort": 5005
+    "udpPort": 5005,
+    "fugara": {
+        "telemetryUrl": "https://app.fugara.tech/api/organ-ui/heartbeat",
+        "heartbeatSeconds": 60
+    }
 }

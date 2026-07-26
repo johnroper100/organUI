@@ -49,6 +49,41 @@ The ports can be configured in `conf.json` with `udpPort`, `oscSendPort`,
 - `OPUS_OSC_LISTEN_PORT`
 - `ORGANUI_HTTP_PORT`
 
+## Fugara monitoring
+
+organUI can report the console's on/off state and uptime to Fugara with an
+outbound HTTPS heartbeat. This works through normal church NAT and firewall
+setups: it does not require port forwarding, a public/static IP address, or any
+inbound connection to the church network.
+
+Set the public Fugara heartbeat URL in `conf.json`:
+
+```json
+{
+  "fugara": {
+    "telemetryUrl": "https://app.fugara.tech/api/organ-ui/heartbeat",
+    "heartbeatSeconds": 60
+  }
+}
+```
+
+The same settings can be supplied as `FUGARA_TELEMETRY_URL` and
+`FUGARA_HEARTBEAT_SECONDS`. On first start, organUI creates
+`fugara-device.json`, containing a random device ID and authentication token.
+Keep that file private and persistent; copying or deleting it creates a
+different Fugara device identity. `FUGARA_DEVICE_IDENTITY_PATH` can place it in
+a persistent application-data directory.
+
+Once its first heartbeat reaches Fugara, link the newly discovered organUI
+device from the client's Overview page. Fugara records a state event whenever
+the Opus-Two controller begins or stops returning OSC feedback, and organUI
+sends those transitions immediately rather than waiting for the next scheduled
+heartbeat. This assumes the organUI server remains powered while the console's
+physical switch controls the organ controller. If organUI heartbeats stop,
+Fugara reports the site connection as unreachable instead of claiming that the
+organ is off, since a network or organUI power failure cannot be distinguished
+remotely.
+
 Discovery uses IPv4 broadcasts and therefore requires organUI and the
 controller to be on the same broadcast network. For a controller on a different
 routed subnet, set `oscHost` in `conf.json` or use `OPUS_OSC_HOST` as an

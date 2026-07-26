@@ -132,6 +132,7 @@ dist
 # other
 
 database.json
+fugara-device.json
 
 .DS_Store
 

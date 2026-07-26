@@ -38,6 +38,10 @@ const {
 const {
     persistDiscoveredCapacity
 } = require('./lib/config-capacity');
+const {
+    FugaraTelemetry
+} = require('./lib/fugara-telemetry');
+const packageMetadata = require('./package.json');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -78,6 +82,20 @@ const oscTargetPort = readPort('OPUS_OSC_SEND_PORT', 'oscSendPort', 8000);
 const oscListenPort = readPort('OPUS_OSC_LISTEN_PORT', 'oscListenPort', 9000);
 const opusUdpPort = readPort('OPUS_UDP_PORT', 'udpPort', 5005);
 const httpPort = readPort('ORGANUI_HTTP_PORT', 'httpPort', 3000);
+const fugaraConfig = (
+    conf.fugara
+    && typeof conf.fugara === 'object'
+    && !Array.isArray(conf.fugara)
+) ? conf.fugara : {};
+const fugaraTelemetryUrl = process.env.FUGARA_TELEMETRY_URL
+    ?? fugaraConfig.telemetryUrl
+    ?? null;
+const fugaraHeartbeatSeconds = process.env.FUGARA_HEARTBEAT_SECONDS
+    ?? fugaraConfig.heartbeatSeconds
+    ?? 60;
+const fugaraIdentityPath = process.env.FUGARA_DEVICE_IDENTITY_PATH
+    ?? fugaraConfig.identityPath
+    ?? path.join(__dirname, 'fugara-device.json');
 
 const oscServer = new OSCServer(oscListenPort, '0.0.0.0');
 const bonjour = new Bonjour();
@@ -170,6 +188,10 @@ const oscTransport = new OSCControllerTransport({
     port: oscTargetPort,
     onControllerDiscovered: (host) => {
         console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
+        // Do not carry the previous controller session's uptime into the new
+        // "on" event. The current uptime will arrive with fresh feedback.
+        updateScalar('uptimeSeconds', 'uptimeSeconds', '');
+        reportFugaraStateChange();
         updateRemoteTarget();
         if (
             !beginCapacityDiscovery()
@@ -185,6 +207,7 @@ const oscTransport = new OSCControllerTransport({
             `OSC controller at ${host} stopped responding; resuming discovery`
         );
         updateScalar('uptime', 'uptime', 'Not Connected');
+        reportFugaraStateChange();
         updateRemoteTarget();
         if (opusUdpTransport.discoveredHost === null) {
             resetCapacityDiscovery();
@@ -250,7 +273,24 @@ capacityDiscovery = new CapacityDiscovery({
     onComplete: applyDiscoveredCapacity,
     onFailure: handleCapacityDiscoveryFailure
 });
+
+const fugaraTelemetry = new FugaraTelemetry({
+    endpoint: fugaraTelemetryUrl,
+    heartbeatSeconds: fugaraHeartbeatSeconds,
+    identityPath: path.resolve(__dirname, fugaraIdentityPath),
+    deviceName: conf.siteName || os.hostname(),
+    appVersion: packageMetadata.version,
+    getStatus: () => ({
+        organOn: oscTransport.connected,
+        organUptimeSeconds: data.uptimeSeconds,
+        organUptimeLabel: data.uptime
+    })
+});
 setImmediate(updateRemoteTarget);
+
+function reportFugaraStateChange() {
+    setImmediate(() => fugaraTelemetry.sendNow());
+}
 
 function beginCapacityDiscovery() {
     if (
@@ -1285,6 +1325,18 @@ httpServer.listen(httpPort, () => {
         );
     }
     console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
+    if (fugaraTelemetry.enabled) {
+        if (fugaraTelemetry.start()) {
+            console.log('Fugara telemetry enabled (outbound HTTPS heartbeat)');
+            console.log(
+                `Fugara pairing code: ${fugaraTelemetry.identity.pairingCode}`
+            );
+        } else {
+            console.warn('Fugara telemetry could not be started');
+        }
+    } else {
+        console.log('Fugara telemetry disabled; configure fugara.telemetryUrl to enable it');
+    }
     beginCapacityDiscovery();
 });
 
@@ -1308,6 +1360,7 @@ function shutdown(exitCode = 0) {
     shuttingDown = true;
     clearInterval(subscribeInterval);
     clearInterval(nameInventoryRefreshInterval);
+    fugaraTelemetry.stop();
     if (nameInventoryTimer !== null) {
         clearInterval(nameInventoryTimer);
         nameInventoryTimer = null;
