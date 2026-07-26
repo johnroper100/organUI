@@ -30,6 +30,9 @@ const {
     buildNameInventoryRequests
 } = require('./lib/name-inventory');
 const {
+    nextLocalMemoryLevel
+} = require('./lib/memory-level-state');
+const {
     CapacityDiscovery
 } = require('./lib/capacity-discovery');
 
@@ -125,6 +128,7 @@ const data = {
     userVarPage: '',
     organistNumber: '',
     memoryLevel: '',
+    localMemoryLevel: '',
     trackMinutes: '',
     trackSeconds: '',
     transposer: '',
@@ -463,6 +467,20 @@ function sendUDPRequest(request) {
     } else if (request.action === 'renameFolder') {
         updateInventoryName('folder', Number(request.number), request.name.trim());
         confirmInventoryName('folder', Number(request.number));
+    }
+
+    const localMemoryLevel = nextLocalMemoryLevel(
+        data.localMemoryLevel,
+        data.memoryLevel,
+        request,
+        remoteLimits.numLevels
+    );
+    if (localMemoryLevel !== null) {
+        updateScalar(
+            'localMemoryLevel',
+            'localMemoryLevel',
+            localMemoryLevel
+        );
     }
 
     updateRemoteTarget();
@@ -1053,6 +1071,7 @@ io.on('connection', (socket) => {
         userVarPage: data.userVarPage,
         organistNumber: data.organistNumber,
         memoryLevel: data.memoryLevel,
+        localMemoryLevel: data.localMemoryLevel,
         trackMinutes: data.trackMinutes,
         trackSeconds: data.trackSeconds,
         transposer: data.transposer,

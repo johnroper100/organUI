@@ -181,6 +181,7 @@ test('advanced protocol controls have valid module syntax and expose every UDP a
         'expressions',
         'folderTrackName',
         'keyboardStatus',
+        'localMemoryLevel',
         'magicTunerStatus',
         'memoryLevel',
         'nameInventoryStatus',

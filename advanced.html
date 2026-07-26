@@ -355,6 +355,8 @@
                                     <dd class="col-7">{{binaryLabel(trackLocked)}}</dd>
                                     <dt class="col-5">Memory level</dt>
                                     <dd class="col-7">{{memoryLevel || '—'}}</dd>
+                                    <dt class="col-5">Local memory level</dt>
+                                    <dd class="col-7">{{localMemoryLevel || '—'}}</dd>
                                     <dt class="col-5">Transposer</dt>
                                     <dd class="col-7">{{transposer || '—'}}</dd>
                                     <dt class="col-5">Naming buffer</dt>
@@ -380,7 +382,10 @@
                         <div class="card protocol-card">
                             <div class="card-body">
                                 <h3 class="h5">Memory levels</h3>
-                                <div class="readout mb-3">Current memory level: <strong>{{memoryLevel || '—'}}</strong></div>
+                                <div class="readout mb-3">
+                                    <div>Global memory level: <strong>{{memoryLevel || '—'}}</strong></div>
+                                    <div>Local memory level: <strong>{{localMemoryLevel || '—'}}</strong></div>
+                                </div>
                                 <div class="row g-2 align-items-end">
                                     <div class="col-6">
                                         <label class="form-label" for="udp-level">Level number</label>
@@ -416,6 +421,9 @@
                                         <button class="btn btn-outline-secondary w-100"
                                             @click="sendUDPcmd('localMemoryLevelUp', {count: repeatCount})">Local Up</button>
                                     </div>
+                                </div>
+                                <div class="form-text mt-2">
+                                    Local level is tracked from local-level commands sent through organUI.
                                 </div>
                             </div>
                         </div>
@@ -948,6 +956,7 @@
                     userVarPage: "",
                     organistNumber: "",
                     memoryLevel: "",
+                    localMemoryLevel: "",
                     trackMinutes: "",
                     trackSeconds: "",
                     transposer: "",
@@ -1372,6 +1381,7 @@
             userVarPage: "userVarPage",
             organistNumber: "organistNumber",
             memoryLevel: "memoryLevel",
+            localMemoryLevel: "localMemoryLevel",
             trackMinutes: "trackMinutes",
             trackSeconds: "trackSeconds",
             transposer: "transposer",
