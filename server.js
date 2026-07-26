@@ -26,6 +26,9 @@ const {
 const {
     OpusUDPTransport
 } = require('./lib/opus-udp-transport');
+const {
+    buildNameInventoryRequests
+} = require('./lib/name-inventory');
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -74,6 +77,8 @@ const remoteActionCommands = {
     next: '/OPTICS/special2015'
 };
 const remoteActionHoldDurationMs = 120;
+const nameInventoryQueryIntervalMs = 50;
+const nameInventoryRefreshIntervalMs = 5 * 60 * 1000;
 const pendingMomentaryReleases = new Map();
 const feedbackFamilies = new Set([
     'RP',
@@ -125,6 +130,15 @@ const data = {
     remoteReply: '',
     remoteTarget: 'Discovering controller',
     queriedFolderNames: {},
+    nameInventoryStatus: {
+        phase: 'idle',
+        sent: 0,
+        total: conf.numTracks + conf.numFolders,
+        knownTracks: 0,
+        knownFolders: 0,
+        lastCompletedAt: '',
+        message: 'Waiting to read names from the console'
+    },
     oledDisplays: Array.from(
         { length: OLED_DISPLAY_COUNT },
         () => Array.from({ length: OLED_LINE_COUNT }, () => '')
@@ -145,6 +159,12 @@ const oscTransport = new OSCControllerTransport({
     onControllerDiscovered: (host) => {
         console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
         updateRemoteTarget();
+        if (
+            nameInventoryEnabled
+            && data.nameInventoryStatus.phase === 'unavailable'
+        ) {
+            refreshNameInventory();
+        }
     },
     onControllerLost: (host) => {
         console.warn(
@@ -164,6 +184,10 @@ const remoteLimits = {
     numTracks: conf.numTracks
 };
 
+let nameInventoryEnabled = false;
+let nameInventoryTimer = null;
+let nameInventoryQueue = [];
+
 const opusUdpTransport = new OpusUDPTransport({
     port: opusUdpPort,
     fallbackHost: configuredOscTargetHost,
@@ -171,6 +195,12 @@ const opusUdpTransport = new OpusUDPTransport({
     onControllerDiscovered: (host) => {
         console.log(`Discovered Opus-Two UDP controller at ${host}:${opusUdpPort}`);
         updateScalar('remoteTarget', 'remoteTarget', `${host} (SSDP)`);
+        if (
+            nameInventoryEnabled
+            && data.nameInventoryStatus.phase === 'unavailable'
+        ) {
+            refreshNameInventory();
+        }
     },
     onControllerLost: (host) => {
         console.warn(
@@ -283,8 +313,134 @@ function sendUDPRequest(request) {
         }
     }
 
+    if (request.action === 'renameTrack') {
+        updateInventoryName('track', Number(request.number), request.name.trim());
+        confirmInventoryName('track', Number(request.number));
+    } else if (request.action === 'renameFolder') {
+        updateInventoryName('folder', Number(request.number), request.name.trim());
+        confirmInventoryName('folder', Number(request.number));
+    }
+
     updateRemoteTarget();
     return { ok: true, commands };
+}
+
+function inventoryKnownCount(names) {
+    return Object.values(names).filter(name => typeof name === 'string').length;
+}
+
+function updateNameInventoryStatus(values) {
+    Object.assign(data.nameInventoryStatus, values, {
+        knownTracks: inventoryKnownCount(data.udpTrackNames),
+        knownFolders: inventoryKnownCount(data.queriedFolderNames)
+    });
+    emitState('nameInventoryStatus', { ...data.nameInventoryStatus });
+}
+
+function updateInventoryName(kind, number, name) {
+    const limit = kind === 'track' ? conf.numTracks : conf.numFolders;
+    if (
+        !Number.isInteger(number)
+        || number < 1
+        || number > limit
+        || typeof name !== 'string'
+    ) {
+        return;
+    }
+
+    if (kind === 'track') {
+        const changed = data.udpTrackNames[number] !== name;
+        data.trackNames[number] = name;
+        data.udpTrackNames[number] = name;
+        if (changed) {
+            emitState('trackNames', data.trackNames);
+            emitState('udpTrackNames', data.udpTrackNames);
+        }
+    } else {
+        const changed = data.queriedFolderNames[number] !== name;
+        data.queriedFolderNames[number] = name;
+        if (changed) {
+            emitState('queriedFolderNames', data.queriedFolderNames);
+        }
+    }
+
+    updateNameInventoryStatus({});
+}
+
+function confirmInventoryName(kind, number) {
+    const confirmationTimer = setTimeout(() => {
+        sendUDPRequest({
+            action: kind === 'track' ? 'getTrackName' : 'getFolderName',
+            number
+        });
+    }, 250);
+    confirmationTimer.unref();
+}
+
+function finishNameInventoryRefresh(values) {
+    if (nameInventoryTimer !== null) {
+        clearInterval(nameInventoryTimer);
+        nameInventoryTimer = null;
+    }
+    nameInventoryQueue = [];
+    updateNameInventoryStatus(values);
+}
+
+function refreshNameInventory() {
+    nameInventoryEnabled = true;
+    if (nameInventoryTimer !== null) {
+        return {
+            ok: true,
+            started: false,
+            status: { ...data.nameInventoryStatus }
+        };
+    }
+
+    nameInventoryQueue = buildNameInventoryRequests(
+        conf.numTracks,
+        conf.numFolders
+    );
+    updateNameInventoryStatus({
+        phase: 'refreshing',
+        sent: 0,
+        total: nameInventoryQueue.length,
+        message: 'Reading track and folder names from the console'
+    });
+
+    nameInventoryTimer = setInterval(() => {
+        const request = nameInventoryQueue.shift();
+        if (request === undefined) {
+            finishNameInventoryRefresh({
+                phase: 'current',
+                sent: data.nameInventoryStatus.total,
+                lastCompletedAt: new Date().toISOString(),
+                message: 'Console name refresh completed'
+            });
+            return;
+        }
+
+        const result = sendUDPRequest(request);
+        if (!result.ok) {
+            finishNameInventoryRefresh({
+                phase: 'unavailable',
+                message: 'Waiting for a console connection'
+            });
+            return;
+        }
+
+        const sent = data.nameInventoryStatus.sent + 1;
+        data.nameInventoryStatus.sent = sent;
+        if (sent % 10 === 0 || nameInventoryQueue.length === 0) {
+            updateNameInventoryStatus({ sent });
+        }
+    }, nameInventoryQueryIntervalMs);
+    nameInventoryTimer.unref();
+
+    return {
+        ok: true,
+        started: true,
+        status: { ...data.nameInventoryStatus }
+    };
 }
 
 function sendOSCCommand(cmd, state) {
@@ -337,18 +493,14 @@ function handleRemoteReply(reply, rinfo) {
     if (track) {
         const number = Number(track[1]);
         const name = track[2].trim();
-        data.trackNames[number] = name;
-        data.udpTrackNames[number] = name;
-        emitState('trackNames', data.trackNames);
-        emitState('udpTrackNames', data.udpTrackNames);
+        updateInventoryName('track', number, name);
         return;
     }
 
     const folder = /^Fldr(\d{3})(.*)$/u.exec(reply);
     if (folder) {
         const number = Number(folder[1]);
-        data.queriedFolderNames[number] = folder[2].trim();
-        emitState('queriedFolderNames', data.queriedFolderNames);
+        updateInventoryName('folder', number, folder[2].trim());
         return;
     }
 
@@ -567,9 +719,11 @@ function handleUserDefMessage(token, value) {
         && isText(value)
     ) {
         const trackNumber = labelNumber - 980;
-        if (data.trackNames[trackNumber] !== value) {
-            data.trackNames[trackNumber] = value;
-            emitState('trackNames', data.trackNames);
+        if (
+            data.trackNames[trackNumber] !== value
+            || data.udpTrackNames[trackNumber] !== value
+        ) {
+            updateInventoryName('track', trackNumber, value);
         }
         return;
     }
@@ -746,6 +900,7 @@ io.on('connection', (socket) => {
         remoteReply: data.remoteReply,
         remoteTarget: data.remoteTarget,
         queriedFolderNames: data.queriedFolderNames,
+        nameInventoryStatus: data.nameInventoryStatus,
         oledDisplays: data.oledDisplays,
         oledLines: data.oledLines,
         numTracks: conf.numTracks,
@@ -774,6 +929,13 @@ io.on('connection', (socket) => {
                 `Rejected UDP command from socket ${socket.id}: ${result.error}`
             );
         }
+        if (typeof acknowledge === 'function') {
+            acknowledge(result);
+        }
+    });
+
+    socket.on('refreshNameInventory', (acknowledge = () => {}) => {
+        const result = refreshNameInventory();
         if (typeof acknowledge === 'function') {
             acknowledge(result);
         }
@@ -926,6 +1088,12 @@ httpServer.listen(httpPort, () => {
 sendSubscribeMessage();
 const subscribeInterval = setInterval(sendSubscribeMessage, 30 * 60 * 1000);
 subscribeInterval.unref();
+const nameInventoryRefreshInterval = setInterval(() => {
+    if (nameInventoryEnabled) {
+        refreshNameInventory();
+    }
+}, nameInventoryRefreshIntervalMs);
+nameInventoryRefreshInterval.unref();
 
 let shuttingDown = false;
 
@@ -936,6 +1104,11 @@ function shutdown(exitCode = 0) {
 
     shuttingDown = true;
     clearInterval(subscribeInterval);
+    clearInterval(nameInventoryRefreshInterval);
+    if (nameInventoryTimer !== null) {
+        clearInterval(nameInventoryTimer);
+        nameInventoryTimer = null;
+    }
 
     for (const [command, releaseTimeout] of pendingMomentaryReleases) {
         clearTimeout(releaseTimeout);

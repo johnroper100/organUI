@@ -218,15 +218,37 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-body">
-                                <h3 class="h5">Queried track names</h3>
-                                <div v-if="udpTrackNameEntries.length == 0"
-                                    class="text-muted">No track-name replies received</div>
-                                <div class="table-responsive feedback-table" v-else>
+                                <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+                                    <div>
+                                        <h3 class="h5 mb-1">All tracks</h3>
+                                        <div class="small text-muted">{{nameInventorySummary}}</div>
+                                    </div>
+                                    <button class="btn btn-sm btn-outline-primary"
+                                        :disabled="nameInventoryStatus.phase == 'refreshing'"
+                                        @click="refreshNameInventory">
+                                        Refresh names
+                                    </button>
+                                </div>
+                                <div class="progress mb-2" v-if="nameInventoryStatus.phase == 'refreshing'"
+                                    role="progressbar" aria-label="Track and folder name refresh"
+                                    :aria-valuenow="nameInventoryStatus.sent"
+                                    aria-valuemin="0" :aria-valuemax="nameInventoryStatus.total">
+                                    <div class="progress-bar" :style="{width: nameInventoryProgress + '%'}"></div>
+                                </div>
+                                <div class="table-responsive feedback-table">
                                     <table class="table table-sm table-striped mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Track</th>
+                                                <th scope="col">Name</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             <tr v-for="entry in udpTrackNameEntries" :key="entry.number">
-                                                <th>{{entry.number}}</th>
-                                                <td>{{entry.name || '—'}}</td>
+                                                <th scope="row">{{entry.number}}</th>
+                                                <td :class="{'text-muted': !entry.known}">
+                                                    {{entry.known ? (entry.name || 'Unnamed') : 'Awaiting console'}}
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -283,15 +305,26 @@
                                     Rename Folder {{folderNumber}}
                                 </button>
                                 <hr>
-                                <h4 class="h6">Queried folder names</h4>
-                                <div v-if="udpFolderNameEntries.length == 0"
-                                    class="text-muted">No folder-name replies received</div>
-                                <div class="table-responsive feedback-table" v-else>
+                                <div class="d-flex align-items-center justify-content-between gap-2">
+                                    <h4 class="h6 mb-0">All folders</h4>
+                                    <span class="small text-muted">
+                                        {{nameInventoryStatus.knownFolders}} of {{numFolders}} received
+                                    </span>
+                                </div>
+                                <div class="table-responsive feedback-table mt-2">
                                     <table class="table table-sm mb-0">
+                                        <thead>
+                                            <tr>
+                                                <th scope="col">Folder</th>
+                                                <th scope="col">Name</th>
+                                            </tr>
+                                        </thead>
                                         <tbody>
                                             <tr v-for="entry in udpFolderNameEntries" :key="entry.number">
-                                                <th>{{entry.number}}</th>
-                                                <td>{{entry.name || '—'}}</td>
+                                                <th scope="row">{{entry.number}}</th>
+                                                <td :class="{'text-muted': !entry.known}">
+                                                    {{entry.known ? (entry.name || 'Unnamed') : 'Awaiting console'}}
+                                                </td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -872,6 +905,15 @@
                     numLevels: 9999,
                     udpTrackNames: {},
                     queriedFolderNames: {},
+                    nameInventoryStatus: {
+                        phase: "idle",
+                        sent: 0,
+                        total: 1000,
+                        knownTracks: 0,
+                        knownFolders: 0,
+                        lastCompletedAt: "",
+                        message: "Waiting to read names from the console"
+                    },
                     oledDisplays: Array.from(
                         {length: 4},
                         () => ["", "", "", ""]
@@ -1007,20 +1049,44 @@
             },
             computed: {
                 udpTrackNameEntries() {
-                    return Object.entries(this.udpTrackNames)
-                        .map(([number, name]) => ({
-                            number: Number(number),
-                            name: name
-                        }))
-                        .sort((left, right) => left.number - right.number);
+                    return Array.from({length: Number(this.numTracks) || 0},
+                        (_, index) => {
+                            const number = index + 1;
+                            return {
+                                number: number,
+                                name: this.udpTrackNames[number] ?? "",
+                                known: Object.prototype.hasOwnProperty.call(
+                                    this.udpTrackNames,
+                                    number
+                                )
+                            };
+                        });
                 },
                 udpFolderNameEntries() {
-                    return Object.entries(this.queriedFolderNames)
-                        .map(([number, name]) => ({
-                            number: Number(number),
-                            name: name
-                        }))
-                        .sort((left, right) => left.number - right.number);
+                    return Array.from({length: Number(this.numFolders) || 0},
+                        (_, index) => {
+                            const number = index + 1;
+                            return {
+                                number: number,
+                                name: this.queriedFolderNames[number] ?? "",
+                                known: Object.prototype.hasOwnProperty.call(
+                                    this.queriedFolderNames,
+                                    number
+                                )
+                            };
+                        });
+                },
+                nameInventoryProgress() {
+                    const total = Number(this.nameInventoryStatus.total);
+                    return total > 0
+                        ? Math.min(100, (this.nameInventoryStatus.sent / total) * 100)
+                        : 0;
+                },
+                nameInventorySummary() {
+                    const status = this.nameInventoryStatus;
+                    return status.message + " · "
+                        + status.knownTracks + " of " + this.numTracks
+                        + " track names received";
                 },
                 meaningfulStops() {
                     return this.stops
@@ -1093,6 +1159,16 @@
                 }
             },
             methods: {
+                refreshNameInventory() {
+                    this.commandStatus = "Starting console name refresh…";
+                    socket.emit("refreshNameInventory", result => {
+                        this.commandStatus = result?.ok
+                            ? (result.started
+                                ? "Reading names from the console"
+                                : "Name refresh is already running")
+                            : result?.error || "Name refresh could not start";
+                    });
+                },
                 sendUDPcmd(action, values = {}) {
                     this.commandStatus = "Sending UDP " + action + "…";
                     socket.emit(
@@ -1269,6 +1345,7 @@
             numLevels: "numLevels",
             udpTrackNames: "udpTrackNames",
             queriedFolderNames: "queriedFolderNames",
+            nameInventoryStatus: "nameInventoryStatus",
             oledDisplays: "oledDisplays",
             trackNum: "trackNum",
             trackTime: "trackTime",
@@ -1309,6 +1386,8 @@
                 }
             });
         }
+
+        socket.on("connect", () => app.refreshNameInventory());
     </script>
 </body>
 

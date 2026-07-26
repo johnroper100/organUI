@@ -183,6 +183,7 @@ test('advanced protocol controls have valid module syntax and expose every UDP a
         'keyboardStatus',
         'magicTunerStatus',
         'memoryLevel',
+        'nameInventoryStatus',
         'namingCurrentFolder',
         'numFolders',
         'numLevels',
@@ -224,4 +225,15 @@ test('advanced protocol controls have valid module syntax and expose every UDP a
 
     assert.doesNotMatch(html, /^\s*trackNames: "trackNames",?$/mu);
     assert.doesNotMatch(html, /^\s*oledLines: "oledLines",?$/mu);
+    assert.match(
+        html,
+        /Array\.from\(\{length: Number\(this\.numTracks\)/u,
+        'advanced track inventory must contain every configured track'
+    );
+    assert.match(
+        html,
+        /Array\.from\(\{length: Number\(this\.numFolders\)/u,
+        'advanced folder inventory must contain every configured folder'
+    );
+    assert.match(html, /socket\.on\("connect", \(\) => app\.refreshNameInventory\(\)\)/u);
 });
