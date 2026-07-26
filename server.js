@@ -81,8 +81,10 @@ const feedbackFamilies = new Set([
     'faders',
     'keyboard',
     'Stops',
+    'Tabs',
     'UserDef',
-    'OPTICS'
+    'OPTICS',
+    'vibrate'
 ]);
 
 const data = {
@@ -93,21 +95,33 @@ const data = {
     sostActive: 0,
     trackLocked: 0,
     trackNames: {},
+    udpTrackNames: {},
     stops: Array.from(
         { length: 253 },
         (_, index) => ({ number: index + 1, name: '', active: 0 })
     ),
+    triggerStatus: Array.from({ length: 253 }, () => 0),
+    tabLabels: {},
     divLabels: Array.from({ length: 36 }, () => 'Unlabeled Div'),
-    presetStatus: Array.from({ length: 12 }, () => 0),
+    presetStatus: Array.from({ length: 99 }, () => 0),
     pitchStatus: Array.from({ length: 11 }, () => 0),
     expressions: Array.from({ length: 32 }, () => ({ name: '', value: 0 })),
-    keyboardStatus: Array.from({ length: 25 }, () => 0),
+    keyboardStatus: Array.from({ length: 255 }, () => 0),
     folderTrackName: '',
     namingCurrentFolder: 'Current Folder',
     trackDupSrc: '[source]',
     trackDupTgt: '[target]',
     userVars: Array.from({ length: 10 }, () => ({ name: '', value: '' })),
     userVarPage: '',
+    organistNumber: '',
+    memoryLevel: '',
+    trackMinutes: '',
+    trackSeconds: '',
+    transposer: '',
+    cyclesSinceKeypress: '',
+    uptimeSeconds: '',
+    oscSpecialStatus: {},
+    vibrateFeedback: { count: 0, lastReceived: '' },
     remoteReply: '',
     remoteTarget: 'Discovering controller',
     queriedFolderNames: {},
@@ -322,8 +336,11 @@ function handleRemoteReply(reply, rinfo) {
     const track = /^Tk(\d{3})(.*)$/u.exec(reply);
     if (track) {
         const number = Number(track[1]);
-        data.trackNames[number] = track[2].trim();
+        const name = track[2].trim();
+        data.trackNames[number] = name;
+        data.udpTrackNames[number] = name;
         emitState('trackNames', data.trackNames);
+        emitState('udpTrackNames', data.udpTrackNames);
         return;
     }
 
@@ -384,10 +401,24 @@ function isText(value) {
 }
 
 function handleRPMessage(token, value) {
-    if (token === 'label332' && isText(value)) {
+    if (!isText(value)) {
+        return;
+    }
+
+    if (token === 'label328') {
+        updateScalar('organistNumber', 'organistNumber', value);
+    } else if (token === 'label329') {
+        updateScalar('memoryLevel', 'memoryLevel', value);
+    } else if (token === 'label330') {
+        updateScalar('trackMinutes', 'trackMinutes', value);
+    } else if (token === 'label331') {
+        updateScalar('trackSeconds', 'trackSeconds', value);
+    } else if (token === 'label332') {
         updateScalar('trackTime', 'trackTime', value);
     } else if (token === 'label350') {
         updateScalar('trackLocked', 'trackLocked', labelToBinary(value));
+    } else if (token === 'label340') {
+        updateScalar('transposer', 'transposer', value);
     }
 }
 
@@ -414,7 +445,7 @@ function handleFaderMessage(token, value) {
 }
 
 function handleKeyboardMessage(parts, value) {
-    const keyNumber = parseIndexedToken(parts[1], 'key', 1, 25);
+    const keyNumber = parseIndexedToken(parts[1], 'key', 1, 255);
     if (keyNumber === null || parts.length !== 3 || parts[2] !== 'color') {
         return;
     }
@@ -475,6 +506,22 @@ function handleStopsMessage(parts, value) {
         return;
     }
 
+    const triggerNumber = parseIndexedToken(token, 'trigger', 1, 253);
+    if (
+        triggerNumber !== null
+        && parts.length === 3
+        && parts[2] === 'color'
+    ) {
+        const active = colorToBinary(value, ['green'], ['purple']);
+        updateArrayValue(
+            'triggerStatus',
+            data.triggerStatus,
+            triggerNumber - 1,
+            active
+        );
+        return;
+    }
+
     const divisionNumber = parseIndexedToken(token, 'DivLabel', 1, 36);
     if (divisionNumber !== null && isText(value)) {
         const label = value.length === 0 ? 'Unlabeled Div' : value;
@@ -482,9 +529,43 @@ function handleStopsMessage(parts, value) {
     }
 }
 
+function handleTabsMessage(token, value) {
+    const labelNumber = parseIndexedToken(token, 'Label', 1, 99);
+    if (
+        labelNumber === null
+        || !isText(value)
+        || data.tabLabels[labelNumber] === value
+    ) {
+        return;
+    }
+
+    data.tabLabels[labelNumber] = value;
+    emitState('tabLabels', data.tabLabels);
+}
+
 function handleUserDefMessage(token, value) {
-    const labelNumber = parseIndexedToken(token, 'label', 1, 990);
-    if (labelNumber !== null && labelNumber >= 981 && isText(value)) {
+    const labelNumber = parseIndexedToken(token, 'label', 1, 992);
+
+    if (labelNumber === 991 && isText(value)) {
+        updateScalar(
+            'cyclesSinceKeypress',
+            'cyclesSinceKeypress',
+            value
+        );
+        return;
+    }
+
+    if (labelNumber === 992 && isText(value)) {
+        updateScalar('uptimeSeconds', 'uptimeSeconds', value);
+        return;
+    }
+
+    if (
+        labelNumber !== null
+        && labelNumber >= 981
+        && labelNumber <= 990
+        && isText(value)
+    ) {
         const trackNumber = labelNumber - 980;
         if (data.trackNames[trackNumber] !== value) {
             data.trackNames[trackNumber] = value;
@@ -531,7 +612,16 @@ function handleOPTICSMessage(parts, value) {
         return;
     }
 
-    const active = colorToBinary(value, ['red'], ['blue']);
+    if (!isText(value)) {
+        return;
+    }
+
+    if (data.oscSpecialStatus[itemNumber] !== value) {
+        data.oscSpecialStatus[itemNumber] = value;
+        emitState('oscSpecialStatus', data.oscSpecialStatus);
+    }
+
+    const active = colorToBinary(value, ['red'], ['blue', 'gray']);
     if (active === null) {
         return;
     }
@@ -542,7 +632,7 @@ function handleOPTICSMessage(parts, value) {
         updateScalar('sostActive', 'sostActive', active);
     } else if (itemNumber === 2012) {
         updateObjectField('magicTunerStatus', data.magicTunerStatus, 'active', active);
-    } else if (itemNumber >= 1900 && itemNumber <= 1911) {
+    } else if (itemNumber >= 1900 && itemNumber <= 1998) {
         updateArrayValue(
             'presetStatus',
             data.presetStatus,
@@ -557,6 +647,14 @@ function handleOPTICSMessage(parts, value) {
             active
         );
     }
+}
+
+function handleVibrateMessage() {
+    data.vibrateFeedback = {
+        count: data.vibrateFeedback.count + 1,
+        lastReceived: new Date().toISOString()
+    };
+    emitState('vibrateFeedback', data.vibrateFeedback);
 }
 
 function handleOSCMessage(message, rinfo) {
@@ -584,10 +682,14 @@ function handleOSCMessage(message, rinfo) {
             handleKeyboardMessage(parts, value);
         } else if (parts[0] === 'Stops') {
             handleStopsMessage(parts, value);
+        } else if (parts[0] === 'Tabs') {
+            handleTabsMessage(parts[1], value);
         } else if (parts[0] === 'UserDef') {
             handleUserDefMessage(parts[1], value);
         } else if (parts[0] === 'OPTICS') {
             handleOPTICSMessage(parts, value);
+        } else if (parts[0] === 'vibrate') {
+            handleVibrateMessage();
         }
     } catch (error) {
         // A malformed or unexpected UDP packet must not terminate instrument
@@ -616,7 +718,10 @@ io.on('connection', (socket) => {
         uptime: data.uptime,
         magicTunerStatus: data.magicTunerStatus,
         trackNames: data.trackNames,
+        udpTrackNames: data.udpTrackNames,
         stops: data.stops,
+        triggerStatus: data.triggerStatus,
+        tabLabels: data.tabLabels,
         sostActive: data.sostActive,
         divLabels: data.divLabels,
         presetStatus: data.presetStatus,
@@ -629,6 +734,15 @@ io.on('connection', (socket) => {
         trackDupTgt: data.trackDupTgt,
         userVars: data.userVars,
         userVarPage: data.userVarPage,
+        organistNumber: data.organistNumber,
+        memoryLevel: data.memoryLevel,
+        trackMinutes: data.trackMinutes,
+        trackSeconds: data.trackSeconds,
+        transposer: data.transposer,
+        cyclesSinceKeypress: data.cyclesSinceKeypress,
+        uptimeSeconds: data.uptimeSeconds,
+        oscSpecialStatus: data.oscSpecialStatus,
+        vibrateFeedback: data.vibrateFeedback,
         remoteReply: data.remoteReply,
         remoteTarget: data.remoteTarget,
         queriedFolderNames: data.queriedFolderNames,

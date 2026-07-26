@@ -93,6 +93,10 @@ test('builds bounded high-level UDP commands', () => {
         ['LDS Buttons 20']
     );
     assert.deepEqual(
+        buildRemoteCommands({ action: 'resetDevice' }, limits),
+        ['Dev Reset']
+    );
+    assert.deepEqual(
         buildRemoteCommands({ action: 'queryOLED' }, limits),
         ['Query OLED']
     );

@@ -57,6 +57,11 @@ test('parses valid node-osc messages and ignores malformed messages', () => {
         parts: ['Stops', 'push42', 'color'],
         value: 'green'
     });
+    assert.deepEqual(parseOSCMessage(['/vibrate']), {
+        address: '/vibrate',
+        parts: ['vibrate'],
+        value: undefined
+    });
 
     assert.equal(parseOSCMessage(null), null);
     assert.equal(parseOSCMessage([]), null);

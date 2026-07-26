@@ -70,6 +70,7 @@ test('advanced protocol controls have valid module syntax and expose every UDP a
         'recordToggle',
         'renameFolder',
         'renameTrack',
+        'resetDevice',
         'setButton',
         'setFlag',
         'setTransportLamps',
@@ -156,4 +157,54 @@ test('advanced protocol controls have valid module syntax and expose every UDP a
     }
 
     assert.doesNotMatch(html, /sendOSCKey\((?:14|15)\)/u);
+
+    for (const eventName of [
+        'cyclesSinceKeypress',
+        'divLabels',
+        'expressions',
+        'folderTrackName',
+        'keyboardStatus',
+        'magicTunerStatus',
+        'memoryLevel',
+        'namingCurrentFolder',
+        'numFolders',
+        'numLevels',
+        'numTracks',
+        'oledDisplays',
+        'organistNumber',
+        'oscSpecialStatus',
+        'pitchStatus',
+        'presetStatus',
+        'queriedFolderNames',
+        'remoteReply',
+        'remoteTarget',
+        'siteName',
+        'sostActive',
+        'stops',
+        'tabLabels',
+        'trackDupSrc',
+        'trackDupTgt',
+        'trackLocked',
+        'trackMinutes',
+        'trackNum',
+        'trackSeconds',
+        'trackTime',
+        'transposer',
+        'triggerStatus',
+        'udpTrackNames',
+        'uptime',
+        'uptimeSeconds',
+        'userVarPage',
+        'userVars',
+        'vibrateFeedback'
+    ]) {
+        assert.match(
+            html,
+            new RegExp(`${eventName}: "${eventName}"`, 'u'),
+            `missing received-data event ${eventName}`
+        );
+    }
+
+    assert.doesNotMatch(html, /^\s*trackNames: "trackNames",?$/mu);
+    assert.doesNotMatch(html, /^\s*oledLines: "oledLines",?$/mu);
 });
