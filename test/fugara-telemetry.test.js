@@ -35,7 +35,7 @@ test('device identity is generated once and then reused', (t) => {
     assert.match(first.pairingCode, /^[A-Z0-9_-]{10,32}$/);
 });
 
-test('heartbeat reports controller state and both uptimes', async () => {
+test('heartbeat reports organ adapters, normalized status, and both uptimes', async () => {
     let submitted;
     const telemetry = new FugaraTelemetry({
         endpoint: 'https://fugara.example/api/organ-ui/heartbeat',
@@ -43,10 +43,28 @@ test('heartbeat reports controller state and both uptimes', async () => {
         identityPath: path.join(os.tmpdir(), `organui-fugara-${process.pid}-${Date.now()}.json`),
         deviceName: 'Test organ',
         appVersion: '1.2.3',
+        organ: {
+            integrationMode: 'monitor-only',
+            adapters: [{
+                id: 'power-sense',
+                adapter: 'example-sensor',
+                kind: 'sensor',
+                manufacturer: 'Example Controls',
+                model: 'EC-4',
+                capabilities: {
+                    monitoring: ['organ-state', 'uptime'],
+                    control: ['stops']
+                },
+                extensions: {
+                    apiVersion: 4
+                }
+            }]
+        },
         getStatus: () => ({
-            organOn: true,
-            organUptimeSeconds: '125',
-            organUptimeLabel: '2 minutes'
+            observationState: 'available',
+            state: 'on',
+            uptimeSeconds: '125',
+            uptimeLabel: '2 minutes'
         }),
         request: async (endpoint, token, payload) => {
             submitted = { endpoint, token, payload };
@@ -58,11 +76,25 @@ test('heartbeat reports controller state and both uptimes', async () => {
         assert.equal(submitted.endpoint.hostname, 'fugara.example');
         assert.ok(submitted.token.length >= 32);
         assert.match(submitted.payload.pairingCode, /^[A-Z0-9_-]{10,32}$/);
-        assert.equal(submitted.payload.organState, 'on');
-        assert.equal(submitted.payload.organUptimeSeconds, 125);
-        assert.equal(submitted.payload.organUptimeLabel, '2 minutes');
+        assert.equal(submitted.payload.schemaVersion, 2);
+        assert.deepEqual(submitted.payload.services, [{
+            id: 'organ',
+            capabilities: ['monitoring']
+        }]);
+        assert.equal(submitted.payload.organ.integrationMode, 'monitor-only');
+        assert.equal(submitted.payload.organ.adapters[0].adapter, 'example-sensor');
+        assert.equal(submitted.payload.organ.adapters[0].kind, 'sensor');
+        assert.deepEqual(
+            submitted.payload.organ.adapters[0].capabilities.control,
+            []
+        );
+        assert.equal(submitted.payload.organStatus.observationState, 'available');
+        assert.equal(submitted.payload.organStatus.state, 'on');
+        assert.equal(submitted.payload.organStatus.uptimeSeconds, 125);
+        assert.equal(submitted.payload.organStatus.uptimeLabel, '2 minutes');
+        assert.ok(submitted.payload.organUiStatus.uptimeSeconds >= 0);
         assert.equal(submitted.payload.heartbeatIntervalSeconds, 60);
-        assert.ok(submitted.payload.organUiUptimeSeconds >= 0);
+        assert.equal('organUptimeSeconds' in submitted.payload, false);
     } finally {
         fs.rmSync(telemetry.identityPath, { force: true });
     }
@@ -72,4 +104,19 @@ test('invalid uptime values are not reported as zero', () => {
     assert.equal(normalizeUptimeSeconds('42'), 42);
     assert.equal(normalizeUptimeSeconds('not connected'), null);
     assert.equal(normalizeUptimeSeconds(''), null);
+});
+
+test('service descriptors require stable IDs and capabilities', () => {
+    assert.throws(
+        () => new FugaraTelemetry({
+            services: [{ capabilities: ['monitoring'] }]
+        }),
+        /invalid service/
+    );
+    assert.throws(
+        () => new FugaraTelemetry({
+            services: [{ id: 'organ', capabilities: [] }]
+        }),
+        /invalid service/
+    );
 });

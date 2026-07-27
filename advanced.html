@@ -94,6 +94,10 @@
                 <div class="col-12 col-lg-4 text-lg-center mt-3 mt-lg-0">
                     <h1 class="h3 mb-0">Advanced Controls</h1>
                     <div>{{siteName}}</div>
+                    <div class="small" v-if="fugaraPairingCode">
+                        Fugara pairing:
+                        <span class="font-monospace user-select-all">{{fugaraPairingCode}}</span>
+                    </div>
                 </div>
                 <div class="col-12 col-lg-4 text-lg-end mt-3 mt-lg-0">
                     <div>Controller: {{remoteTarget}}</div>
@@ -906,6 +910,7 @@
             data() {
                 return {
                     siteName: "",
+                    fugaraPairingCode: "",
                     remoteTarget: "Discovering controller",
                     remoteReply: "",
                     commandStatus: "",
@@ -1350,6 +1355,7 @@
 
         const stateEvents = {
             siteName: "siteName",
+            fugaraPairingCode: "fugaraPairingCode",
             remoteTarget: "remoteTarget",
             remoteReply: "remoteReply",
             numTracks: "numTracks",

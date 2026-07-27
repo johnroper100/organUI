@@ -41,6 +41,12 @@ const {
 const {
     FugaraTelemetry
 } = require('./lib/fugara-telemetry');
+const {
+    createOrganProfile
+} = require('./lib/organ-profile');
+const {
+    ProbeBroadcastMonitor
+} = require('./lib/probe-broadcast-monitor');
 const packageMetadata = require('./package.json');
 
 const app = express();
@@ -96,6 +102,33 @@ const fugaraHeartbeatSeconds = process.env.FUGARA_HEARTBEAT_SECONDS
 const fugaraIdentityPath = process.env.FUGARA_DEVICE_IDENTITY_PATH
     ?? fugaraConfig.identityPath
     ?? path.join(__dirname, 'fugara-device.json');
+const organProfile = createOrganProfile(conf.organ);
+if (
+    organProfile.adapters.length !== 1
+    || organProfile.adapters[0].adapter !== 'opus-two'
+) {
+    throw new Error(
+        'This release has runtime support for exactly one Opus Two adapter'
+    );
+}
+const probeConfig = (
+    conf.probes
+    && typeof conf.probes === 'object'
+    && !Array.isArray(conf.probes)
+) ? conf.probes : {};
+const probeBroadcastEnabled = probeConfig.localBroadcastEnabled !== false;
+const probeBroadcastPort = Number(
+    process.env.PROBE_BROADCAST_PORT
+    ?? probeConfig.localBroadcastPort
+    ?? 47612
+);
+if (
+    !Number.isInteger(probeBroadcastPort)
+    || probeBroadcastPort < 1
+    || probeBroadcastPort > 65535
+) {
+    throw new Error('PROBE_BROADCAST_PORT/probes.localBroadcastPort must be a valid port');
+}
 
 const oscServer = new OSCServer(oscListenPort, '0.0.0.0');
 const bonjour = new Bonjour();
@@ -280,12 +313,41 @@ const fugaraTelemetry = new FugaraTelemetry({
     identityPath: path.resolve(__dirname, fugaraIdentityPath),
     deviceName: conf.siteName || os.hostname(),
     appVersion: packageMetadata.version,
+    services: [
+        {
+            id: 'organ',
+            capabilities: organProfile.integrationMode === 'control-and-monitor'
+                ? ['monitoring', 'control']
+                : ['monitoring']
+        },
+        ...(probeBroadcastEnabled ? [{
+            id: 'environmental-probes',
+            capabilities: ['local-view']
+        }] : [])
+    ],
+    organ: organProfile,
     getStatus: () => ({
-        organOn: oscTransport.connected,
-        organUptimeSeconds: data.uptimeSeconds,
-        organUptimeLabel: data.uptime
+        observationState: oscTransport.connected ? 'available' : 'unavailable',
+        state: oscTransport.connected ? 'on' : 'off',
+        uptimeSeconds: data.uptimeSeconds,
+        uptimeLabel: data.uptime
     })
 });
+const probeBroadcastMonitor = new ProbeBroadcastMonitor({
+    port: probeBroadcastPort,
+    onReading: (_reading, readings) => {
+        io.emit('probeReadings', readings);
+    },
+    onError: (error) => {
+        console.warn(`Ignored local probe broadcast: ${error.message}`);
+    }
+});
+const probeStatusInterval = setInterval(() => {
+    if (probeBroadcastEnabled) {
+        io.emit('probeReadings', probeBroadcastMonitor.list());
+    }
+}, 30 * 1000);
+probeStatusInterval.unref();
 setImmediate(updateRemoteTarget);
 
 function reportFugaraStateChange() {
@@ -1148,7 +1210,9 @@ io.on('connection', (socket) => {
         numTracks: remoteLimits.numTracks,
         numFolders: remoteLimits.numFolders,
         numLevels: remoteLimits.numLevels,
-        siteName: conf.siteName
+        siteName: conf.siteName,
+        fugaraPairingCode: fugaraTelemetry.identity?.pairingCode ?? '',
+        probeReadings: probeBroadcastMonitor.list()
     };
 
     for (const [eventName, value] of Object.entries(initialState)) {
@@ -1268,6 +1332,10 @@ app.post('/api/udp', (req, res) => {
     });
 });
 
+app.get('/api/probes', (_req, res) => {
+    res.json(probeBroadcastMonitor.list());
+});
+
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'landing.html'));
 });
@@ -1282,6 +1350,10 @@ app.get('/organist', (req, res) => {
 
 app.get('/advanced', (req, res) => {
     res.sendFile(path.join(__dirname, 'advanced.html'));
+});
+
+app.get('/probes', (req, res) => {
+    res.sendFile(path.join(__dirname, 'probes.html'));
 });
 
 app.get('/sequencer', (req, res) => {
@@ -1337,6 +1409,14 @@ httpServer.listen(httpPort, () => {
     } else {
         console.log('Fugara telemetry disabled; configure fugara.telemetryUrl to enable it');
     }
+    if (probeBroadcastEnabled) {
+        probeBroadcastMonitor.start();
+        console.log(
+            `Listening for local Plenum probe broadcasts on UDP ${probeBroadcastPort}`
+        );
+    } else {
+        console.log('Local Plenum probe monitoring disabled');
+    }
     beginCapacityDiscovery();
 });
 
@@ -1360,7 +1440,9 @@ function shutdown(exitCode = 0) {
     shuttingDown = true;
     clearInterval(subscribeInterval);
     clearInterval(nameInventoryRefreshInterval);
+    clearInterval(probeStatusInterval);
     fugaraTelemetry.stop();
+    probeBroadcastMonitor.stop();
     if (nameInventoryTimer !== null) {
         clearInterval(nameInventoryTimer);
         nameInventoryTimer = null;

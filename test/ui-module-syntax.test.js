@@ -5,6 +5,42 @@ const path = require('node:path');
 const test = require('node:test');
 const assert = require('node:assert/strict');
 
+test('every Organ UI page displays the Fugara pairing code', () => {
+    for (const file of [
+        'landing.html',
+        'organist.html',
+        'tuner.html',
+        'advanced.html',
+        'probes.html'
+    ]) {
+        const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+        assert.match(
+            html,
+            /Fugara pairing(?: code)?/u,
+            `${file} is missing the pairing-code label`
+        );
+        assert.match(
+            html,
+            /\{\{fugaraPairingCode\}\}/u,
+            `${file} does not render the pairing code`
+        );
+        assert.match(
+            html,
+            /fugaraPairingCode/u,
+            `${file} does not receive pairing-code data`
+        );
+    }
+
+    const server = fs.readFileSync(
+        path.join(__dirname, '..', 'server.js'),
+        'utf8'
+    );
+    assert.match(
+        server,
+        /fugaraPairingCode: fugaraTelemetry\.identity\?\.pairingCode \?\? ''/u
+    );
+});
+
 for (const file of ['organist.html', 'tuner.html']) {
     test(`${file} has valid module-script syntax and UDP controls`, () => {
         const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
@@ -25,6 +61,26 @@ for (const file of ['organist.html', 'tuner.html']) {
         assert.match(html, /UDP(?: target)?: \{\{remoteTarget\}\}/u);
     });
 }
+
+test('probe dashboard has valid module syntax and consumes local readings', () => {
+    const html = fs.readFileSync(
+        path.join(__dirname, '..', 'probes.html'),
+        'utf8'
+    );
+    const scripts = [
+        ...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/gu)
+    ];
+
+    assert.equal(scripts.length, 1);
+    const source = scripts[0][1].replace(
+        "import { createApp } from 'vue'",
+        'const createApp = null'
+    );
+    assert.doesNotThrow(() => new Function(source));
+    assert.match(html, /socket\.on\('probeReadings'/u);
+    assert.match(html, /probe\.temperature/u);
+    assert.match(html, /probe\.humidity/u);
+});
 
 test('advanced protocol controls have valid module syntax and expose every UDP action', () => {
     const html = fs.readFileSync(

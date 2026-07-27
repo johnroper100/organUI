@@ -4,8 +4,24 @@
     "numLevels": 999,
     "numTracks": 999,
     "udpPort": 5005,
+    "organ": {
+        "integrationMode": "control-and-monitor",
+        "adapters": [
+            {
+                "id": "opus-two-primary",
+                "adapter": "opus-two",
+                "kind": "control-system",
+                "manufacturer": "Opus Two",
+                "model": ""
+            }
+        ]
+    },
+    "probes": {
+        "localBroadcastEnabled": true,
+        "localBroadcastPort": 47612
+    },
     "fugara": {
-        "telemetryUrl": "https://app.fugara.tech/api/organ-ui/heartbeat",
+        "telemetryUrl": "http://localhost/plenum-apps/fugara/api/organ-ui/heartbeat",
         "heartbeatSeconds": 60
     }
 }

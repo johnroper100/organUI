@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Organ UI - Environmental Probes</title>
+    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
+    <link href="/static/css/style.css" rel="stylesheet">
+    <script type="importmap">
+        {
+            "imports": {
+                "vue": "/static/js/vue.esm-browser.js"
+            }
+        }
+    </script>
+</head>
+
+<body class="bg-light">
+    <div id="app" class="container py-4">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+            <div>
+                <a href="/" class="small text-decoration-none">&larr; Organ UI</a>
+                <h1 class="h3 mb-0">Environmental probes</h1>
+                <div class="text-muted">{{siteName}}</div>
+                <div class="small text-muted" v-if="fugaraPairingCode">
+                    Fugara pairing:
+                    <span class="font-monospace user-select-all">{{fugaraPairingCode}}</span>
+                </div>
+            </div>
+            <span class="badge bg-secondary">{{probes.length}} discovered locally</span>
+        </div>
+
+        <div class="alert alert-info" v-if="!probes.length">
+            Waiting for Plenum probe broadcasts on the local network.
+        </div>
+
+        <div class="row g-3">
+            <div class="col-12 col-md-6 col-xl-4" v-for="probe in probes" :key="probe.serialNo">
+                <article class="card h-100 shadow-sm">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <span class="fw-semibold">{{probe.serialNo}}</span>
+                        <span class="badge" :class="probe.online ? 'bg-success' : 'bg-warning text-dark'">
+                            {{probe.online ? 'Live' : 'Stale'}}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center g-3">
+                            <div class="col-6">
+                                <div class="display-6">{{formatNumber(probe.temperature, 1)}}&deg;</div>
+                                <div class="text-muted">{{probe.temperatureUnit}}</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="display-6">{{formatNumber(probe.humidity, 1)}}%</div>
+                                <div class="text-muted">Relative humidity</div>
+                            </div>
+                        </div>
+                        <dl class="row small mt-4 mb-0">
+                            <dt class="col-5">Last local reading</dt>
+                            <dd class="col-7">{{formatTime(probe.receivedAt)}}</dd>
+                            <dt class="col-5">Address</dt>
+                            <dd class="col-7 text-break">{{probe.ipAddress || 'Not reported'}}</dd>
+                            <dt class="col-5">Update interval</dt>
+                            <dd class="col-7">{{probe.updateFrequency}} seconds</dd>
+                        </dl>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/bootstrap.bundle.min.js"></script>
+    <script src="/socket.io/socket.io.js"></script>
+    <script type="module">
+        import { createApp } from 'vue'
+
+        const socket = io();
+        const app = createApp({
+            data() {
+                return {
+                    siteName: "",
+                    fugaraPairingCode: "",
+                    probes: []
+                }
+            },
+            methods: {
+                formatNumber(value, digits) {
+                    const number = Number(value);
+                    return Number.isFinite(number) ? number.toFixed(digits) : "—";
+                },
+                formatTime(value) {
+                    const date = new Date(value);
+                    return Number.isNaN(date.getTime()) ? "Never" : date.toLocaleString();
+                }
+            }
+        }).mount('#app');
+
+        socket.on('siteName', function(name) {
+            app.siteName = name;
+        });
+        socket.on('fugaraPairingCode', function(pairingCode) {
+            app.fugaraPairingCode = pairingCode || "";
+        });
+        socket.on('probeReadings', function(readings) {
+            app.probes = Array.isArray(readings) ? readings : [];
+        });
+    </script>
+</body>
+
+</html>

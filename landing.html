@@ -23,10 +23,15 @@
             <h1 class="display-3 text-center mb-5">Pipe Organ Interface</h1>
             <div class="row justify-content-center">
                 <div class="col-12 col-md-5">
+                    <div class="alert alert-info text-center" v-if="fugaraPairingCode">
+                        <div class="small text-uppercase fw-semibold">Fugara pairing code</div>
+                        <div class="fs-4 font-monospace user-select-all">{{fugaraPairingCode}}</div>
+                    </div>
                     <h1>I am the:</h1>
                     <a href="/organist" class="btn btn-outline-secondary mb-3 btn-lg w-100 p-4">Organist</a>
                     <!--<a href="/sequencer" class="btn btn-primary mb-3 btn-lg w-100 p-2">Console Assistant</a>-->
                     <a href="/tuner" class="btn btn-outline-secondary mb-3 btn-lg w-100 p-2">Organ Technician</a>
+                    <a href="/probes" class="btn btn-outline-primary mb-3 btn-lg w-100 p-2">Environmental Probes</a>
                     <a href="/advanced" class="btn btn-outline-danger mb-3 btn-lg w-100 p-2">Advanced OSC / UDP</a>
                 </div>
             </div>
@@ -42,6 +47,7 @@
             data() {
                 return {
                     siteName: "",
+                    fugaraPairingCode: "",
                     uptime: "No Uptime"
                 }
             },
@@ -49,6 +55,10 @@
 
         socket.on('siteName', function (name) {
             app.siteName = name;
+        });
+
+        socket.on('fugaraPairingCode', function (pairingCode) {
+            app.fugaraPairingCode = pairingCode || "";
         });
 
         socket.on('uptime', function (time) {

@@ -1,6 +1,8 @@
 # organUI
 
-Local web and watch bridge for Opus-Two controllers.
+Local organ control and monitoring gateway. The current release includes the
+Opus Two adapter; the Fugara integration and capability model are
+control-system neutral.
 
 ## Run
 
@@ -51,10 +53,39 @@ The ports can be configured in `conf.json` with `udpPort`, `oscSendPort`,
 
 ## Fugara monitoring
 
-organUI can report the console's on/off state and uptime to Fugara with an
-outbound HTTPS heartbeat. This works through normal church NAT and firewall
-setups: it does not require port forwarding, a public/static IP address, or any
-inbound connection to the church network.
+organUI reports its organ adapters, capabilities, normalized organ state, and
+uptime to Fugara with an outbound HTTPS heartbeat. This works through normal
+church NAT and firewall setups: it does not require port forwarding, a
+public/static IP address, or any inbound connection to the church network.
+
+Adapters are status inputs and control outputs used by the general Organ UI
+server. A control system is one possible adapter, not a requirement. An organ
+without a control system can use a sensor/contact-closure adapter, and a future
+installation can combine several adapters:
+
+```json
+{
+  "organ": {
+    "integrationMode": "control-and-monitor",
+    "adapters": [
+      {
+        "id": "opus-two-primary",
+        "adapter": "opus-two",
+        "kind": "control-system",
+        "manufacturer": "Opus Two",
+        "model": ""
+      }
+    ]
+  }
+}
+```
+
+`integrationMode` is `control-and-monitor` when organUI is the site's primary
+control surface, or `monitor-only` when the manufacturer's control surface
+remains primary and organUI mainly reports operational data. An adapter supplies
+its default monitoring and control capabilities. Configuration may override
+them with each adapter's `capabilities.monitoring` and `capabilities.control`;
+monitor-only profiles never advertise control capabilities.
 
 Set the public Fugara heartbeat URL in `conf.json`:
 
@@ -75,14 +106,40 @@ different Fugara device identity. `FUGARA_DEVICE_IDENTITY_PATH` can place it in
 a persistent application-data directory.
 
 Once its first heartbeat reaches Fugara, link the newly discovered organUI
-device from the client's Overview page. Fugara records a state event whenever
-the Opus-Two controller begins or stops returning OSC feedback, and organUI
-sends those transitions immediately rather than waiting for the next scheduled
-heartbeat. This assumes the organUI server remains powered while the console's
-physical switch controls the organ controller. If organUI heartbeats stop,
-Fugara reports the site connection as unreachable instead of claiming that the
-organ is off, since a network or organUI power failure cannot be distinguished
-remotely.
+device from the client's Overview page. Fugara records normalized organ-state
+events regardless of which adapter observed them, and organUI sends transitions
+immediately rather than waiting for the next scheduled heartbeat. If organUI
+heartbeats stop, Fugara reports the site connection as unreachable instead of
+claiming that the organ is off.
+
+The heartbeat uses schema version 2. Its `services` list describes the general
+roles hosted by Organ UI, while generic organ fields and adapters describe how
+this instrument is observed or controlled. Every adapter identifies its kind,
+capabilities, and isolated `extensions` object. See
+[`docs/fugara-integration.md`](docs/fugara-integration.md) for the contract and
+the planned remote-command boundary.
+
+## Local environmental probes
+
+Plenum temperature/humidity probes continue to send their historical data
+directly to Fugara. They also broadcast the latest reading on UDP port `47612`.
+organUI listens to that independent local stream and provides an on-site
+dashboard at `/probes`; Fugara availability is not required to view current
+readings.
+
+```json
+{
+  "probes": {
+    "localBroadcastEnabled": true,
+    "localBroadcastPort": 47612
+  }
+}
+```
+
+Set `PROBE_BROADCAST_PORT` to override the port. The read-only
+`GET /api/probes` endpoint and `probeReadings` Socket.IO event expose the latest
+validated reading per serial number. A reading becomes stale after three
+reported update intervals (with a 60-second minimum).
 
 Discovery uses IPv4 broadcasts and therefore requires organUI and the
 controller to be on the same broadcast network. For a controller on a different
@@ -103,6 +160,7 @@ The browser UI is available at:
 
 - `/organist` for performance controls
 - `/tuner` for tuning, stops, naming, and recorder controls
+- `/probes` for locally broadcast temperature and humidity readings
 - `/advanced` for complete OSC-family and remote UDP command coverage
 
 The Advanced page is intentionally a direct protocol test surface. Its

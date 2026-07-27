@@ -22,6 +22,10 @@
             <div class="row ps-3 pe-3 pt-2 pb-2 align-items-center">
                 <div class="col-12 col-md-4">
                     <h4 class="d-none d-md-block">{{siteName}}</h4>
+                    <div class="small" v-if="fugaraPairingCode">
+                        Fugara pairing:
+                        <span class="font-monospace user-select-all">{{fugaraPairingCode}}</span>
+                    </div>
                 </div>
                 <div class="col-12 col-md-4">
                     <h4 class="text-md-center">{{uptime}}</h4>
@@ -556,6 +560,8 @@
             data() {
                 return {
                     page: 0,
+                    siteName: "",
+                    fugaraPairingCode: "",
                     trackNum: "",
                     trackTime: "-- : --",
                     trackLocked: 0,
@@ -622,6 +628,10 @@
 
         socket.on('siteName', function (name) {
             app.siteName = name;
+        });
+
+        socket.on('fugaraPairingCode', function (pairingCode) {
+            app.fugaraPairingCode = pairingCode || "";
         });
 
         socket.on('trackNum', function (num) {
