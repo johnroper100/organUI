@@ -51,6 +51,21 @@ Every heartbeat contains:
     "uptimeSeconds": 125,
     "uptimeLabel": "2 minutes"
   },
+  "powerStatus": {
+    "combine": "separate",
+    "controlPower": {
+      "source": "controller-api",
+      "included": true,
+      "observationState": "available",
+      "state": "on"
+    },
+    "blowerPower": {
+      "source": "ignore",
+      "included": false,
+      "observationState": "unknown",
+      "state": "unknown"
+    }
+  },
   "organUiStatus": {
     "uptimeSeconds": 900
   }
@@ -92,6 +107,44 @@ Examples of valid future sources include:
 
 Resolution policy belongs in Organ UI. Fugara receives one normalized state plus
 the adapter inventory needed to explain where features come from.
+
+### Power sensing policy
+
+Organ UI keeps control-system power and blower power as separate observations.
+Configure their sources under `organ.powerSensing`:
+
+```json
+{
+  "organ": {
+    "powerSensing": {
+      "control": "controller-api",
+      "blower": "ignore",
+      "combine": "separate"
+    }
+  }
+}
+```
+
+`control` accepts `controller-api`, `power-monitor`, or `ignore`. `blower`
+accepts `power-monitor` or `ignore`. The Raspberry Pi `power-monitor` inputs
+are reserved by this contract but are not implemented yet, so selecting one
+reports that metric and the resolved organ state as `unknown` until a reading
+provider is added.
+
+When both metrics are included, `combine: "any"` reports the organ on when
+either circuit is on; it reports off only when both are known to be off.
+`combine: "all"` reports on only when both are on and off when either is known
+to be off. `combine: "separate"` (or `combine: false`) reports the two metrics
+without producing a single organ on/off state. An ignored metric remains
+visible as ignored in Fugara but does not participate in the resolved
+`organStatus`.
+
+Typical configurations are:
+
+- Control system drives the blower: control `controller-api`, blower `ignore`.
+- Blower-only organ: control `ignore`, blower `power-monitor`.
+- Separately powered control and blower: include both and use `separate`, unless
+  the installation specifically needs an `any` or `all` aggregate.
 
 ## Other local services
 

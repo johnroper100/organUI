@@ -45,6 +45,10 @@ const {
     createOrganProfile
 } = require('./lib/organ-profile');
 const {
+    createPowerSensingConfig,
+    resolveOrganPowerStatus
+} = require('./lib/organ-power-sensing');
+const {
     ProbeBroadcastMonitor
 } = require('./lib/probe-broadcast-monitor');
 const packageMetadata = require('./package.json');
@@ -103,6 +107,7 @@ const fugaraIdentityPath = process.env.FUGARA_DEVICE_IDENTITY_PATH
     ?? fugaraConfig.identityPath
     ?? path.join(__dirname, 'fugara-device.json');
 const organProfile = createOrganProfile(conf.organ);
+const powerSensing = createPowerSensingConfig(conf.organ?.powerSensing);
 if (
     organProfile.adapters.length !== 1
     || organProfile.adapters[0].adapter !== 'opus-two'
@@ -326,12 +331,20 @@ const fugaraTelemetry = new FugaraTelemetry({
         }] : [])
     ],
     organ: organProfile,
-    getStatus: () => ({
-        observationState: oscTransport.connected ? 'available' : 'unavailable',
-        state: oscTransport.connected ? 'on' : 'off',
-        uptimeSeconds: data.uptimeSeconds,
-        uptimeLabel: data.uptime
-    })
+    getStatus: () => {
+        const powerStatus = resolveOrganPowerStatus(powerSensing, {
+            controllerApiConnected: oscTransport.connected
+            // controlPower and blowerPower are intentionally left unavailable
+            // until the Raspberry Pi power-monitor inputs are implemented.
+        });
+        return {
+            observationState: powerStatus.organ.observationState,
+            state: powerStatus.organ.state,
+            uptimeSeconds: data.uptimeSeconds,
+            uptimeLabel: data.uptime,
+            powerStatus
+        };
+    }
 });
 const probeBroadcastMonitor = new ProbeBroadcastMonitor({
     port: probeBroadcastPort,

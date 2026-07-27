@@ -80,6 +80,30 @@ installation can combine several adapters:
 }
 ```
 
+Organ on/off reporting separately tracks control power and blower power. The
+default uses the live controller API connection for control power and ignores
+blower power:
+
+```json
+{
+  "organ": {
+    "powerSensing": {
+      "control": "controller-api",
+      "blower": "ignore",
+      "combine": "separate"
+    }
+  }
+}
+```
+
+Set either metric to `ignore` when it is not meaningful for an installation.
+Control power may use `controller-api` or the future `power-monitor` input;
+blower power may use `power-monitor`. With both included, `any` considers the
+organ on when either input is on, while `all` requires both. Raspberry Pi power
+monitor inputs are not implemented yet and therefore report `unknown`.
+Use `combine: "separate"` (or `false`) when both metrics should be reported
+independently without also reporting a single resolved “organ on” state.
+
 `integrationMode` is `control-and-monitor` when organUI is the site's primary
 control surface, or `monitor-only` when the manufacturer's control surface
 remains primary and organUI mainly reports operational data. An adapter supplies

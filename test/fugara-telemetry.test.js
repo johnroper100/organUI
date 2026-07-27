@@ -64,7 +64,22 @@ test('heartbeat reports organ adapters, normalized status, and both uptimes', as
             observationState: 'available',
             state: 'on',
             uptimeSeconds: '125',
-            uptimeLabel: '2 minutes'
+            uptimeLabel: '2 minutes',
+            powerStatus: {
+                combine: 'any',
+                controlPower: {
+                    source: 'controller-api',
+                    included: true,
+                    observationState: 'available',
+                    state: 'on'
+                },
+                blowerPower: {
+                    source: 'ignore',
+                    included: false,
+                    observationState: 'unknown',
+                    state: 'unknown'
+                }
+            }
         }),
         request: async (endpoint, token, payload) => {
             submitted = { endpoint, token, payload };
@@ -92,6 +107,9 @@ test('heartbeat reports organ adapters, normalized status, and both uptimes', as
         assert.equal(submitted.payload.organStatus.state, 'on');
         assert.equal(submitted.payload.organStatus.uptimeSeconds, 125);
         assert.equal(submitted.payload.organStatus.uptimeLabel, '2 minutes');
+        assert.equal(submitted.payload.powerStatus.combine, 'any');
+        assert.equal(submitted.payload.powerStatus.controlPower.state, 'on');
+        assert.equal(submitted.payload.powerStatus.blowerPower.included, false);
         assert.ok(submitted.payload.organUiStatus.uptimeSeconds >= 0);
         assert.equal(submitted.payload.heartbeatIntervalSeconds, 60);
         assert.equal('organUptimeSeconds' in submitted.payload, false);

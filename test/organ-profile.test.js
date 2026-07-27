@@ -14,6 +14,7 @@ test('the default organ profile installs the first Opus Two adapter', () => {
     assert.equal(adapter.adapter, 'opus-two');
     assert.equal(adapter.kind, 'control-system');
     assert.equal(adapter.manufacturer, 'Opus Two');
+    assert.ok(adapter.capabilities.monitoring.includes('control-power'));
     assert.ok(adapter.capabilities.monitoring.includes('organ-state'));
     assert.ok(adapter.capabilities.control.includes('stops'));
 });

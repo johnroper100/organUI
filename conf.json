@@ -6,6 +6,11 @@
     "udpPort": 5005,
     "organ": {
         "integrationMode": "control-and-monitor",
+        "powerSensing": {
+            "control": "controller-api",
+            "blower": "ignore",
+            "combine": "separate"
+        },
         "adapters": [
             {
                 "id": "opus-two-primary",
