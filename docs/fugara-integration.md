@@ -125,11 +125,11 @@ Configure their sources under `organ.powerSensing`:
 }
 ```
 
-`control` accepts `controller-api`, `power-monitor`, or `ignore`. `blower`
-accepts `power-monitor` or `ignore`. The Raspberry Pi `power-monitor` inputs
-are reserved by this contract but are not implemented yet, so selecting one
-reports that metric and the resolved organ state as `unknown` until a reading
-provider is added.
+`control` accepts `controller-api`, `power-probe`, or `ignore`. `blower`
+accepts `power-probe` or `ignore`. `controlProbe` and `blowerProbe` select the
+Plenum power-probe serial used for each metric. If the configured serial is
+blank and exactly one power probe is discovered, that probe is selected
+automatically. OrganUI does not provide a native current-sensor input.
 
 When both metrics are included, `combine: "any"` reports the organ on when
 either circuit is on; it reports off only when both are known to be off.
@@ -142,17 +142,17 @@ visible as ignored in Fugara but does not participate in the resolved
 Typical configurations are:
 
 - Control system drives the blower: control `controller-api`, blower `ignore`.
-- Blower-only organ: control `ignore`, blower `power-monitor`.
+- Blower-only organ: control `ignore`, blower `power-probe`.
 - Separately powered control and blower: include both and use `separate`, unless
   the installation specifically needs an `any` or `all` aggregate.
 
 ## Other local services
 
-Not every Organ UI data source is an organ-status adapter. Environmental probes
-are a separate stream: probes send history directly to Fugara and broadcast
-current readings on the LAN. Organ UI listens on UDP `47612` and provides the
-local `/probes` dashboard without turning probe readings into organ on/off
-status.
+Not every Organ UI data source is an organ-status adapter. Plenum probes are a
+separate stream: probes send history directly to Fugara and broadcast current
+readings on the LAN. Organ UI listens on UDP `47612` and provides the local
+`/probes` dashboard. A power probe only contributes to organ on/off status when
+selected by `organ.powerSensing`.
 
 Keeping these domains separate allows one Organ UI process and web application
 to host organ control, organ monitoring, and local probe viewing without

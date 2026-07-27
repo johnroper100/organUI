@@ -82,6 +82,9 @@ test('probe dashboard has valid module syntax and consumes local readings', () =
     assert.match(html, /probe\.serialNo/u);
     assert.match(html, /probe\.temperature/u);
     assert.match(html, /probe\.humidity/u);
+    assert.match(html, /probe\.currentAmps/u);
+    assert.match(html, /probe\.estimatedWatts/u);
+    assert.match(html, /probe\.loadState/u);
     assert.match(html, /probe\.macAddress/u);
     assert.match(html, /probe\.firmwareVersion/u);
 });

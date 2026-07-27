@@ -11,6 +11,7 @@ function packet(overrides = {}) {
     return Buffer.from(JSON.stringify({
         type: 'plenum_probe_reading',
         version: 1,
+        probeType: 'environment',
         serialNo: 'PT-1234-5678-9ABC',
         name: 'Great Division',
         macAddress: 'AA:BB:CC:DD:EE:FF',
@@ -34,6 +35,35 @@ function packet(overrides = {}) {
         humidityOffset: 0.5,
         temperatureScale: 1,
         humidityScale: 1,
+        ...overrides
+    }));
+}
+
+function powerPacket(overrides = {}) {
+    return Buffer.from(JSON.stringify({
+        type: 'plenum_probe_reading',
+        version: 1,
+        probeType: 'power',
+        serialNo: 'PW-1234-5678-9ABC',
+        name: 'Main blower',
+        macAddress: '02:11:22:33:44:55',
+        ipAddress: '192.0.2.20',
+        probeUrl: 'https://app.fugara.tech/api/probeData',
+        firmwareVersion: '2.0.0',
+        currentAmps: 18.25,
+        currentUnit: 'A',
+        rawSensorVoltage: 0.1825,
+        sensorVoltageUnit: 'V',
+        estimatedWatts: 1971,
+        powerUnit: 'W',
+        loadState: 'on',
+        updateFrequency: 300,
+        screenRotation: 180,
+        currentScale: 100,
+        currentOffsetAmps: 0,
+        lineVoltage: 120,
+        powerFactor: 0.9,
+        onThresholdAmps: 1,
         ...overrides
     }));
 }
@@ -100,4 +130,29 @@ test('tracks the latest reading per probe and derives local reachability', () =>
 
     const stale = monitor.list(new Date('2026-07-27T12:17:00Z'));
     assert.equal(stale[0].online, false);
+});
+
+test('parses power probe current, estimated load, and calibration contract', () => {
+    const reading = parseProbeBroadcast(
+        powerPacket(),
+        { address: '192.0.2.99' },
+        new Date('2026-07-27T12:00:00Z')
+    );
+
+    assert.equal(reading.probeType, 'power');
+    assert.equal(reading.currentAmps, 18.25);
+    assert.equal(reading.estimatedWatts, 1971);
+    assert.equal(reading.loadState, 'on');
+    assert.equal(reading.currentScale, 100);
+});
+
+test('rejects malformed power probe units and load states', () => {
+    assert.throws(
+        () => parseProbeBroadcast(powerPacket({ currentUnit: 'mA' })),
+        /units/u
+    );
+    assert.throws(
+        () => parseProbeBroadcast(powerPacket({ loadState: 'running' })),
+        /load state/u
+    );
 });

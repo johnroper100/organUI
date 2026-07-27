@@ -8,7 +8,9 @@
         "integrationMode": "control-and-monitor",
         "powerSensing": {
             "control": "controller-api",
+            "controlProbe": "",
             "blower": "ignore",
+            "blowerProbe": "",
             "combine": "separate"
         },
         "adapters": [

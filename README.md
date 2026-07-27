@@ -97,10 +97,28 @@ blower power:
 ```
 
 Set either metric to `ignore` when it is not meaningful for an installation.
-Control power may use `controller-api` or the future `power-monitor` input;
-blower power may use `power-monitor`. With both included, `any` considers the
-organ on when either input is on, while `all` requires both. Raspberry Pi power
-monitor inputs are not implemented yet and therefore report `unknown`.
+Control power may use `controller-api` or `power-probe`; blower power may use
+`power-probe`. Select a specific locally discovered Plenum power probe with
+`controlProbe` or `blowerProbe`:
+
+```json
+{
+  "organ": {
+    "powerSensing": {
+      "control": "power-probe",
+      "controlProbe": "PW-1111-2222-3333",
+      "blower": "power-probe",
+      "blowerProbe": "PW-4444-5555-6666",
+      "combine": "separate"
+    }
+  }
+}
+```
+
+When only one power probe is discovered, it is selected automatically if the
+configured serial is blank. OrganUI has no native current-sensor input. With
+both metrics included, `any` considers the organ on when either input is on,
+while `all` requires both.
 Use `combine: "separate"` (or `false`) when both metrics should be reported
 independently without also reporting a single resolved “organ on” state.
 
@@ -143,13 +161,12 @@ capabilities, and isolated `extensions` object. See
 [`docs/fugara-integration.md`](docs/fugara-integration.md) for the contract and
 the planned remote-command boundary.
 
-## Local environmental probes
+## Local probes
 
-Plenum temperature/humidity probes continue to send their historical data
-directly to Fugara. They also broadcast the latest reading on UDP port `47612`.
-organUI listens to that independent local stream and provides an on-site
-dashboard at `/probes`; Fugara availability is not required to view current
-readings.
+Plenum temperature/humidity and power probes send historical data directly to
+Fugara. They also broadcast the latest reading on UDP port `47612`. organUI
+listens to that independent local stream and provides an on-site dashboard at
+`/probes`; Fugara availability is not required to view current readings.
 
 ```json
 {

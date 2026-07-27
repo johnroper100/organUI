@@ -4,7 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Organ UI - Environmental Probes</title>
+    <title>Organ UI - Probes</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/style.css" rel="stylesheet">
     <script type="importmap">
@@ -21,7 +21,7 @@
         <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
             <div>
                 <a href="/" class="small text-decoration-none">&larr; Organ UI</a>
-                <h1 class="h3 mb-0">Environmental probes</h1>
+                <h1 class="h3 mb-0">Probes</h1>
                 <div class="text-muted">{{siteName}}</div>
                 <div class="small text-muted" v-if="fugaraPairingCode">
                     Fugara pairing:
@@ -43,12 +43,15 @@
                             <div class="fw-semibold">{{probe.name || 'Name not reported'}}</div>
                             <div class="small text-muted font-monospace">{{probe.serialNo}}</div>
                         </div>
-                        <span class="badge" :class="probe.online ? 'bg-success' : 'bg-warning text-dark'">
-                            {{probe.online ? 'Live' : 'Stale'}}
-                        </span>
+                        <div class="d-flex gap-2">
+                            <span class="badge bg-primary">{{probe.probeType === 'power' ? 'Power' : 'Environment'}}</span>
+                            <span class="badge" :class="probe.online ? 'bg-success' : 'bg-warning text-dark'">
+                                {{probe.online ? 'Live' : 'Stale'}}
+                            </span>
+                        </div>
                     </div>
                     <div class="card-body">
-                        <div class="row text-center g-3">
+                        <div class="row text-center g-3" v-if="probe.probeType === 'environment'">
                             <div class="col-6">
                                 <div class="display-6">{{formatNumber(probe.temperature, 1)}}&deg;</div>
                                 <div class="text-muted">{{probe.temperatureUnit}}</div>
@@ -67,6 +70,20 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row text-center g-3" v-else>
+                            <div class="col-6">
+                                <div class="display-6">{{formatNumber(probe.currentAmps, 2)}} A</div>
+                                <div class="text-muted">RMS current</div>
+                                <div class="small text-muted mt-1">Sensor {{formatNumber(probe.rawSensorVoltage, 4)}} V RMS</div>
+                            </div>
+                            <div class="col-6">
+                                <div class="display-6">{{formatWatts(probe.estimatedWatts)}}</div>
+                                <div class="text-muted">Estimated load</div>
+                                <span class="badge mt-1" :class="probe.loadState === 'on' ? 'bg-success' : 'bg-secondary'">
+                                    {{probe.loadState === 'on' ? 'On' : 'Off'}}
+                                </span>
+                            </div>
+                        </div>
                         <dl class="row small mt-4 mb-0">
                             <dt class="col-5">Name</dt>
                             <dd class="col-7">{{probe.name || 'Not reported'}}</dd>
@@ -80,6 +97,7 @@
                             <dd class="col-7 font-monospace text-break">{{probe.macAddress || 'Not reported'}}</dd>
                             <dt class="col-5">Update interval</dt>
                             <dd class="col-7">{{probe.updateFrequency}} seconds</dd>
+                            <template v-if="probe.probeType === 'environment'">
                             <dt class="col-5">Display setting</dt>
                             <dd class="col-7">
                                 {{probe.displayTemperatureUnit}}
@@ -92,6 +110,17 @@
                                 Humidity {{formatSigned(probe.humidityOffset)}}%
                                 &times; {{formatNumber(probe.humidityScale, 3)}}
                             </dd>
+                            </template>
+                            <template v-else>
+                            <dt class="col-5">Display setting</dt>
+                            <dd class="col-7">{{probe.screenRotation}}&deg; rotation</dd>
+                            <dt class="col-5">On threshold</dt>
+                            <dd class="col-7">{{formatNumber(probe.onThresholdAmps, 2)}} A</dd>
+                            <dt class="col-5">Calibration</dt>
+                            <dd class="col-7">{{formatNumber(probe.currentScale, 2)}} A/V &middot; {{formatSigned(probe.currentOffsetAmps)}} A</dd>
+                            <dt class="col-5">Power estimate</dt>
+                            <dd class="col-7">{{formatNumber(probe.lineVoltage, 0)}} V &middot; PF {{formatNumber(probe.powerFactor, 2)}}</dd>
+                            </template>
                             <dt class="col-5">Firmware</dt>
                             <dd class="col-7">v{{probe.firmwareVersion}}</dd>
                             <dt class="col-5">Fugara endpoint</dt>
@@ -135,6 +164,15 @@
                 formatTime(value) {
                     const date = new Date(value);
                     return Number.isNaN(date.getTime()) ? "Never" : date.toLocaleString();
+                },
+                formatWatts(value) {
+                    const number = Number(value);
+                    if (!Number.isFinite(number)) {
+                        return "--";
+                    }
+                    return number >= 1000
+                        ? `${this.formatNumber(number / 1000, 2)} kW`
+                        : `${this.formatNumber(number, 0)} W`;
                 }
             }
         }).mount('#app');

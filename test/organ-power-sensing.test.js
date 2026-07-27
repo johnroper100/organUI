@@ -4,7 +4,8 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const {
     createPowerSensingConfig,
-    resolveOrganPowerStatus
+    resolveOrganPowerStatus,
+    resolvePowerProbeObservation
 } = require('../lib/organ-power-sensing');
 
 test('default sensing treats the controller API connection as control power', () => {
@@ -15,7 +16,9 @@ test('default sensing treats the controller API connection as control power', ()
     assert.deepEqual(createPowerSensingConfig(), {
         control: 'controller-api',
         blower: 'ignore',
-        combine: 'separate'
+        combine: 'separate',
+        controlProbe: '',
+        blowerProbe: ''
     });
     assert.equal(status.controlPower.included, true);
     assert.equal(status.controlPower.state, 'on');
@@ -26,7 +29,7 @@ test('default sensing treats the controller API connection as control power', ()
 test('a blower-only organ can ignore control power', () => {
     const status = resolveOrganPowerStatus({
         control: 'ignore',
-        blower: 'power-monitor'
+        blower: 'power-probe'
     }, {
         blowerPower: {
             observationState: 'available',
@@ -42,7 +45,7 @@ test('a blower-only organ can ignore control power', () => {
 test('any mode reports on when either included circuit is powered', () => {
     const status = resolveOrganPowerStatus({
         control: 'controller-api',
-        blower: 'power-monitor',
+        blower: 'power-probe',
         combine: 'any'
     }, {
         controllerApiConnected: false,
@@ -57,7 +60,7 @@ test('any mode reports on when either included circuit is powered', () => {
 test('all mode requires every included circuit to be powered', () => {
     const status = resolveOrganPowerStatus({
         control: 'controller-api',
-        blower: 'power-monitor',
+        blower: 'power-probe',
         combine: 'all'
     }, {
         controllerApiConnected: true,
@@ -70,7 +73,7 @@ test('all mode requires every included circuit to be powered', () => {
 test('separate mode does not invent a combined organ state', () => {
     const status = resolveOrganPowerStatus({
         control: 'controller-api',
-        blower: 'power-monitor',
+        blower: 'power-probe',
         combine: 'separate'
     }, {
         controllerApiConnected: true,
@@ -89,9 +92,9 @@ test('combine false is accepted as a convenient separate-mode setting', () => {
     assert.equal(config.combine, 'separate');
 });
 
-test('unimplemented power-monitor inputs remain unknown', () => {
+test('unavailable power probes remain unknown', () => {
     const status = resolveOrganPowerStatus({
-        control: 'power-monitor',
+        control: 'power-probe',
         blower: 'ignore'
     });
 
@@ -108,5 +111,28 @@ test('invalid sensing choices fail during startup configuration', () => {
     assert.throws(
         () => createPowerSensingConfig({ combine: 'sometimes' }),
         /organ\.powerSensing\.combine/
+    );
+    assert.throws(
+        () => createPowerSensingConfig({ blowerProbe: 'not a serial!' }),
+        /organ\.powerSensing\.blowerProbe/
+    );
+});
+
+test('selects configured Plenum power probes and auto-selects a sole probe', () => {
+    const readings = [
+        { probeType: 'environment', serialNo: 'PT-1', online: true },
+        { probeType: 'power', serialNo: 'PW-CONTROL', online: true, loadState: 'off' },
+        { probeType: 'power', serialNo: 'PW-BLOWER', online: true, loadState: 'on' }
+    ];
+
+    assert.deepEqual(resolvePowerProbeObservation(readings, 'PW-BLOWER'), {
+        observationState: 'available',
+        state: 'on'
+    });
+    assert.equal(resolvePowerProbeObservation(readings).state, 'unknown');
+    assert.equal(resolvePowerProbeObservation([readings[2]]).state, 'on');
+    assert.equal(
+        resolvePowerProbeObservation([{ ...readings[2], online: false }]).state,
+        'unknown'
     );
 });

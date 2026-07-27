@@ -46,7 +46,8 @@ const {
 } = require('./lib/organ-profile');
 const {
     createPowerSensingConfig,
-    resolveOrganPowerStatus
+    resolveOrganPowerStatus,
+    resolvePowerProbeObservation
 } = require('./lib/organ-power-sensing');
 const {
     ProbeBroadcastMonitor
@@ -328,14 +329,17 @@ const fugaraTelemetry = new FugaraTelemetry({
         ...(probeBroadcastEnabled ? [{
             id: 'environmental-probes',
             capabilities: ['local-view']
+        }, {
+            id: 'power-probes',
+            capabilities: ['local-view', 'power-monitoring']
         }] : [])
     ],
     organ: organProfile,
     getStatus: () => {
         const powerStatus = resolveOrganPowerStatus(powerSensing, {
-            controllerApiConnected: oscTransport.connected
-            // controlPower and blowerPower are intentionally left unavailable
-            // until the Raspberry Pi power-monitor inputs are implemented.
+            controllerApiConnected: oscTransport.connected,
+            controlPower: powerProbeObservation(powerSensing.controlProbe),
+            blowerPower: powerProbeObservation(powerSensing.blowerProbe)
         });
         return {
             observationState: powerStatus.organ.observationState,
@@ -346,10 +350,18 @@ const fugaraTelemetry = new FugaraTelemetry({
         };
     }
 });
+const lastPowerProbeStates = new Map();
 const probeBroadcastMonitor = new ProbeBroadcastMonitor({
     port: probeBroadcastPort,
-    onReading: (_reading, readings) => {
+    onReading: (reading, readings) => {
         io.emit('probeReadings', readings);
+        if (reading.probeType === 'power') {
+            const previousState = lastPowerProbeStates.get(reading.serialNo);
+            lastPowerProbeStates.set(reading.serialNo, reading.loadState);
+            if (previousState !== reading.loadState) {
+                reportFugaraStateChange();
+            }
+        }
     },
     onError: (error) => {
         console.warn(`Ignored local probe broadcast: ${error.message}`);
@@ -362,6 +374,10 @@ const probeStatusInterval = setInterval(() => {
 }, 30 * 1000);
 probeStatusInterval.unref();
 setImmediate(updateRemoteTarget);
+
+function powerProbeObservation(serialNo) {
+    return resolvePowerProbeObservation(probeBroadcastMonitor.list(), serialNo);
+}
 
 function reportFugaraStateChange() {
     setImmediate(() => fugaraTelemetry.sendNow());
