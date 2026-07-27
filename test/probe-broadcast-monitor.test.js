@@ -12,16 +12,28 @@ function packet(overrides = {}) {
         type: 'plenum_probe_reading',
         version: 1,
         serialNo: 'PT-1234-5678-9ABC',
+        name: 'Great Division',
         macAddress: 'AA:BB:CC:DD:EE:FF',
         ipAddress: '192.0.2.20',
         probeUrl: 'https://app.fugara.tech/api/probeData',
+        firmwareVersion: '1.0.0',
         temperature: 70.5,
         temperatureUnit: 'F',
         nativeTemperature: 21.4,
         nativeTemperatureUnit: 'C',
+        rawTemperature: 21.1,
+        rawTemperatureUnit: 'C',
         humidity: 43.2,
         humidityUnit: '%RH',
+        rawHumidity: 42.7,
+        rawHumidityUnit: '%RH',
         updateFrequency: 300,
+        displayTemperatureUnit: 'F',
+        screenRotation: 180,
+        temperatureOffsetC: 0.3,
+        humidityOffset: 0.5,
+        temperatureScale: 1,
+        humidityScale: 1,
         ...overrides
     }));
 }
@@ -34,9 +46,14 @@ test('parses the probe firmware local broadcast contract', () => {
     );
 
     assert.equal(reading.serialNo, 'PT-1234-5678-9ABC');
+    assert.equal(reading.name, 'Great Division');
     assert.equal(reading.temperature, 70.5);
     assert.equal(reading.nativeTemperatureUnit, 'C');
+    assert.equal(reading.rawTemperature, 21.1);
     assert.equal(reading.humidity, 43.2);
+    assert.equal(reading.rawHumidity, 42.7);
+    assert.equal(reading.screenRotation, 180);
+    assert.equal(reading.firmwareVersion, '1.0.0');
     assert.equal(reading.receivedAt, '2026-07-27T12:00:00.000Z');
 });
 
@@ -48,6 +65,22 @@ test('rejects unrelated or implausible UDP packets', () => {
     assert.throws(
         () => parseProbeBroadcast(packet({ humidity: 140 })),
         /humidity/
+    );
+});
+
+test('requires the complete pre-release probe display contract', () => {
+    const payload = JSON.parse(packet().toString('utf8'));
+    delete payload.name;
+    assert.throws(
+        () => parseProbeBroadcast(Buffer.from(JSON.stringify(payload))),
+        /name/
+    );
+
+    payload.name = 'Great Division';
+    delete payload.rawTemperature;
+    assert.throws(
+        () => parseProbeBroadcast(Buffer.from(JSON.stringify(payload))),
+        /raw temperature/
     );
 });
 

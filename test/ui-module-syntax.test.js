@@ -78,8 +78,12 @@ test('probe dashboard has valid module syntax and consumes local readings', () =
     );
     assert.doesNotThrow(() => new Function(source));
     assert.match(html, /socket\.on\('probeReadings'/u);
+    assert.match(html, /probe\.name/u);
+    assert.match(html, /probe\.serialNo/u);
     assert.match(html, /probe\.temperature/u);
     assert.match(html, /probe\.humidity/u);
+    assert.match(html, /probe\.macAddress/u);
+    assert.match(html, /probe\.firmwareVersion/u);
 });
 
 test('advanced protocol controls have valid module syntax and expose every UDP action', () => {

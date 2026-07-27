@@ -36,10 +36,13 @@
         </div>
 
         <div class="row g-3">
-            <div class="col-12 col-md-6 col-xl-4" v-for="probe in probes" :key="probe.serialNo">
+            <div class="col-12 col-xl-6" v-for="probe in probes" :key="probe.serialNo">
                 <article class="card h-100 shadow-sm">
                     <div class="card-header d-flex justify-content-between align-items-center">
-                        <span class="fw-semibold">{{probe.serialNo}}</span>
+                        <div class="me-3">
+                            <div class="fw-semibold">{{probe.name || 'Name not reported'}}</div>
+                            <div class="small text-muted font-monospace">{{probe.serialNo}}</div>
+                        </div>
                         <span class="badge" :class="probe.online ? 'bg-success' : 'bg-warning text-dark'">
                             {{probe.online ? 'Live' : 'Stale'}}
                         </span>
@@ -49,19 +52,50 @@
                             <div class="col-6">
                                 <div class="display-6">{{formatNumber(probe.temperature, 1)}}&deg;</div>
                                 <div class="text-muted">{{probe.temperatureUnit}}</div>
+                                <div class="small text-muted mt-1">
+                                    Native {{formatTemperature(probe.nativeTemperature, probe.nativeTemperatureUnit)}}
+                                </div>
+                                <div class="small text-muted">
+                                    Raw {{formatTemperature(probe.rawTemperature, probe.rawTemperatureUnit)}}
+                                </div>
                             </div>
                             <div class="col-6">
                                 <div class="display-6">{{formatNumber(probe.humidity, 1)}}%</div>
                                 <div class="text-muted">Relative humidity</div>
+                                <div class="small text-muted mt-1">
+                                    Raw {{formatNumber(probe.rawHumidity, 1)}}% RH
+                                </div>
                             </div>
                         </div>
                         <dl class="row small mt-4 mb-0">
+                            <dt class="col-5">Name</dt>
+                            <dd class="col-7">{{probe.name || 'Not reported'}}</dd>
+                            <dt class="col-5">Serial number</dt>
+                            <dd class="col-7 font-monospace text-break">{{probe.serialNo}}</dd>
                             <dt class="col-5">Last local reading</dt>
                             <dd class="col-7">{{formatTime(probe.receivedAt)}}</dd>
-                            <dt class="col-5">Address</dt>
+                            <dt class="col-5">IP address</dt>
                             <dd class="col-7 text-break">{{probe.ipAddress || 'Not reported'}}</dd>
+                            <dt class="col-5">MAC address</dt>
+                            <dd class="col-7 font-monospace text-break">{{probe.macAddress || 'Not reported'}}</dd>
                             <dt class="col-5">Update interval</dt>
                             <dd class="col-7">{{probe.updateFrequency}} seconds</dd>
+                            <dt class="col-5">Display setting</dt>
+                            <dd class="col-7">
+                                {{probe.displayTemperatureUnit}}
+                                &middot; {{probe.screenRotation}}&deg; rotation
+                            </dd>
+                            <dt class="col-5">Calibration</dt>
+                            <dd class="col-7">
+                                Temp {{formatSigned(probe.temperatureOffsetC)}}&deg; C
+                                &times; {{formatNumber(probe.temperatureScale, 3)}}<br>
+                                Humidity {{formatSigned(probe.humidityOffset)}}%
+                                &times; {{formatNumber(probe.humidityScale, 3)}}
+                            </dd>
+                            <dt class="col-5">Firmware</dt>
+                            <dd class="col-7">v{{probe.firmwareVersion}}</dd>
+                            <dt class="col-5">Fugara endpoint</dt>
+                            <dd class="col-7 text-break">{{probe.probeUrl || 'Not reported'}}</dd>
                         </dl>
                     </div>
                 </article>
@@ -86,7 +120,17 @@
             methods: {
                 formatNumber(value, digits) {
                     const number = Number(value);
-                    return Number.isFinite(number) ? number.toFixed(digits) : "—";
+                    return Number.isFinite(number) ? number.toFixed(digits) : "--";
+                },
+                formatSigned(value) {
+                    const number = Number(value);
+                    if (!Number.isFinite(number)) {
+                        return "--";
+                    }
+                    return `${number >= 0 ? "+" : ""}${number.toFixed(1)}`;
+                },
+                formatTemperature(value, unit) {
+                    return `${this.formatNumber(value, 1)}° ${unit || ""}`.trim();
                 },
                 formatTime(value) {
                     const date = new Date(value);
