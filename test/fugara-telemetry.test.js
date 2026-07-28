@@ -122,6 +122,7 @@ test('invalid uptime values are not reported as zero', () => {
     assert.equal(normalizeUptimeSeconds('42'), 42);
     assert.equal(normalizeUptimeSeconds('not connected'), null);
     assert.equal(normalizeUptimeSeconds(''), null);
+    assert.equal(normalizeUptimeSeconds('   '), null);
 });
 
 test('service descriptors require stable IDs and capabilities', () => {

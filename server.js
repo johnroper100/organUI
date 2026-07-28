@@ -39,7 +39,8 @@ const {
     persistDiscoveredCapacity
 } = require('./lib/config-capacity');
 const {
-    FugaraTelemetry
+    FugaraTelemetry,
+    normalizeUptimeSeconds
 } = require('./lib/fugara-telemetry');
 const {
     createOrganProfile
@@ -147,6 +148,7 @@ const nameInventoryQueryIntervalMs = 50;
 const nameInventoryRefreshIntervalMs = 5 * 60 * 1000;
 const pendingMomentaryReleases = new Map();
 const controllerObservationStartedAt = Date.now();
+let controllerUptimeReady = false;
 let capacityDiscovery = null;
 let capacityDiscoveryAttempted = false;
 const feedbackFamilies = new Set([
@@ -229,9 +231,11 @@ const oscTransport = new OSCControllerTransport({
     onControllerDiscovered: (host) => {
         console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
         // Do not carry the previous controller session's uptime into the new
-        // "on" event. The current uptime will arrive with fresh feedback.
+        // "on" event. Keep controller telemetry unavailable until fresh uptime
+        // feedback arrives, so Fugara's connected event includes that uptime.
+        controllerUptimeReady = false;
         updateScalar('uptimeSeconds', 'uptimeSeconds', '');
-        reportFugaraStateChange();
+        updateScalar('uptime', 'uptime', '');
         updateRemoteTarget();
         if (
             !beginCapacityDiscovery()
@@ -246,6 +250,7 @@ const oscTransport = new OSCControllerTransport({
         console.warn(
             `OSC controller at ${host} stopped responding; resuming discovery`
         );
+        controllerUptimeReady = false;
         updateScalar('uptime', 'uptime', 'Not Connected');
         reportFugaraStateChange();
         updateRemoteTarget();
@@ -408,10 +413,20 @@ function powerProbeObservation(serialNo) {
 }
 
 function controllerPowerObservation(now = Date.now()) {
-    if (oscTransport.connected) {
+    if (oscTransport.connected && controllerUptimeReady) {
         return {
             observationState: 'available',
             state: 'on'
+        };
+    }
+
+    // The first controller feedback establishes the OSC connection, but uptime
+    // is delivered separately in the ensuing refresh. Do not report the
+    // controller as on until that session's uptime has been received.
+    if (oscTransport.connected) {
+        return {
+            observationState: 'unavailable',
+            state: 'unknown'
         };
     }
 
@@ -1096,6 +1111,13 @@ function handleUserDefMessage(token, value) {
 
     if (labelNumber === 992 && isText(value)) {
         updateScalar('uptimeSeconds', 'uptimeSeconds', value);
+        if (
+            !controllerUptimeReady
+            && normalizeUptimeSeconds(value) !== null
+        ) {
+            controllerUptimeReady = true;
+            reportFugaraStateChange();
+        }
         return;
     }
 

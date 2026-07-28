@@ -154,6 +154,9 @@ immediately rather than waiting for the next scheduled heartbeat. The startup
 heartbeat is sent before OrganUI starts its web and discovery services. If
 OrganUI heartbeats stop, Fugara marks the site connection unreachable while
 retaining the last controller/probe power observation as a separate metric.
+When the OSC controller connects, organUI waits for that controller session's
+fresh uptime feedback before reporting the controller as on, so the connected
+event and its uptime are recorded together.
 
 The heartbeat uses schema version 2. Its `services` list describes the general
 roles hosted by Organ UI, while generic organ fields and adapters describe how
