@@ -1462,10 +1462,6 @@ app.get('/probes', (req, res) => {
     res.sendFile(path.join(__dirname, 'probes.html'));
 });
 
-app.get('/sequencer', (req, res) => {
-    res.sendFile(path.join(__dirname, 'sequencer.html'));
-});
-
 app.use('/static', express.static(path.join(__dirname, 'static')));
 
 oscServer.on('listening', () => {
