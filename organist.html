@@ -136,9 +136,6 @@
                     The controller's direct-track command selects the track and starts playback.
                 </div>
             </div>
-            <!--<div class="container mt-3 text-center">
-                <button class="btn btn-primary me-2" @touchstart="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 1)" @touchend="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 0, $event)" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
-            </div>-->
         </div>
         <div class="container-fluid" v-if="page == 2">
             <div class="alert alert-secondary py-2 text-center">
