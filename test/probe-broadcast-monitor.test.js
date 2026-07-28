@@ -81,6 +81,7 @@ function pressurePacket(overrides = {}) {
         firmwareVersion: '3.0.0',
         pressureInH2O: 72.35,
         pressureUnit: 'inH2O',
+        displayPressureUnit: 'inH2O',
         rawSensorVoltage: 2.34,
         sensorVoltageUnit: 'V',
         updateFrequency: 300,
@@ -191,16 +192,33 @@ test('parses pressure probe differential pressure and calibration contract', () 
     assert.equal(reading.probeType, 'pressure');
     assert.equal(reading.pressureInH2O, 72.35);
     assert.equal(reading.pressureUnit, 'inH2O');
+    assert.equal(reading.displayPressureUnit, 'inH2O');
     assert.equal(reading.rawSensorVoltage, 2.34);
     assert.equal(reading.pressureZeroVoltage, 1.65);
     assert.equal(reading.pressureFullScaleVoltage, 2.97);
     assert.equal(reading.pressureFullScaleInH2O, 138.4);
+
+    const metricReading = parseProbeBroadcast(
+        pressurePacket({ displayPressureUnit: 'mmH2O' })
+    );
+    assert.equal(metricReading.displayPressureUnit, 'mmH2O');
+
+    const legacyPayload = JSON.parse(pressurePacket().toString('utf8'));
+    delete legacyPayload.displayPressureUnit;
+    const legacyReading = parseProbeBroadcast(
+        Buffer.from(JSON.stringify(legacyPayload))
+    );
+    assert.equal(legacyReading.displayPressureUnit, 'inH2O');
 });
 
 test('rejects malformed pressure probe units and calibration spans', () => {
     assert.throws(
         () => parseProbeBroadcast(pressurePacket({ pressureUnit: 'psi' })),
         /units/u
+    );
+    assert.throws(
+        () => parseProbeBroadcast(pressurePacket({ displayPressureUnit: 'Pa' })),
+        /display unit/u
     );
     assert.throws(
         () => parseProbeBroadcast(pressurePacket({

@@ -86,7 +86,7 @@
                         </div>
                         <div class="row text-center g-3" v-else>
                             <div class="col-12">
-                                <div class="display-6">{{formatNumber(probe.pressureInH2O, 2)}} inH2O</div>
+                                <div class="display-6">{{formatPressure(probe.pressureInH2O, probe.displayPressureUnit)}}</div>
                                 <div class="text-muted">Differential wind pressure</div>
                                 <div class="small text-muted mt-1">Sensor {{formatNumber(probe.rawSensorVoltage, 4)}} V</div>
                             </div>
@@ -130,7 +130,7 @@
                             </template>
                             <template v-else>
                             <dt class="col-5">Display setting</dt>
-                            <dd class="col-7">{{probe.screenRotation}}&deg; rotation</dd>
+                            <dd class="col-7">{{probe.displayPressureUnit || 'inH2O'}} &middot; {{probe.screenRotation}}&deg; rotation</dd>
                             <dt class="col-5">Calibration</dt>
                             <dd class="col-7">
                                 Zero {{formatNumber(probe.pressureZeroVoltage, 3)}} V<br>
@@ -177,6 +177,17 @@
                 },
                 formatTemperature(value, unit) {
                     return `${this.formatNumber(value, 1)}° ${unit || ""}`.trim();
+                },
+                formatPressure(value, unit) {
+                    const pressureInH2O = Number(value);
+                    if (!Number.isFinite(pressureInH2O)) {
+                        return "--";
+                    }
+                    const displayUnit = unit === "mmH2O" ? "mmH2O" : "inH2O";
+                    const displayValue = displayUnit === "mmH2O"
+                        ? pressureInH2O * 25.4
+                        : pressureInH2O;
+                    return `${this.formatNumber(displayValue, displayUnit === "mmH2O" ? 1 : 2)} ${displayUnit}`;
                 },
                 formatTime(value) {
                     const date = new Date(value);
