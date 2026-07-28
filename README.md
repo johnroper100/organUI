@@ -150,9 +150,10 @@ a persistent application-data directory.
 Once its first heartbeat reaches Fugara, link the newly discovered organUI
 device from the client's Overview page. Fugara records normalized organ-state
 events regardless of which adapter observed them, and organUI sends transitions
-immediately rather than waiting for the next scheduled heartbeat. If organUI
-heartbeats stop, Fugara reports the site connection as unreachable instead of
-claiming that the organ is off.
+immediately rather than waiting for the next scheduled heartbeat. The startup
+heartbeat is sent before OrganUI starts its web and discovery services. If
+OrganUI heartbeats stop, Fugara marks the site connection unreachable while
+retaining the last controller/probe power observation as a separate metric.
 
 The heartbeat uses schema version 2. Its `services` list describes the general
 roles hosted by Organ UI, while generic organ fields and adapters describe how

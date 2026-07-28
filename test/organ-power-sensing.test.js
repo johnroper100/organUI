@@ -8,9 +8,12 @@ const {
     resolvePowerProbeObservation
 } = require('../lib/organ-power-sensing');
 
-test('default sensing treats the controller API connection as control power', () => {
+test('default sensing uses the controller-reported power observation', () => {
     const status = resolveOrganPowerStatus({}, {
-        controllerApiConnected: true
+        controllerPower: {
+            observationState: 'available',
+            state: 'on'
+        }
     });
 
     assert.deepEqual(createPowerSensingConfig(), {
@@ -48,7 +51,10 @@ test('any mode reports on when either included circuit is powered', () => {
         blower: 'power-probe',
         combine: 'any'
     }, {
-        controllerApiConnected: false,
+        controllerPower: {
+            observationState: 'available',
+            state: 'off'
+        },
         blowerPower: true
     });
 
@@ -63,7 +69,10 @@ test('all mode requires every included circuit to be powered', () => {
         blower: 'power-probe',
         combine: 'all'
     }, {
-        controllerApiConnected: true,
+        controllerPower: {
+            observationState: 'available',
+            state: 'on'
+        },
         blowerPower: false
     });
 
@@ -76,7 +85,10 @@ test('separate mode does not invent a combined organ state', () => {
         blower: 'power-probe',
         combine: 'separate'
     }, {
-        controllerApiConnected: true,
+        controllerPower: {
+            observationState: 'available',
+            state: 'on'
+        },
         blowerPower: true
     });
 

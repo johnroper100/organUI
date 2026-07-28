@@ -146,6 +146,7 @@ const remoteActionHoldDurationMs = 120;
 const nameInventoryQueryIntervalMs = 50;
 const nameInventoryRefreshIntervalMs = 5 * 60 * 1000;
 const pendingMomentaryReleases = new Map();
+const controllerObservationStartedAt = Date.now();
 let capacityDiscovery = null;
 let capacityDiscoveryAttempted = false;
 const feedbackFamilies = new Set([
@@ -337,7 +338,7 @@ const fugaraTelemetry = new FugaraTelemetry({
     organ: organProfile,
     getStatus: () => {
         const powerStatus = resolveOrganPowerStatus(powerSensing, {
-            controllerApiConnected: oscTransport.connected,
+            controllerPower: controllerPowerObservation(),
             controlPower: powerProbeObservation(powerSensing.controlProbe),
             blowerPower: powerProbeObservation(powerSensing.blowerProbe)
         });
@@ -367,6 +368,33 @@ const probeBroadcastMonitor = new ProbeBroadcastMonitor({
         console.warn(`Ignored local probe broadcast: ${error.message}`);
     }
 });
+
+// Check in before starting the web server, controller discovery, or local
+// probe listener. This first heartbeat truthfully reports unknown/unavailable
+// sources until their own feedback arrives; source transitions trigger a
+// follow-up heartbeat independently of OrganUI's reachability.
+if (fugaraTelemetry.enabled) {
+    if (fugaraTelemetry.start()) {
+        console.log('Fugara telemetry enabled (outbound HTTPS heartbeat)');
+        console.log(
+            `Fugara pairing code: ${fugaraTelemetry.identity.pairingCode}`
+        );
+    } else {
+        console.warn('Fugara telemetry could not be started');
+    }
+} else {
+    console.log('Fugara telemetry disabled; configure fugara.telemetryUrl to enable it');
+}
+
+if (probeBroadcastEnabled) {
+    probeBroadcastMonitor.start();
+    console.log(
+        `Listening for local Plenum probe broadcasts on UDP ${probeBroadcastPort}`
+    );
+} else {
+    console.log('Local Plenum probe monitoring disabled');
+}
+
 const probeStatusInterval = setInterval(() => {
     if (probeBroadcastEnabled) {
         io.emit('probeReadings', probeBroadcastMonitor.list());
@@ -377,6 +405,33 @@ setImmediate(updateRemoteTarget);
 
 function powerProbeObservation(serialNo) {
     return resolvePowerProbeObservation(probeBroadcastMonitor.list(), serialNo);
+}
+
+function controllerPowerObservation(now = Date.now()) {
+    if (oscTransport.connected) {
+        return {
+            observationState: 'available',
+            state: 'on'
+        };
+    }
+
+    // During the controller's first reporting window, absence of feedback is
+    // not yet an "off" measurement. Once that window expires, a live OrganUI
+    // can infer control-system power is off from the reporting timeout.
+    if (
+        oscTransport.lastFeedbackAt === 0
+        && now - controllerObservationStartedAt <= oscTransport.controllerTimeoutMs
+    ) {
+        return {
+            observationState: 'unavailable',
+            state: 'unknown'
+        };
+    }
+
+    return {
+        observationState: 'available',
+        state: 'off'
+    };
 }
 
 function reportFugaraStateChange() {
@@ -1426,26 +1481,6 @@ httpServer.listen(httpPort, () => {
         );
     }
     console.log(`Bonjour service published as "${serviceName}" on _organremote._tcp`);
-    if (fugaraTelemetry.enabled) {
-        if (fugaraTelemetry.start()) {
-            console.log('Fugara telemetry enabled (outbound HTTPS heartbeat)');
-            console.log(
-                `Fugara pairing code: ${fugaraTelemetry.identity.pairingCode}`
-            );
-        } else {
-            console.warn('Fugara telemetry could not be started');
-        }
-    } else {
-        console.log('Fugara telemetry disabled; configure fugara.telemetryUrl to enable it');
-    }
-    if (probeBroadcastEnabled) {
-        probeBroadcastMonitor.start();
-        console.log(
-            `Listening for local Plenum probe broadcasts on UDP ${probeBroadcastPort}`
-        );
-    } else {
-        console.log('Local Plenum probe monitoring disabled');
-    }
     beginCapacityDiscovery();
 });
 

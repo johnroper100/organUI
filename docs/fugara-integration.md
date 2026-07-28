@@ -75,6 +75,12 @@ Every heartbeat contains:
 The complete heartbeat also carries the Organ UI device ID, pairing code, name,
 send time, heartbeat interval, and application version.
 
+`powerStatus` is required. Its control and blower values come from the
+configured controller and power-probe observations. `organStatus.state` is the
+aggregate resolved from those values and must agree with it; it is not derived
+from whether the Organ UI server itself is running. `organUiStatus` and the
+arrival time of heartbeats provide the separate Organ UI reachability signal.
+
 `services` describes the roles hosted by the Organ UI server itself. This keeps
 the Fugara connection open to services beyond organ control: the current server
 can advertise organ monitoring/control and local environmental-probe viewing
