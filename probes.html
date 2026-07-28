@@ -102,8 +102,10 @@
                             <dd class="col-7 text-break">{{probe.ipAddress || 'Not reported'}}</dd>
                             <dt class="col-5">MAC address</dt>
                             <dd class="col-7 font-monospace text-break">{{probe.macAddress || 'Not reported'}}</dd>
-                            <dt class="col-5">Update interval</dt>
+                            <dt class="col-5">Display refresh</dt>
                             <dd class="col-7">{{probe.updateFrequency}} seconds</dd>
+                            <dt class="col-5">Fugara report interval</dt>
+                            <dd class="col-7">{{probe.reportingFrequency}} seconds</dd>
                             <template v-if="probe.probeType === 'environment'">
                             <dt class="col-5">Display setting</dt>
                             <dd class="col-7">

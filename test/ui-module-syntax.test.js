@@ -90,6 +90,8 @@ test('probe dashboard has valid module syntax and consumes local readings', () =
     assert.match(html, /probe\.pressureFullScaleInH2O/u);
     assert.match(html, /probe\.macAddress/u);
     assert.match(html, /probe\.firmwareVersion/u);
+    assert.match(html, /probe\.updateFrequency/u);
+    assert.match(html, /probe\.reportingFrequency/u);
 });
 
 test('advanced protocol controls have valid module syntax and expose every UDP action', () => {

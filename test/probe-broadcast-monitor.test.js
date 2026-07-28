@@ -28,7 +28,8 @@ function packet(overrides = {}) {
         humidityUnit: '%RH',
         rawHumidity: 42.7,
         rawHumidityUnit: '%RH',
-        updateFrequency: 300,
+        updateFrequency: 5,
+        reportingFrequency: 300,
         displayTemperatureUnit: 'F',
         screenRotation: 180,
         temperatureOffsetC: 0.3,
@@ -57,7 +58,8 @@ function powerPacket(overrides = {}) {
         estimatedWatts: 1971,
         powerUnit: 'W',
         loadState: 'on',
-        updateFrequency: 300,
+        updateFrequency: 5,
+        reportingFrequency: 300,
         screenRotation: 180,
         currentScale: 100,
         currentOffsetAmps: 0,
@@ -84,7 +86,8 @@ function pressurePacket(overrides = {}) {
         displayPressureUnit: 'inH2O',
         rawSensorVoltage: 2.34,
         sensorVoltageUnit: 'V',
-        updateFrequency: 300,
+        updateFrequency: 5,
+        reportingFrequency: 300,
         screenRotation: 180,
         pressureZeroVoltage: 1.65,
         pressureFullScaleVoltage: 2.97,
@@ -107,9 +110,24 @@ test('parses the probe firmware local broadcast contract', () => {
     assert.equal(reading.rawTemperature, 21.1);
     assert.equal(reading.humidity, 43.2);
     assert.equal(reading.rawHumidity, 42.7);
+    assert.equal(reading.updateFrequency, 5);
+    assert.equal(reading.reportingFrequency, 300);
     assert.equal(reading.screenRotation, 180);
     assert.equal(reading.firmwareVersion, '1.0.0');
     assert.equal(reading.receivedAt, '2026-07-27T12:00:00.000Z');
+});
+
+test('accepts legacy broadcasts with one shared update frequency', () => {
+    const payload = JSON.parse(packet().toString('utf8'));
+    delete payload.reportingFrequency;
+    payload.updateFrequency = 300;
+
+    const reading = parseProbeBroadcast(
+        Buffer.from(JSON.stringify(payload))
+    );
+
+    assert.equal(reading.updateFrequency, 300);
+    assert.equal(reading.reportingFrequency, 300);
 });
 
 test('rejects unrelated or implausible UDP packets', () => {
