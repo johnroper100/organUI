@@ -44,7 +44,7 @@
                             <div class="small text-muted font-monospace">{{probe.serialNo}}</div>
                         </div>
                         <div class="d-flex gap-2">
-                            <span class="badge bg-primary">{{probe.probeType === 'power' ? 'Power' : 'Environment'}}</span>
+                            <span class="badge bg-primary">{{probe.probeType === 'power' ? 'Power' : (probe.probeType === 'pressure' ? 'Wind Pressure' : 'Environment')}}</span>
                             <span class="badge" :class="probe.online ? 'bg-success' : 'bg-warning text-dark'">
                                 {{probe.online ? 'Live' : 'Stale'}}
                             </span>
@@ -70,7 +70,7 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="row text-center g-3" v-else>
+                        <div class="row text-center g-3" v-else-if="probe.probeType === 'power'">
                             <div class="col-6">
                                 <div class="display-6">{{formatNumber(probe.currentAmps, 2)}} A</div>
                                 <div class="text-muted">RMS current</div>
@@ -82,6 +82,13 @@
                                 <span class="badge mt-1" :class="probe.loadState === 'on' ? 'bg-success' : 'bg-secondary'">
                                     {{probe.loadState === 'on' ? 'On' : 'Off'}}
                                 </span>
+                            </div>
+                        </div>
+                        <div class="row text-center g-3" v-else>
+                            <div class="col-12">
+                                <div class="display-6">{{formatNumber(probe.pressureInH2O, 2)}} inH2O</div>
+                                <div class="text-muted">Differential wind pressure</div>
+                                <div class="small text-muted mt-1">Sensor {{formatNumber(probe.rawSensorVoltage, 4)}} V</div>
                             </div>
                         </div>
                         <dl class="row small mt-4 mb-0">
@@ -111,7 +118,7 @@
                                 &times; {{formatNumber(probe.humidityScale, 3)}}
                             </dd>
                             </template>
-                            <template v-else>
+                            <template v-else-if="probe.probeType === 'power'">
                             <dt class="col-5">Display setting</dt>
                             <dd class="col-7">{{probe.screenRotation}}&deg; rotation</dd>
                             <dt class="col-5">On threshold</dt>
@@ -120,6 +127,16 @@
                             <dd class="col-7">{{formatNumber(probe.currentScale, 2)}} A/V &middot; {{formatSigned(probe.currentOffsetAmps)}} A</dd>
                             <dt class="col-5">Power estimate</dt>
                             <dd class="col-7">{{formatNumber(probe.lineVoltage, 0)}} V &middot; PF {{formatNumber(probe.powerFactor, 2)}}</dd>
+                            </template>
+                            <template v-else>
+                            <dt class="col-5">Display setting</dt>
+                            <dd class="col-7">{{probe.screenRotation}}&deg; rotation</dd>
+                            <dt class="col-5">Calibration</dt>
+                            <dd class="col-7">
+                                Zero {{formatNumber(probe.pressureZeroVoltage, 3)}} V<br>
+                                Full scale {{formatNumber(probe.pressureFullScaleVoltage, 3)}} V
+                                = {{formatNumber(probe.pressureFullScaleInH2O, 1)}} inH2O
+                            </dd>
                             </template>
                             <dt class="col-5">Firmware</dt>
                             <dd class="col-7">v{{probe.firmwareVersion}}</dd>

@@ -68,6 +68,30 @@ function powerPacket(overrides = {}) {
     }));
 }
 
+function pressurePacket(overrides = {}) {
+    return Buffer.from(JSON.stringify({
+        type: 'plenum_probe_reading',
+        version: 1,
+        probeType: 'pressure',
+        serialNo: 'PR-1234-5678-9ABC',
+        name: 'Main regulator',
+        macAddress: '02:11:22:33:44:66',
+        ipAddress: '192.0.2.21',
+        probeUrl: 'https://app.fugara.tech/api/probeData',
+        firmwareVersion: '3.0.0',
+        pressureInH2O: 72.35,
+        pressureUnit: 'inH2O',
+        rawSensorVoltage: 2.34,
+        sensorVoltageUnit: 'V',
+        updateFrequency: 300,
+        screenRotation: 180,
+        pressureZeroVoltage: 1.65,
+        pressureFullScaleVoltage: 2.97,
+        pressureFullScaleInH2O: 138.4,
+        ...overrides
+    }));
+}
+
 test('parses the probe firmware local broadcast contract', () => {
     const reading = parseProbeBroadcast(
         packet(),
@@ -154,5 +178,35 @@ test('rejects malformed power probe units and load states', () => {
     assert.throws(
         () => parseProbeBroadcast(powerPacket({ loadState: 'running' })),
         /load state/u
+    );
+});
+
+test('parses pressure probe differential pressure and calibration contract', () => {
+    const reading = parseProbeBroadcast(
+        pressurePacket(),
+        { address: '192.0.2.99' },
+        new Date('2026-07-27T12:00:00Z')
+    );
+
+    assert.equal(reading.probeType, 'pressure');
+    assert.equal(reading.pressureInH2O, 72.35);
+    assert.equal(reading.pressureUnit, 'inH2O');
+    assert.equal(reading.rawSensorVoltage, 2.34);
+    assert.equal(reading.pressureZeroVoltage, 1.65);
+    assert.equal(reading.pressureFullScaleVoltage, 2.97);
+    assert.equal(reading.pressureFullScaleInH2O, 138.4);
+});
+
+test('rejects malformed pressure probe units and calibration spans', () => {
+    assert.throws(
+        () => parseProbeBroadcast(pressurePacket({ pressureUnit: 'psi' })),
+        /units/u
+    );
+    assert.throws(
+        () => parseProbeBroadcast(pressurePacket({
+            pressureZeroVoltage: 2.97,
+            pressureFullScaleVoltage: 1.65
+        })),
+        /voltage span/u
     );
 });

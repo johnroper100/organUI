@@ -167,8 +167,9 @@ the planned remote-command boundary.
 
 ## Local probes
 
-Plenum temperature/humidity and power probes send historical data directly to
-Fugara. They also broadcast the latest reading on UDP port `47612`. organUI
+Plenum temperature/humidity, power, and wind-pressure probes send historical
+data directly to Fugara. They also broadcast the latest reading on UDP port
+`47612`. organUI
 listens to that independent local stream and provides an on-site dashboard at
 `/probes`; Fugara availability is not required to view current readings.
 
@@ -205,7 +206,7 @@ The browser UI is available at:
 
 - `/organist` for performance controls
 - `/tuner` for tuning, stops, naming, and recorder controls
-- `/probes` for locally broadcast temperature and humidity readings
+- `/probes` for locally broadcast environment, power, and wind-pressure readings
 - `/advanced` for complete OSC-family and remote UDP command coverage
 
 The Advanced page is intentionally a direct protocol test surface. Its
