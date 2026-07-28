@@ -43,6 +43,10 @@ test('heartbeat reports organ adapters, normalized status, and both uptimes', as
         identityPath: path.join(os.tmpdir(), `organui-fugara-${process.pid}-${Date.now()}.json`),
         deviceName: 'Test organ',
         appVersion: '1.2.3',
+        services: [{
+            id: 'organ',
+            capabilities: ['monitoring']
+        }],
         organ: {
             integrationMode: 'monitor-only',
             adapters: [{
@@ -126,6 +130,10 @@ test('invalid uptime values are not reported as zero', () => {
 });
 
 test('service descriptors require stable IDs and capabilities', () => {
+    assert.throws(
+        () => new FugaraTelemetry(),
+        /at least one service/
+    );
     assert.throws(
         () => new FugaraTelemetry({
             services: [{ capabilities: ['monitoring'] }]

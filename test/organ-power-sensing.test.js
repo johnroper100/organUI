@@ -4,9 +4,17 @@ const assert = require('node:assert/strict');
 const test = require('node:test');
 const {
     createPowerSensingConfig,
+    normalizeObservation,
     resolveOrganPowerStatus,
     resolvePowerProbeObservation
 } = require('../lib/organ-power-sensing');
+
+test('power observations require structured observation objects', () => {
+    assert.deepEqual(normalizeObservation(true), {
+        observationState: 'unavailable',
+        state: 'unknown'
+    });
+});
 
 test('default sensing uses the controller-reported power observation', () => {
     const status = resolveOrganPowerStatus({}, {
@@ -55,7 +63,10 @@ test('any mode reports on when either included circuit is powered', () => {
             observationState: 'available',
             state: 'off'
         },
-        blowerPower: true
+        blowerPower: {
+            observationState: 'available',
+            state: 'on'
+        }
     });
 
     assert.equal(status.controlPower.state, 'off');
@@ -73,7 +84,10 @@ test('all mode requires every included circuit to be powered', () => {
             observationState: 'available',
             state: 'on'
         },
-        blowerPower: false
+        blowerPower: {
+            observationState: 'available',
+            state: 'off'
+        }
     });
 
     assert.equal(status.organ.state, 'off');
@@ -89,19 +103,16 @@ test('separate mode does not invent a combined organ state', () => {
             observationState: 'available',
             state: 'on'
         },
-        blowerPower: true
+        blowerPower: {
+            observationState: 'available',
+            state: 'on'
+        }
     });
 
     assert.equal(status.controlPower.state, 'on');
     assert.equal(status.blowerPower.state, 'on');
     assert.equal(status.organ.state, 'unknown');
     assert.equal(status.organ.observationState, 'unknown');
-});
-
-test('combine false is accepted as a convenient separate-mode setting', () => {
-    const config = createPowerSensingConfig({ combine: false });
-
-    assert.equal(config.combine, 'separate');
 });
 
 test('unavailable power probes remain unknown', () => {
@@ -122,6 +133,10 @@ test('invalid sensing choices fail during startup configuration', () => {
     );
     assert.throws(
         () => createPowerSensingConfig({ combine: 'sometimes' }),
+        /organ\.powerSensing\.combine/
+    );
+    assert.throws(
+        () => createPowerSensingConfig({ combine: false }),
         /organ\.powerSensing\.combine/
     );
     assert.throws(
