@@ -23,7 +23,7 @@ over Bonjour, so it does not depend on a fixed IP address.
 
 The watch target explicitly opts into Always On display support. On Apple
 Watch models that support Always On, the app remains visible in the dimmed
-state while it stays frontmost. The exact duration still follows the user’s
+state while it stays frontmost. The exact duration still follows the user's
 watch settings under `Settings > General > Wake Screen > Return to Clock`, and
 Always On can also be disabled globally or per app by the user.
 

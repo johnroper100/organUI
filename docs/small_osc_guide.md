@@ -1,9 +1,9 @@
 Ethernet: OSC Protocol
-Please note:  If you are wondering what OSC is or how it would work with an organ, this page probably isn’t for you.  If you are a tinkering type who has configuration software for your controller and would like to remote control using an app such as TouchOSC on an iOS or Android device, then this page would probably be helpful for you.
+Please note:  If you are wondering what OSC is or how it would work with an organ, this page probably isn't for you.  If you are a tinkering type who has configuration software for your controller and would like to remote control using an app such as TouchOSC on an iOS or Android device, then this page would probably be helpful for you.
 
-Please also note that because we are may use broadcast messages, network quality can’t be emphasized enough.  The fewer hops a message has to go through between the Opus-Two controller and the remote device the better.  The higher the quality of the network components the better.
+Please also note that because we are may use broadcast messages, network quality can't be emphasized enough.  The fewer hops a message has to go through between the Opus-Two controller and the remote device the better.  The higher the quality of the network components the better.
 
-The controller listens on port 9000, and sends on port 8000.  Remote devices need the opposite port numbers set.  Controller responses are sent back to the IP address of the source message.  Up to eight devices will be tracked and responded to.  All responses go to all devices (not just the device that made the request).  The controller will also (by default) “storm” update data.  This data is stormed to any registered OSC devices (any devices that have sent a message in the previous hour or so).  This storm keeps on screen displays (counters, stop status’, etc.) accurate and helps ensure that any missed messages are synced.  Approximately 500 update messages are sent per second, so (again), network quality can’t be emphasized enough.  If sluggishness is experienced, it is almost always a network problem.
+The controller listens on port 9000, and sends on port 8000.  Remote devices need the opposite port numbers set.  Controller responses are sent back to the IP address of the source message.  Up to eight devices will be tracked and responded to.  All responses go to all devices (not just the device that made the request).  The controller will also (by default) “storm” update data.  This data is stormed to any registered OSC devices (any devices that have sent a message in the previous hour or so).  This storm keeps on screen displays (counters, stop status', etc.) accurate and helps ensure that any missed messages are synced.  Approximately 500 update messages are sent per second, so (again), network quality can't be emphasized enough.  If sluggishness is experienced, it is almost always a network problem.
 
 OSC Messages follow an exact format.  If there is any deviation at all, they will not work.  The messages are case sensitive.  All characters are equally important in strings, including forward slashes / , back slashes \ , and CAPITALIZATION.  All OSC strings will be listed “in quotes” but the quotes are not part of the string to be sent.
 
@@ -28,7 +28,7 @@ Special Button Numbers:
 
 1900-1920 - Piston Recall for tuning interface buttons (completely separate from console C/A).
 
-1999 - Piston Set (latching) for above pistons.  Will be color ID’d red to indicate setting.
+1999 - Piston Set (latching) for above pistons.  Will be color ID'd red to indicate setting.
 
 2000 - General Cancel will clear all OSC activity, clear all buttons to the off position, send a vibrate message to the device, and immediately send the state of all buttons to clear/paint them.
 
@@ -48,7 +48,7 @@ Special Button Numbers:
 
 2016 - Touch Button
 
-2020-2027 - Couplers (2020-Unison, 2021 4’/+1Oct, etc.)
+2020-2027 - Couplers (2020-Unison, 2021 4'/+1Oct, etc.)
 
 2030 - Track + 10
 
