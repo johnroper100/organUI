@@ -1518,6 +1518,10 @@ app.get('/advanced', (req, res) => {
     res.sendFile(path.join(__dirname, 'advanced.html'));
 });
 
+app.get('/console', (req, res) => {
+    res.sendFile(path.join(__dirname, 'console.html'));
+});
+
 app.get('/probes', (req, res) => {
     res.sendFile(path.join(__dirname, 'probes.html'));
 });
