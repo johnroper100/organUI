@@ -13,11 +13,11 @@ const app = createApp({
     data() {
         return {
             ...feedback, connected: false, probes: [], panel: 'timer', sheet: '', commandStatus: '',
-            localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', stopSearch: '',
+            localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '',
             timerElapsed: 0, timerStarted: null, now: Date.now(), timerInterval: null,
             panels: [{id: 'sostenuto', label: 'Sostenuto'}, {id: 'crescendo', label: 'Crescendo'},
                 {id: 'timer', label: 'Timer'}, {id: 'transposer', label: 'Transposer'},
-                {id: 'stops', label: 'Stops & couplers'}, {id: 'recorder', label: 'Recorder'},
+                {id: 'recorder', label: 'Record / playback'},
                 {id: 'probes', label: 'Probes'}]
         };
     },
@@ -29,21 +29,19 @@ const app = createApp({
         transposeText() {
             if (this.transposer === '' || this.transposer == null) return '—';
             const value = Number(this.transposer);
-            return Number.isFinite(value) ? (value === 0 ? 'Off' : value > 0 ? '+' + value : String(value)) : this.transposer;
+            return Number.isFinite(value) ? (value === 0 ? 'Neutral' : value > 0 ? '+' + value : String(value)) : this.transposer;
         },
         namedExpressions() {
             return this.expressions.map((exp, id) => ({...exp, id, value: Math.max(0, Math.min(1, Number(exp?.value) || 0))})).filter(exp => exp.name);
         },
         crescendoExpression() { return this.namedExpressions.find(exp => /cres/i.test(exp.name)); },
         crescendoStops() { return this.stops.filter(stop => stop?.name && /crescendo|\bcresc?\b/i.test(stop.name)); },
-        activeStopCount() { return this.stops.filter(stop => stop?.active).length; },
-        filteredStops() { return this.stops.filter(stop => stop?.name && stop.name.toLowerCase().includes(this.stopSearch.toLowerCase())); },
         namedUserVars() { return this.userVars.map((item, i) => ({...item, number: i + 1})).filter(item => item.name); },
         timerText() {
             const seconds = Math.floor((this.timerElapsed + (this.timerStarted === null ? 0 : this.now - this.timerStarted)) / 1000);
             return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(n => String(n).padStart(2, '0')).join(':');
         },
-        sheetTitle() { return {memory: 'Memory select', library: 'Library select', tracks: 'Recordings', copy: 'Copy recording', stops: 'Stops & couplers', probes: 'Probe readings', settings: 'Settings'}[this.sheet] || ''; },
+        sheetTitle() { return {memory: 'Memory select', library: 'Organist folder', tracks: 'Tracks', copy: 'Copy track', probes: 'Probe readings', settings: 'Settings'}[this.sheet] || ''; },
         inventoryEntries() {
             const library = this.sheet === 'library';
             const names = library ? this.queriedFolderNames : this.udpTrackNames;
@@ -76,7 +74,7 @@ const app = createApp({
         panelSummary(id) {
             return {sostenuto: this.sostActive === null ? '—' : this.sostActive ? 'On' : 'Off',
                 crescendo: this.crescendoExpression ? Math.round(this.crescendoExpression.value * 100) + '%' : '—',
-                timer: this.timerText, transposer: this.transposeText, stops: this.activeStopCount + ' active',
+                timer: this.timerText, transposer: this.transposeText,
                 recorder: this.currentTrackName || (this.trackNum ? 'Track ' + this.trackNum : '—'), probes: this.probeSummary}[id];
         },
         udp(action, values = {}) {

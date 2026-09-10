@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="color-scheme" content="dark">
     <title>OrganUI · Console</title>
     <link rel="stylesheet" href="/static/css/console.css">
@@ -12,29 +12,29 @@
 <div id="app" v-cloak>
     <div class="console-shell">
         <header class="console-header">
-            <button @click="openSheet('library')">{{ folderTrackName || 'Library' }}</button>
+            <button class="folder-button" @click="openSheet('library')"><small>Organist folder</small><span>{{ folderTrackName || 'Select folder' }}</span></button>
             <div class="brand"><a href="/">ORGAN<span>UI</span></a><small>{{ siteName || 'Organ console' }}</small></div>
             <button @click="openSheet('settings')">Settings</button>
         </header>
         <main class="console-grid">
             <section class="tile memory" aria-label="Memory level">
                 <button class="display-button" @click="openSheet('memory')">
-                    <span class="eyebrow">{{ localMemory ? 'Local' : 'Global' }} memory</span>
+                    <span class="eyebrow">{{ localMemory ? 'Local memory level' : 'Memory level' }}</span>
                     <span class="large-number red">{{ shownMemory || '—' }}</span>
                     <span class="hint">Touch to select level</span>
                 </button>
                 <div class="button-row">
                     <button :disabled="!connected" @click="changeMemory('Down')">Down</button>
-                    <button @click="localMemory = !localMemory">{{ localMemory ? 'Global' : 'Local' }}</button>
-                    <button :disabled="!connected" @click="udp('generalCancel')">Gen. cancel</button>
+                    <button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button>
+                    <button :disabled="!connected" @click="udp('generalCancel')">General cancel</button>
                     <button :disabled="!connected" @click="changeMemory('Up')">Up</button>
                 </div>
             </section>
             <section class="tile track" aria-label="Current track">
                 <button class="display-button" @click="openSheet('tracks')">
-                    <span class="eyebrow">Track <span v-if="trackLocked">· Locked</span></span>
+                    <span class="eyebrow">Track <span v-if="trackLocked">· Record protected</span></span>
                     <span class="large-number green">{{ trackNum || '—' }}</span>
-                    <span class="hint">{{ currentTrackName || 'Touch to browse recordings' }}</span>
+                    <span class="hint">{{ currentTrackName || 'Touch to browse tracks' }}</span>
                 </button>
                 <div class="button-row">
                     <button :disabled="!connected" @click="udp('trackDown')">Previous</button>
@@ -43,19 +43,11 @@
                     <button :disabled="!connected" @click="udp('trackUp')">Next</button>
                 </div>
             </section>
-            <section class="tile expression" aria-label="Expression and crescendo">
-                <div class="expression-bars" v-if="namedExpressions.length">
-                    <label class="expression-channel" v-for="exp in namedExpressions" :key="exp.id" :class="{crescendo: /cres/i.test(exp.name)}">
-                        <span class="bar-value">{{ Math.round(exp.value * 100) }}<small>%</small></span>
-                        <span class="bar-well"><span class="bar-fill" :style="{height: (exp.value * 100) + '%'}"></span>
-                            <input type="range" min="0" max="1" step="0.01" :value="exp.value" :aria-label="exp.name" :disabled="!connected" @input="moveFader(exp.id, $event.target.value)">
-                        </span>
-                        <span class="bar-label">{{ exp.name }}</span>
-                    </label>
-                </div>
-                <div class="empty-state" v-else><span class="eyebrow">Expression & crescendo</span><p>Waiting for expression controls</p></div>
-            </section>
-            <section class="tile detail" aria-label="Selected control">
+            <nav class="side-controls" aria-label="Console controls">
+                <label class="mobile-panel-select">Console control<select v-model="panel"><option v-for="item in panels" :key="item.id" :value="item.id">{{ item.label }} · {{ panelSummary(item.id) }}</option></select></label>
+                <button v-for="item in panels" :key="item.id" :class="{selected: panel === item.id}" :aria-pressed="panel === item.id" aria-controls="console-detail" @click="panel = item.id"><span>{{ item.label }}</span><strong>{{ panelSummary(item.id) }}</strong></button>
+            </nav>
+            <section id="console-detail" class="tile detail" aria-label="Selected control">
                 <template v-if="panel === 'timer'">
                     <span class="eyebrow">Timer</span>
                     <div class="panel-readout timer pink">{{ timerText }}</div>
@@ -70,7 +62,7 @@
                     <div class="button-row"><button :disabled="!connected" @click="tap(2010)">Toggle</button><button :disabled="!connected" @click="tap(2011)">Release</button></div>
                 </template>
                 <template v-else-if="panel === 'recorder'">
-                    <span class="eyebrow">Recorder <span v-if="trackLocked">· Locked</span></span>
+                    <span class="eyebrow">Record / playback <span v-if="trackLocked">· Record protected</span></span>
                     <button class="panel-readout recording orange" @click="openSheet('tracks')">{{ currentTrackName || (trackNum ? 'Track ' + trackNum : 'Select track') }}<small>{{ trackTime || '— : —' }}</small></button>
                     <div class="button-row"><button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></div>
                 </template>
@@ -91,14 +83,20 @@
                     <div class="empty-state" v-else><p>{{ connected ? 'Waiting for probe broadcasts on the local network.' : 'Connect to the server to receive probe readings.' }}</p></div>
                     <div class="button-row"><button @click="openSheet('probes')">View probes</button></div>
                 </template>
-                <template v-else>
-                    <span class="eyebrow">Stops & couplers</span><div class="panel-readout blue">{{ activeStopCount }}<small>stops active</small></div>
-                    <div class="button-row"><button @click="openSheet('stops')">View stops</button><button :disabled="!connected" @click="udp('generalCancel')">General cancel</button></div>
-                </template>
             </section>
-            <nav class="side-controls" aria-label="Console controls">
-                <button v-for="item in panels" :key="item.id" :class="{selected: panel === item.id}" :aria-pressed="panel === item.id" @click="panel = item.id"><span>{{ item.label }}</span><strong>{{ panelSummary(item.id) }}</strong></button>
-            </nav>
+            <section class="tile expression" aria-label="Expression and crescendo">
+                <span class="eyebrow section-label">Expression & crescendo</span>
+                <div class="expression-bars" v-if="namedExpressions.length">
+                    <label class="expression-channel" v-for="exp in namedExpressions" :key="exp.id" :class="{crescendo: /cres/i.test(exp.name)}">
+                        <span class="bar-value">{{ Math.round(exp.value * 100) }}<small>%</small></span>
+                        <span class="bar-well"><span class="bar-fill" :style="{height: (exp.value * 100) + '%'}"></span>
+                            <input type="range" min="0" max="1" step="0.01" :value="exp.value" :aria-label="exp.name" :disabled="!connected" @input="moveFader(exp.id, $event.target.value)">
+                        </span>
+                        <span class="bar-label">{{ exp.name }}</span>
+                    </label>
+                </div>
+                <div class="empty-state" v-else><p>Waiting for expression controls</p></div>
+            </section>
         </main>
         <footer><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span class="command-status" role="status">{{ commandStatus }}</span><a href="/advanced">Advanced controls ↗</a></footer>
     </div>
@@ -106,26 +104,23 @@
         <header class="sheet-header"><h1 id="sheet-title">{{ sheetTitle }}</h1><button aria-label="Close" @click="closeSheet">×</button></header>
         <div class="sheet-body">
             <form v-if="sheet === 'memory'" @submit.prevent="goMemory" class="selection-form">
-                <div class="button-row"><button type="button" :class="{selected: !localMemory}" @click="localMemory = false">Global memory</button><button type="button" :class="{selected: localMemory}" @click="localMemory = true">Local memory</button></div>
+                <div class="button-row"><button type="button" :class="{selected: !localMemory}" @click="localMemory = false">Memory level</button><button type="button" :class="{selected: localMemory}" @click="localMemory = true">Local memory level</button></div>
                 <label>Memory level<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
                 <div class="keypad"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div>
                 <button class="primary" :disabled="!connected">Go to level</button>
             </form>
             <template v-else-if="sheet === 'library' || sheet === 'tracks'">
                 <form @submit.prevent="chooseItem" class="selection-form">
-                    <label>{{ sheet === 'library' ? 'Select library folder' : 'Select recording' }}<select v-model.number="selectedNumber"><option v-for="entry in inventoryEntries" :value="entry.number">{{ entry.number }} · {{ entry.name || 'Unnamed' }}</option></select></label>
-                    <button class="primary" :disabled="!connected">{{ sheet === 'library' ? 'Open library' : 'Play selected track' }}</button>
+                    <label>{{ sheet === 'library' ? 'Select organist folder' : 'Select track' }}<select v-model.number="selectedNumber"><option v-for="entry in inventoryEntries" :value="entry.number">{{ entry.number }} · {{ entry.name || 'Unnamed' }}</option></select></label>
+                    <button class="primary" :disabled="!connected">{{ sheet === 'library' ? 'Select folder' : 'Play selected track' }}</button>
                 </form>
                 <p class="muted" v-if="sheet === 'tracks'">Selecting a recording in the list does not start playback. Press Play selected track to begin.</p>
                 <form @submit.prevent="renameItem" class="inline-form"><label>Rename selected {{ sheet === 'library' ? 'folder' : 'track' }}<input v-model="renameText" maxlength="15" required placeholder="New name"></label><button :disabled="!connected">Rename</button></form>
-                <div class="button-row"><button :disabled="!connected" @click="refreshNames">Refresh names</button><button v-if="sheet === 'tracks'" :disabled="!connected" @click="udp('toggleTrackLock')">{{ trackLocked ? 'Unlock' : 'Lock' }} current track</button></div>
+                <div class="button-row"><button :disabled="!connected" @click="refreshNames">Refresh names</button><button v-if="sheet === 'tracks'" :disabled="!connected" @click="udp('toggleTrackLock')">{{ trackLocked ? 'Disable' : 'Enable' }} record protection</button></div>
             </template>
             <template v-else-if="sheet === 'copy'">
                 <div class="copy-grid"><section class="tile" v-for="(title, i) in ['Source track', 'Destination track']"><span class="eyebrow">{{ title }}</span><div class="copy-readout">{{ (i ? trackDupTgt : trackDupSrc) || '—' }}</div><div class="button-row"><button :disabled="!connected" @click="tap(i ? 2051 : 2049)">−10</button><button :disabled="!connected" @click="tap(i ? 2047 : 2045)">−1</button><button :disabled="!connected" @click="tap(i ? 2046 : 2044)">+1</button><button :disabled="!connected" @click="tap(i ? 2050 : 2048)">+10</button></div></section></div>
                 <p class="muted">Copy the source recording to the destination shown above.</p><button class="primary" :disabled="!connected || !trackDupSrc || !trackDupTgt" @click="tap(2052)">Copy track →</button>
-            </template>
-            <template v-else-if="sheet === 'stops'">
-                <label>Find a stop<input type="search" v-model="stopSearch" placeholder="Stop or coupler name"></label><div class="stop-grid"><button v-for="stop in filteredStops" :key="stop.number" :class="{selected: stop.active}" :aria-pressed="!!stop.active" :disabled="!connected" @click="udp('toggleStop', {number: stop.number})">{{ stop.name }}</button></div><p v-if="!filteredStops.length" class="muted">No matching stops received from the console.</p>
             </template>
             <template v-else-if="sheet === 'probes'">
                 <p class="muted" role="status">{{ probeSummary }}<span v-if="!connected && probes.length"> · Showing last received readings.</span><span v-else-if="probes.length > liveProbeCount"> · Stale readings are the last values received.</span></p>
