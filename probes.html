@@ -31,6 +31,28 @@
             <span class="badge bg-secondary">{{probes.length}} discovered locally</span>
         </div>
 
+        <section class="card mb-4">
+            <div class="card-header"><b>Organ left-on alert</b></div>
+            <div class="card-body">
+                <p class="small text-muted">Standalone monitoring works without Fugara. Use one alert source for each organ to avoid duplicate notifications.</p>
+                <p role="status" v-if="alertMessage">{{alertMessage}}</p>
+                <div class="alert alert-warning" role="alert" v-if="alertStatus.active && alertSettings.dashboard">The organ has been left on without input. {{alertStatus.observation === 'unknown' || alertStatus.idleSeconds === null ? 'Awaiting current power and activity observations.' : ''}}</div>
+                <fieldset :disabled="!alertLoaded || alertSaving">
+                    <div class="d-flex flex-wrap gap-3 mb-3"><label><input type="checkbox" v-model="alertSettings.enabled"> Enabled</label><label><input type="checkbox" v-model="alertSettings.dashboard"> Dashboard</label><label><input type="checkbox" v-model="alertSettings.email" :disabled="!alertStatus.emailAvailable"> Email</label><label><input type="checkbox" v-model="alertSettings.recovery"> Notify when input resumes or power turns off</label></div>
+                    <div class="row g-3">
+                        <div class="col-md-6"><label class="form-label w-100">Power source<select class="form-select" v-model="alertSettings.source"><option value="organ">Combined organ state</option><option value="controlPower">Control power</option><option value="blowerPower">Blower power</option></select></label></div>
+                        <div class="col-md-6"><label class="form-label w-100">Powered on without input for (minutes)<input type="number" min="1" max="10080" class="form-control" v-model.number="alertSettings.minutes"></label></div>
+                        <div class="col-12" v-if="alertSettings.email"><label class="form-label w-100">Email recipients (comma separated)<input type="text" class="form-control" v-model="alertRecipients"></label></div>
+                    </div>
+                    <p class="small text-muted">Power comes from the configured controller or power probes; inactivity comes from controller input monitoring. If control and blower are monitored separately, select one of them. Missing input observations never count as inactivity.</p>
+                    <p class="small" v-if="alertLoaded">{{alertStatus.idleSeconds === null ? 'Input monitoring unavailable or still connecting.' : 'Time without input: ' + (alertStatus.idleSecondsIsLowerBound ? 'at least ' : '') + Math.floor(alertStatus.idleSeconds / 60) + ' minutes.'}}</p>
+                    <p class="small text-muted" v-if="!alertStatus.emailAvailable">Email delivery has not been configured for this Organ UI installation.</p>
+                    <button type="button" class="btn btn-primary" @click="saveAlertSettings">{{alertSaving ? 'Saving…' : 'Save alert settings'}}</button>
+                </fieldset>
+                <p class="small mt-3" v-if="alertStatus.pendingEmails">{{alertStatus.pendingEmails}} email deliveries pending.</p>
+                <div class="border-top pt-2 mt-2" v-for="event in alertStatus.events" :key="event.id">{{event.message}} <span class="small text-muted">{{formatTime(event.observedAt)}}</span></div>
+            </div>
+        </section>
         <div class="alert alert-info" v-if="!probes.length">
             Waiting for Plenum probe broadcasts on the local network.
         </div>
@@ -162,10 +184,36 @@
                 return {
                     siteName: "",
                     fugaraPairingCode: "",
-                    probes: []
+                    probes: [],
+                    alertSettings: { enabled: false, dashboard: true, email: false, recovery: true, minutes: 240, source: 'organ' },
+                    alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null
                 }
             },
             methods: {
+                async getAlertStatus(initial = false) {
+                    try {
+                        const response = await fetch('/api/left-on-alerts');
+                        if (!response.ok) throw new Error('Unable to load organ alert status.');
+                        this.alertStatus = await response.json();
+                        if (initial || !this.alertLoaded) {
+                            this.alertSettings = { ...this.alertStatus.settings };
+                            this.alertRecipients = this.alertSettings.recipients.join(', ');
+                            this.alertLoaded = true;
+                        }
+                    } catch (error) { this.alertMessage = error.message; }
+                },
+                async saveAlertSettings() {
+                    this.alertSaving = true;
+                    try {
+                        const response = await fetch('/api/left-on-alerts', { method: 'PUT', headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...this.alertSettings, recipients: this.alertRecipients.split(',').map(value => value.trim()).filter(Boolean) }) });
+                        const payload = await response.json();
+                        if (!response.ok) throw new Error(payload.message || 'Unable to save alert settings.');
+                        this.alertStatus = payload;
+                        this.alertMessage = 'Alert settings saved.';
+                    } catch (error) { this.alertMessage = error.message; }
+                    finally { this.alertSaving = false; }
+                },
                 formatNumber(value, digits) {
                     const number = Number(value);
                     return Number.isFinite(number) ? number.toFixed(digits) : "--";
@@ -204,7 +252,9 @@
                         ? `${this.formatNumber(number / 1000, 2)} kW`
                         : `${this.formatNumber(number, 0)} W`;
                 }
-            }
+            },
+            mounted() { this.getAlertStatus(true); this.alertTimer = setInterval(() => this.getAlertStatus(), 15000); },
+            beforeUnmount() { clearInterval(this.alertTimer); }
         }).mount('#app');
 
         socket.on('siteName', function(name) {

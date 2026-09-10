@@ -69,6 +69,7 @@ test('heartbeat reports organ adapters, normalized status, and both uptimes', as
             state: 'on',
             uptimeSeconds: '125',
             uptimeLabel: '2 minutes',
+            idleSeconds: 45,
             powerStatus: {
                 combine: 'any',
                 controlPower: {
@@ -110,6 +111,7 @@ test('heartbeat reports organ adapters, normalized status, and both uptimes', as
         assert.equal(submitted.payload.organStatus.observationState, 'available');
         assert.equal(submitted.payload.organStatus.state, 'on');
         assert.equal(submitted.payload.organStatus.uptimeSeconds, 125);
+        assert.equal(submitted.payload.organStatus.idleSeconds, 45);
         assert.equal(submitted.payload.organStatus.uptimeLabel, '2 minutes');
         assert.equal(submitted.payload.powerStatus.combine, 'any');
         assert.equal(submitted.payload.powerStatus.controlPower.state, 'on');

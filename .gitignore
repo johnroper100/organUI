@@ -153,3 +153,7 @@ DerivedData/
 **/xcuserdata/
 *.xccheckout
 *.xcscmblueprint
+
+# Local monitoring settings and email queue
+/left-on-alerts.json
+/left-on-alerts.json.tmp

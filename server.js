@@ -54,6 +54,9 @@ const {
     ProbeBroadcastMonitor
 } = require('./lib/probe-broadcast-monitor');
 const packageMetadata = require('./package.json');
+const { LeftOnAlerts } = require('./lib/left-on-alerts');
+const { OrganActivity } = require('./lib/organ-activity');
+const organActivity = new OrganActivity();
 
 const app = express();
 const httpServer = http.createServer(app);
@@ -110,6 +113,20 @@ const fugaraIdentityPath = process.env.FUGARA_DEVICE_IDENTITY_PATH
     ?? path.join(__dirname, 'fugara-device.json');
 const organProfile = createOrganProfile(conf.organ);
 const powerSensing = createPowerSensingConfig(conf.organ?.powerSensing);
+const alertMailKey = process.env.ORGANUI_ALERT_MAIL_API_KEY;
+const alertMailFrom = process.env.ORGANUI_ALERT_MAIL_FROM;
+const leftOnAlerts = new LeftOnAlerts({
+    filePath: path.join(__dirname, 'left-on-alerts.json'),
+    sendEmail: alertMailKey && alertMailFrom ? async (recipient, message, observedAt) => {
+        const response = await fetch('https://api.resend.com/emails', {
+            method: 'POST', signal: AbortSignal.timeout(15000),
+            headers: { Authorization: `Bearer ${alertMailKey}`, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ from: alertMailFrom, to: [recipient], subject: 'Organ UI: organ power alert',
+                text: `${conf.siteName || 'Organ UI'}: ${message}\nObserved: ${new Date(observedAt).toISOString()}` })
+        });
+        if (!response.ok) throw new Error('Email provider did not accept the alert.');
+    } : null
+});
 if (
     organProfile.adapters.length !== 1
     || organProfile.adapters[0].adapter !== 'opus-two'
@@ -229,6 +246,7 @@ const oscTransport = new OSCControllerTransport({
     // OSC discovery get the first opportunity to identify the controller.
     port: oscTargetPort,
     onControllerDiscovered: (host) => {
+        organActivity.reset();
         console.log(`Discovered OSC controller at ${host}:${oscTargetPort}`);
         // Do not carry the previous controller session's uptime into the new
         // "on" event. Keep controller telemetry unavailable until fresh uptime
@@ -247,6 +265,7 @@ const oscTransport = new OSCControllerTransport({
         }
     },
     onControllerLost: (host) => {
+        organActivity.reset();
         console.warn(
             `OSC controller at ${host} stopped responding; resuming discovery`
         );
@@ -352,6 +371,8 @@ const fugaraTelemetry = new FugaraTelemetry({
             state: powerStatus.organ.state,
             uptimeSeconds: data.uptimeSeconds,
             uptimeLabel: data.uptime,
+            idleSeconds: organIdleSeconds(),
+            idleSecondsIsLowerBound: organActivity.idleIsLowerBound,
             powerStatus
         };
     }
@@ -401,6 +422,14 @@ if (probeBroadcastEnabled) {
 }
 
 const probeStatusInterval = setInterval(() => {
+    try {
+        leftOnAlerts.observe(resolveOrganPowerStatus(powerSensing, {
+            controllerPower: controllerPowerObservation(),
+            controlPower: powerProbeObservation(powerSensing.controlProbe),
+            blowerPower: powerProbeObservation(powerSensing.blowerProbe)
+        }), organIdleSeconds(), organActivity.idleIsLowerBound);
+    } catch (error) { console.warn(`Unable to persist organ alert: ${error.message}`); }
+    leftOnAlerts.flush().catch(error => console.warn(`Organ alert delivery failed: ${error.message}`));
     if (probeBroadcastEnabled) {
         io.emit('probeReadings', probeBroadcastMonitor.list());
     }
@@ -845,6 +874,20 @@ function refreshNameInventory() {
 }
 
 function sendOSCCommand(cmd, state) {
+    const sent = dispatchOSCCommand(cmd, state);
+    if (sent) organActivity.recordInput();
+    return sent;
+}
+
+function organIdleSeconds() {
+    return organActivity.idleSeconds({
+        available: controllerPowerObservation().state === 'on',
+        uptimeSeconds: normalizeUptimeSeconds(data.uptimeSeconds),
+        keysHeld: data.keyboardStatus.some(value => value === 1)
+    });
+}
+
+function dispatchOSCCommand(cmd, state) {
     const validation = validateOSCCommand({ cmd, state });
     if (!validation.ok) {
         console.warn(`Rejected OSC command ${String(cmd)}: ${validation.error}`);
@@ -1005,6 +1048,7 @@ function handleKeyboardMessage(parts, value) {
     }
 
     const active = colorToBinary(value, ['green'], ['purple', 'brown']);
+    if (active !== null && (active === 1 || data.keyboardStatus[keyNumber - 1] !== active)) organActivity.recordInput();
     updateArrayValue('keyboardStatus', data.keyboardStatus, keyNumber - 1, active);
 }
 
@@ -1056,6 +1100,7 @@ function handleStopsMessage(parts, value) {
     ) {
         const active = colorToBinary(value, ['green'], ['purple']);
         const stop = data.stops[buttonNumber - 1];
+        if (active !== null && stop.active !== active) organActivity.recordInput();
         updateObjectField('stops', stop, 'active', active, data.stops);
         return;
     }
@@ -1101,6 +1146,7 @@ function handleUserDefMessage(token, value) {
     const labelNumber = parseIndexedToken(token, 'label', 1, 992);
 
     if (labelNumber === 991 && isText(value)) {
+        organActivity.observeCounter(value);
         updateScalar(
             'cyclesSinceKeypress',
             'cyclesSinceKeypress',
@@ -1336,6 +1382,7 @@ io.on('connection', (socket) => {
 
     socket.on('sendUDPcmd', (command, acknowledge = () => {}) => {
         const result = sendUDPRequest(command);
+        if (result.ok && !['getTrackName', 'getFolderName', 'getMemoryLevelName'].includes(command.action)) organActivity.recordInput();
         if (!result.ok) {
             console.warn(
                 `Rejected UDP command from socket ${socket.id}: ${result.error}`
@@ -1425,6 +1472,7 @@ app.post('/api/remote-action', (req, res) => {
 
 app.post('/api/udp', (req, res) => {
     const result = sendUDPRequest(req.body);
+    if (result.ok && !['getTrackName', 'getFolderName', 'getMemoryLevelName'].includes(req.body.action)) organActivity.recordInput();
     if (!result.ok) {
         const status = result.error === 'no controller has been discovered'
             ? 503
@@ -1440,6 +1488,18 @@ app.post('/api/udp', (req, res) => {
 
 app.get('/api/probes', (_req, res) => {
     res.json(probeBroadcastMonitor.list());
+});
+
+app.get('/api/left-on-alerts', (_req, res) => {
+    res.set('Cache-Control', 'no-store').json(leftOnAlerts.snapshot());
+});
+app.put('/api/left-on-alerts', (req, res) => {
+    // Settings changes must originate in this local application's UI.
+    if (req.get('origin') !== `${req.protocol}://${req.get('host')}` || !req.is('application/json')) {
+        return res.status(403).json({ message: 'Use the Organ UI settings page to update alerts.' });
+    }
+    try { res.json(leftOnAlerts.configure(req.body)); }
+    catch (error) { res.status(422).json({ message: error.message }); }
 });
 
 app.get('/', (req, res) => {
