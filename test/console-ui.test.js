@@ -91,6 +91,34 @@ test('controller feedback drives names, transposer and site-specific crescendo c
     assert.equal(app.crescendoStops[0].number, 22);
 });
 
+test('probe readings retain stale values but never appear live while disconnected', () => {
+    const {app, events} = harness();
+    events.connect();
+    events.probeReadings([{serialNo: 'env-1', online: true}, {serialNo: 'power-1', online: false}]);
+    assert.equal(app.panelSummary('probes'), '1 / 2 live');
+    assert.equal(app.probeStatus(app.probes[1]), 'Stale');
+    events.disconnect();
+    assert.equal(app.liveProbeCount, 0);
+    assert.equal(app.probeStatus(app.probes[0]), 'Disconnected');
+    assert.equal(app.probes.length, 2);
+    events.connect();
+    events.probeReadings([{serialNo: 'env-1', online: false}]);
+    assert.equal(app.panelSummary('probes'), '0 / 1 live');
+    events.probeReadings(null);
+    assert.equal(app.probeSummary, 'Waiting');
+});
+
+test('probe readouts preserve missing measurements and convert pressure and power units', () => {
+    const {app} = harness();
+    const environment = app.probeMeasurements({probeType: 'environment', temperature: 20.25, temperatureUnit: 'C', humidity: null});
+    assert.equal(environment[0].value, '20.3° C');
+    assert.equal(environment[1].value, '--% RH');
+    assert.equal(app.probeMeasurements({probeType: 'pressure', pressureInH2O: 4, displayPressureUnit: 'mmH2O'})[0].value, '101.6 mmH2O');
+    assert.equal(app.probeMeasurements({probeType: 'pressure', pressureInH2O: null, displayPressureUnit: 'mmH2O'})[0].value, '-- mmH2O');
+    assert.equal(app.probeMeasurements({probeType: 'power', estimatedWatts: 1500})[1].value, '1.50 kW');
+    assert.equal(app.probeMeasurements({probeType: 'power', currentAmps: 0, estimatedWatts: 0})[0].value, '0.00 A');
+});
+
 test('console Vue template compiles without errors', async () => {
     const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
     const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));

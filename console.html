@@ -80,6 +80,17 @@
                     <div class="button-row" v-if="crescendoStops.length"><button v-for="stop in crescendoStops" :key="stop.number" :disabled="!connected" :class="{selected: stop.active}" @click="udp('toggleStop', {number: stop.number})">{{ stop.name }}</button></div>
                     <p class="panel-note" v-else>Use the crescendo shoe when available.</p>
                 </template>
+                <template v-else-if="panel === 'probes'">
+                    <span class="eyebrow">Probes · {{ probeSummary }}</span>
+                    <div class="probe-preview" v-if="probes.length">
+                        <button class="probe-preview-row" v-for="probe in probes" :key="probe.serialNo" @click="openSheet('probes')">
+                            <span class="probe-heading"><strong>{{ probe.name || probe.serialNo }}</strong><span class="probe-status" :class="{live: connected && probe.online}">{{ probeStatus(probe) }}</span></span>
+                            <span class="probe-preview-values"><span v-for="reading in probeMeasurements(probe)" :key="reading.label">{{ reading.value }}</span></span>
+                        </button>
+                    </div>
+                    <div class="empty-state" v-else><p>{{ connected ? 'Waiting for probe broadcasts on the local network.' : 'Connect to the server to receive probe readings.' }}</p></div>
+                    <div class="button-row"><button @click="openSheet('probes')">View probes</button></div>
+                </template>
                 <template v-else>
                     <span class="eyebrow">Stops & couplers</span><div class="panel-readout blue">{{ activeStopCount }}<small>stops active</small></div>
                     <div class="button-row"><button @click="openSheet('stops')">View stops</button><button :disabled="!connected" @click="udp('generalCancel')">General cancel</button></div>
@@ -115,6 +126,20 @@
             </template>
             <template v-else-if="sheet === 'stops'">
                 <label>Find a stop<input type="search" v-model="stopSearch" placeholder="Stop or coupler name"></label><div class="stop-grid"><button v-for="stop in filteredStops" :key="stop.number" :class="{selected: stop.active}" :aria-pressed="!!stop.active" :disabled="!connected" @click="udp('toggleStop', {number: stop.number})">{{ stop.name }}</button></div><p v-if="!filteredStops.length" class="muted">No matching stops received from the console.</p>
+            </template>
+            <template v-else-if="sheet === 'probes'">
+                <p class="muted" role="status">{{ probeSummary }}<span v-if="!connected && probes.length"> · Showing last received readings.</span><span v-else-if="probes.length > liveProbeCount"> · Stale readings are the last values received.</span></p>
+                <div class="empty-state" v-if="!probes.length">{{ connected ? 'Waiting for probe broadcasts on the local network.' : 'Connect to the server to receive probe readings.' }}</div>
+                <div class="probe-grid" v-else>
+                    <article class="tile probe-card" v-for="probe in probes" :key="probe.serialNo">
+                        <div class="probe-heading"><h2>{{ probe.name || 'Unnamed probe' }}</h2><span class="probe-status" :class="{live: connected && probe.online}">{{ probeStatus(probe) }}</span></div>
+                        <p class="muted">{{ probeTypeLabel(probe) }} · {{ probe.serialNo }}</p>
+                        <div class="probe-measurements"><div v-for="reading in probeMeasurements(probe)" :key="reading.label"><strong>{{ reading.value }}</strong><span>{{ reading.label }}</span></div></div>
+                        <p class="muted" v-if="probe.probeType === 'power'">Last reported load: {{ probe.loadState === 'on' ? 'On' : probe.loadState === 'off' ? 'Off' : 'Unknown' }}</p>
+                        <dl class="probe-metadata"><dt>Last reading</dt><dd>{{ probeTime(probe.receivedAt) }}</dd><dt>IP address</dt><dd>{{ probe.ipAddress || 'Not reported' }}</dd></dl>
+                    </article>
+                </div>
+                <div class="settings-links"><a href="/probes">Probe diagnostics & alert settings ↗</a></div>
             </template>
             <template v-else-if="sheet === 'settings'">
                 <div class="settings-links"><a href="/">Home</a><a href="/organist">Organist</a><a href="/tuner">Tuner</a><a href="/advanced">Advanced controls</a></div>

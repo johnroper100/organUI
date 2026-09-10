@@ -207,7 +207,7 @@ The browser UI is available at:
 - `/organist` for performance controls
 - `/tuner` for tuning, stops, naming, and recorder controls
 - `/probes` for locally broadcast environment, power, and wind-pressure readings
-- `/console` for a touch-friendly console inspired by the SSOS reference layout: memory and track readouts, expression bars, and selectable timer, recorder, transposer, sostenuto, crescendo, and stop panels. Settings contains site-defined user controls and Fugara pairing. The timer is local to the page and resets on reload. Crescendo selectors and expression channels use controller-provided names; SSOS-only modes are not emulated.
+- `/console` for a touch-friendly console inspired by the SSOS reference layout: memory and track readouts, expression bars, and selectable timer, recorder, transposer, sostenuto, crescendo, stop, and probe panels. Probes shows live environment, power, and wind-pressure readings with a larger readings sheet and a link to diagnostics and alert settings. Stale or disconnected probes retain their last readings with an explicit status. Settings contains site-defined user controls and Fugara pairing. The timer is local to the page and resets on reload. Crescendo selectors and expression channels use controller-provided names; SSOS-only modes are not emulated.
 - `/advanced` for complete OSC-family and remote UDP command coverage
 
 The Advanced page is intentionally a direct protocol test surface. Its

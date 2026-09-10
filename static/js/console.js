@@ -12,15 +12,18 @@ const feedback = {
 const app = createApp({
     data() {
         return {
-            ...feedback, connected: false, panel: 'timer', sheet: '', commandStatus: '',
+            ...feedback, connected: false, probes: [], panel: 'timer', sheet: '', commandStatus: '',
             localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', stopSearch: '',
             timerElapsed: 0, timerStarted: null, now: Date.now(), timerInterval: null,
             panels: [{id: 'sostenuto', label: 'Sostenuto'}, {id: 'crescendo', label: 'Crescendo'},
                 {id: 'timer', label: 'Timer'}, {id: 'transposer', label: 'Transposer'},
-                {id: 'stops', label: 'Stops & couplers'}, {id: 'recorder', label: 'Recorder'}]
+                {id: 'stops', label: 'Stops & couplers'}, {id: 'recorder', label: 'Recorder'},
+                {id: 'probes', label: 'Probes'}]
         };
     },
     computed: {
+        liveProbeCount() { return this.connected ? this.probes.filter(probe => probe.online).length : 0; },
+        probeSummary() { return !this.connected ? 'Disconnected' : this.probes.length ? `${this.liveProbeCount} / ${this.probes.length} live` : 'Waiting'; },
         shownMemory() { return this.localMemory ? this.localMemoryLevel : this.memoryLevel; },
         currentTrackName() { return this.udpTrackNames[this.trackNum] || ''; },
         transposeText() {
@@ -40,7 +43,7 @@ const app = createApp({
             const seconds = Math.floor((this.timerElapsed + (this.timerStarted === null ? 0 : this.now - this.timerStarted)) / 1000);
             return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(n => String(n).padStart(2, '0')).join(':');
         },
-        sheetTitle() { return {memory: 'Memory select', library: 'Library select', tracks: 'Recordings', copy: 'Copy recording', stops: 'Stops & couplers', settings: 'Settings'}[this.sheet] || ''; },
+        sheetTitle() { return {memory: 'Memory select', library: 'Library select', tracks: 'Recordings', copy: 'Copy recording', stops: 'Stops & couplers', probes: 'Probe readings', settings: 'Settings'}[this.sheet] || ''; },
         inventoryEntries() {
             const library = this.sheet === 'library';
             const names = library ? this.queriedFolderNames : this.udpTrackNames;
@@ -48,11 +51,33 @@ const app = createApp({
         }
     },
     methods: {
+        probeStatus(probe) { return !this.connected ? 'Disconnected' : probe.online ? 'Live' : 'Stale'; },
+        probeTypeLabel(probe) { return {environment: 'Environment', power: 'Power', pressure: 'Wind pressure'}[probe.probeType] || 'Probe'; },
+        probeNumber(value, digits = 1) {
+            return value === null || value === undefined || value === '' || !Number.isFinite(Number(value)) ? '--' : Number(value).toFixed(digits);
+        },
+        probeMeasurements(probe) {
+            if (probe.probeType === 'environment') return [
+                {label: 'Temperature', value: `${this.probeNumber(probe.temperature)}° ${probe.temperatureUnit || ''}`},
+                {label: 'Humidity', value: `${this.probeNumber(probe.humidity)}% RH`}
+            ];
+            if (probe.probeType === 'power') return [
+                {label: 'RMS current', value: `${this.probeNumber(probe.currentAmps, 2)} A`},
+                {label: 'Estimated load', value: Number(probe.estimatedWatts) >= 1000 ? `${this.probeNumber(probe.estimatedWatts / 1000, 2)} kW` : `${this.probeNumber(probe.estimatedWatts, 0)} W`}
+            ];
+            const millimeters = probe.displayPressureUnit === 'mmH2O';
+            const pressure = probe.pressureInH2O;
+            return [{label: 'Wind pressure', value: `${this.probeNumber(pressure == null || pressure === '' ? null : Number(pressure) * (millimeters ? 25.4 : 1), millimeters ? 1 : 2)} ${millimeters ? 'mmH2O' : 'inH2O'}`}];
+        },
+        probeTime(value) {
+            const date = value ? new Date(value) : null;
+            return date && !Number.isNaN(date.getTime()) ? date.toLocaleString() : 'Not received';
+        },
         panelSummary(id) {
             return {sostenuto: this.sostActive === null ? '—' : this.sostActive ? 'On' : 'Off',
                 crescendo: this.crescendoExpression ? Math.round(this.crescendoExpression.value * 100) + '%' : '—',
                 timer: this.timerText, transposer: this.transposeText, stops: this.activeStopCount + ' active',
-                recorder: this.currentTrackName || (this.trackNum ? 'Track ' + this.trackNum : '—')}[id];
+                recorder: this.currentTrackName || (this.trackNum ? 'Track ' + this.trackNum : '—'), probes: this.probeSummary}[id];
         },
         udp(action, values = {}) {
             if (!socket.connected) { this.commandStatus = 'Disconnected · command not sent'; return; }
@@ -110,6 +135,7 @@ const app = createApp({
 }).mount('#app');
 
 for (const name of Object.keys(feedback)) socket.on(name, value => { app[name] = value; });
+socket.on('probeReadings', readings => { app.probes = Array.isArray(readings) ? readings : []; });
 socket.on('remoteReply', value => { app.commandStatus = value; });
 socket.on('connect', () => { app.connected = true; app.commandStatus = ''; });
 socket.on('disconnect', () => { app.connected = false; app.commandStatus = 'Connection lost'; });
