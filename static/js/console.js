@@ -14,19 +14,29 @@ const app = createApp({
         return {
             standaloneView: window.location?.pathname.match(/^\/console\/custom\/([^/]+)\/?$/)?.[1] || '',
             customViews: [], customError: '', customLoading: false, customDrafts: {}, customPending: {},
-            activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'tracks', label: 'Tracks'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
+            activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'controls', label: 'Console controls'}, {id: 'tracks', label: 'Tracks'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
             alertSettings: {enabled: false, dashboard: true, email: false, recovery: true, minutes: 240, source: 'organ'},
             alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null,
             ...feedback, connected: false, probes: [], panel: 'timer', sheet: '', commandStatus: '',
-            localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '',
+            localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', controlPage: 'memory', tracksPane: 'tracks',
             timerElapsed: 0, timerStarted: null, now: Date.now(), timerInterval: null,
-            panels: [{id: 'sostenuto', label: 'Sostenuto'}, {id: 'crescendo', label: 'Crescendo'},
+            panels: [{id: 'sostenuto', label: 'Sostenuto'},
                 {id: 'timer', label: 'Timer'}, {id: 'transposer', label: 'Transposer'},
                 {id: 'recorder', label: 'Record / playback'},
                 {id: 'probes', label: 'Probes'}]
         };
     },
     computed: {
+        pageTitle() {
+            return this.activeTab === 'controls' ? this.controlPages.find(item => item.id === this.controlPage)?.label
+                : this.tabs.find(item => item.id === this.activeTab)?.label;
+        },
+        showTransport() { return this.activeTab === 'tracks'; },
+        controlPages() {
+            return [{id: 'memory', label: 'Memory level'},
+                {id: 'expression', label: 'Expression & crescendo'},
+                ...this.panels.filter(item => !['recorder', 'probes'].includes(item.id))];
+        },
         visibleCustomViews() { return this.customViews.filter(view => !this.standaloneView || view.id === this.standaloneView); },
         filteredTracks() {
             const query = this.trackSearch.trim().toLowerCase();
@@ -44,8 +54,6 @@ const app = createApp({
         namedExpressions() {
             return this.expressions.map((exp, id) => ({...exp, id, value: Math.max(0, Math.min(1, Number(exp?.value) || 0))})).filter(exp => exp.name);
         },
-        crescendoExpression() { return this.namedExpressions.find(exp => /cres/i.test(exp.name)); },
-        crescendoStops() { return this.stops.filter(stop => stop?.name && /crescendo|\bcresc?\b/i.test(stop.name)); },
         namedUserVars() { return this.userVars.map((item, i) => ({...item, number: i + 1})).filter(item => item.name); },
         timerText() {
             const seconds = Math.floor((this.timerElapsed + (this.timerStarted === null ? 0 : this.now - this.timerStarted)) / 1000);
@@ -59,6 +67,11 @@ const app = createApp({
         }
     },
     methods: {
+        showControl(id) {
+            this.controlPage = id;
+            if (id === 'memory') this.levelNumber = Number(this.shownMemory) || 1;
+            this.selectTab('controls');
+        },
         selectHashTab() {
             if (!this.standaloneView) this.selectTab(window.location?.hash.slice(1));
         },
@@ -161,6 +174,7 @@ const app = createApp({
         },
         selectTab(id) {
             if (!this.tabs.some(tab => tab.id === id)) return;
+            if (id === 'controls' && this.activeTab !== id && this.controlPage === 'memory') this.levelNumber = Number(this.shownMemory) || 1;
             if (id === 'tracks' && this.activeTab !== id) { this.selectedNumber = Number(this.trackNum) || 1; this.renameText = ''; }
             this.activeTab = id;
             if (id === 'probes') this.getAlertStatus();
@@ -222,7 +236,6 @@ const app = createApp({
         },
         panelSummary(id) {
             return {sostenuto: this.sostActive === null ? '—' : this.sostActive ? 'On' : 'Off',
-                crescendo: this.crescendoExpression ? Math.round(this.crescendoExpression.value * 100) + '%' : '—',
                 timer: this.timerText, transposer: this.transposeText,
                 recorder: this.currentTrackName || (this.trackNum ? 'Track ' + this.trackNum : '—'), probes: this.probeSummary}[id];
         },

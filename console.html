@@ -8,99 +8,61 @@
     <link rel="stylesheet" href="/static/css/console.css">
     <script type="importmap">{"imports":{"vue":"/static/js/vue.esm-browser.js"}}</script>
 </head>
-<body>
+<body class="console-page">
 <div id="app" v-cloak>
     <div class="console-shell">
         <header class="console-header" v-if="!standaloneView">
-            <button class="folder-button" @click="openSheet('library')"><small>Organist folder</small><span>{{ folderTrackName || 'Select folder' }}</span></button>
             <div class="brand"><a href="/">ORGAN<span>UI</span></a><small>{{ siteName || 'Organ console' }}</small></div>
-            <button @click="selectTab('settings')">Settings</button>
+            <button class="folder-button" @click="openSheet('library')"><small>Organist folder</small><span>{{ folderTrackName || 'Select folder' }}</span></button>
         </header>
         <nav v-if="!standaloneView" class="console-tabs" role="tablist" aria-label="Console views">
             <button v-for="item in tabs" :key="item.id" :id="'tab-' + item.id" role="tab" :aria-selected="activeTab === item.id" :aria-controls="'view-' + item.id" :tabindex="activeTab === item.id ? 0 : -1" :class="{selected: activeTab === item.id}" @click="selectTab(item.id)" @keydown="tabKeydown($event, item.id)">{{ item.label }}</button>
         </nav>
+        <header class="page-header">
+            <h1>{{ pageTitle }}</h1>
+            <span v-if="activeTab === 'probes'" class="muted">{{ probeSummary }}</span>
+            <button v-if="activeTab === 'tracks'" :disabled="!connected" @click="refreshNames">Refresh names</button>
+        </header>
+        <nav v-if="!standaloneView" v-show="activeTab === 'controls'" class="control-page-tabs" aria-label="Console controls">
+                <button v-for="item in controlPages" :key="item.id" :class="{selected: controlPage === item.id}" :aria-pressed="controlPage === item.id" :aria-controls="'control-' + item.id" @click="showControl(item.id)">{{ item.label }}</button>
+        </nav>
+        <nav v-if="!standaloneView" v-show="activeTab === 'tracks'" class="track-pages" aria-label="Track controls">
+            <button :class="{selected: tracksPane === 'tracks'}" :aria-pressed="tracksPane === 'tracks'" aria-controls="track-inventory" @click="tracksPane = 'tracks'">Tracks</button>
+            <button :class="{selected: tracksPane === 'rename'}" :aria-pressed="tracksPane === 'rename'" aria-controls="track-rename" @click="tracksPane = 'rename'">Rename</button>
+            <button :class="{selected: tracksPane === 'current'}" :aria-pressed="tracksPane === 'current'" aria-controls="track-current" @click="tracksPane = 'current'">Current track</button>
+        </nav>
         <main v-if="!standaloneView" v-show="activeTab === 'overview'" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" class="console-grid">
-            <section class="tile memory" aria-label="Memory level">
-                <button class="display-button" @click="openSheet('memory')">
-                    <span class="eyebrow">{{ localMemory ? 'Local memory level' : 'Memory level' }}</span>
-                    <span class="large-number red">{{ shownMemory || '—' }}</span>
-                    <span class="hint">Touch to select level</span>
-                </button>
-                <div class="button-row">
-                    <button :disabled="!connected" @click="changeMemory('Down')">Down</button>
-                    <button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button>
-                    <button :disabled="!connected" @click="udp('generalCancel')">General cancel</button>
-                    <button :disabled="!connected" @click="changeMemory('Up')">Up</button>
-                </div>
-            </section>
-            <section class="tile track" aria-label="Current track">
-                <button class="display-button" @click="openSheet('tracks')">
-                    <span class="eyebrow">Track <span v-if="trackLocked">· Record protected</span></span>
-                    <span class="large-number green">{{ trackNum || '—' }}</span>
-                    <span class="hint">{{ currentTrackName || 'Touch to browse tracks' }}</span>
-                </button>
-                <div class="button-row">
-                    <button :disabled="!connected" @click="udp('trackDown')">Previous</button>
-                    <button @click="openSheet('copy')">Copy</button>
-                    <button @click="openSheet('tracks')">Select</button>
-                    <button :disabled="!connected" @click="udp('trackUp')">Next</button>
-                </div>
-            </section>
-            <nav class="side-controls" aria-label="Console controls">
-                <label class="mobile-panel-select">Console control<select v-model="panel"><option v-for="item in panels" :key="item.id" :value="item.id">{{ item.label }} · {{ panelSummary(item.id) }}</option></select></label>
-                <button v-for="item in panels" :key="item.id" :class="{selected: panel === item.id}" :aria-pressed="panel === item.id" aria-controls="console-detail" @click="panel = item.id"><span>{{ item.label }}</span><strong>{{ panelSummary(item.id) }}</strong></button>
-            </nav>
-            <section id="console-detail" class="tile detail" aria-label="Selected control">
-                <template v-if="panel === 'timer'">
-                    <span class="eyebrow">Timer</span>
-                    <div class="panel-readout timer pink">{{ timerText }}</div>
-                    <div class="button-row"><button @click="startTimer" :disabled="timerStarted !== null">Start</button><button @click="stopTimer">Stop</button><button @click="resetTimer">Reset</button></div>
-                </template>
-                <template v-else-if="panel === 'transposer'">
-                    <span class="eyebrow">Transposer · semitones</span><div class="panel-readout yellow">{{ transposeText }}</div>
-                    <div class="button-row"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></div>
-                </template>
-                <template v-else-if="panel === 'sostenuto'">
-                    <span class="eyebrow">Sostenuto</span><div class="panel-readout blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</div>
-                    <div class="button-row"><button :disabled="!connected" @click="tap(2010)">Toggle</button><button :disabled="!connected" @click="tap(2011)">Release</button></div>
-                </template>
-                <template v-else-if="panel === 'recorder'">
-                    <span class="eyebrow">Record / playback <span v-if="trackLocked">· Record protected</span></span>
-                    <button class="panel-readout recording orange" @click="openSheet('tracks')">{{ currentTrackName || (trackNum ? 'Track ' + trackNum : 'Select track') }}<small>{{ trackTime || '— : —' }}</small></button>
-                    <div class="button-row"><button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></div>
-                </template>
-                <template v-else-if="panel === 'crescendo'">
-                    <span class="eyebrow">Crescendo</span>
-                    <div class="panel-readout purple">{{ crescendoExpression ? Math.round(crescendoExpression.value * 100) + '%' : '—' }}</div>
-                    <div class="button-row" v-if="crescendoStops.length"><button v-for="stop in crescendoStops" :key="stop.number" :disabled="!connected" :class="{selected: stop.active}" @click="udp('toggleStop', {number: stop.number})">{{ stop.name }}</button></div>
-                    <p class="panel-note" v-else>Use the crescendo shoe when available.</p>
-                </template>
-                <template v-else-if="panel === 'probes'">
-                    <span class="eyebrow">Probes · {{ probeSummary }}</span>
-                    <div class="probe-preview" v-if="probes.length">
-                        <button class="probe-preview-row" v-for="probe in probes" :key="probe.serialNo" @click="openSheet('probes')">
-                            <span class="probe-heading"><strong>{{ probe.name || probe.serialNo }}</strong><span class="probe-status" :class="{live: connected && probe.online}">{{ probeStatus(probe) }}</span></span>
-                            <span class="probe-preview-values"><span v-for="reading in probeMeasurements(probe)" :key="reading.label">{{ reading.value }}</span></span>
-                        </button>
-                    </div>
-                    <div class="empty-state" v-else><p>{{ connected ? 'Waiting for probe broadcasts on the local network.' : 'Connect to the server to receive probe readings.' }}</p></div>
-                    <div class="button-row"><button @click="openSheet('probes')">View probes</button></div>
-                </template>
-            </section>
-            <section class="tile expression" aria-label="Expression and crescendo">
-                <span class="eyebrow section-label">Expression & crescendo</span>
+            <div class="overview-status" aria-label="Console status">
+                <button class="status-card memory-status" @click="showControl('memory')"><span>{{ localMemory ? 'Local memory level' : 'Memory level' }}</span><strong class="red">{{ shownMemory || '—' }}</strong></button>
+                <button class="status-card track-status" @click="selectTab('tracks')"><span>Current track</span><strong class="green">{{ trackNum || '—' }}</strong><small>{{ currentTrackName || 'Touch to browse tracks' }}<span v-if="trackLocked"> · Record protected</span></small></button>
+                <button class="status-card" @click="showControl('timer')"><span>Timer</span><strong class="pink status-timer">{{ timerText }}</strong></button>
+                <button class="status-card" @click="showControl('transposer')"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></button>
+                <button class="status-card" @click="showControl('sostenuto')"><span>Sostenuto</span><strong class="blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</strong></button>
+                <button class="status-card" @click="selectTab('probes')"><span>Probes</span><strong class="probe-summary">{{ probeSummary }}</strong></button>
+                <button class="status-card expression-status" @click="showControl('expression')"><span>Expression & crescendo</span><span class="expression-summary" v-if="namedExpressions.length"><small v-for="exp in namedExpressions" :key="exp.id">{{ exp.name }} <strong>{{ Math.round(exp.value * 100) }}%</strong></small></span><small v-else>Waiting for expression controls</small></button>
+            </div>
+        </main>
+
+        <section v-if="!standaloneView" v-show="activeTab === 'controls'" id="view-controls" role="tabpanel" aria-labelledby="tab-controls" tabindex="0" class="tab-page controls-workspace">
+            <form v-show="controlPage === 'memory'" id="control-memory" @submit.prevent="goMemory" class="control-workspace memory-workspace">
+                <label>{{ localMemory ? 'Local memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
+                <p class="muted">{{ localMemory ? 'Local memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
+                <details><summary>Memory select</summary><div class="keypad"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div></details>
+            </form>
+            <section v-show="controlPage === 'expression'" id="control-expression" class="control-workspace expression-workspace" aria-label="Expression and crescendo">
                 <div class="expression-bars" v-if="namedExpressions.length">
                     <label class="expression-channel" v-for="exp in namedExpressions" :key="exp.id" :class="{crescendo: /cres/i.test(exp.name)}">
                         <span class="bar-value">{{ Math.round(exp.value * 100) }}<small>%</small></span>
-                        <span class="bar-well"><span class="bar-fill" :style="{height: (exp.value * 100) + '%'}"></span>
-                            <input type="range" min="0" max="1" step="0.01" :value="exp.value" :aria-label="exp.name" :disabled="!connected" @input="moveFader(exp.id, $event.target.value)">
-                        </span>
+                        <span class="bar-well"><span class="bar-fill" :style="{'--expression-level': (exp.value * 100) + '%'}"></span><input type="range" min="0" max="1" step="0.01" :value="exp.value" :aria-label="exp.name" :disabled="!connected" @input="moveFader(exp.id, $event.target.value)"></span>
                         <span class="bar-label">{{ exp.name }}</span>
                     </label>
                 </div>
-                <div class="empty-state" v-else><p>Waiting for expression controls</p></div>
+                <div class="empty-state" v-else>Waiting for expression controls</div>
             </section>
-        </main>
+            <section v-show="controlPage === 'timer'" id="control-timer" class="control-workspace" aria-label="Timer"><div class="panel-readout timer pink">{{ timerText }}</div></section>
+            <section v-show="controlPage === 'transposer'" id="control-transposer" class="control-workspace" aria-label="Transposer"><span class="eyebrow">Transposer · semitones</span><div class="panel-readout yellow">{{ transposeText }}</div></section>
+            <section v-show="controlPage === 'sostenuto'" id="control-sostenuto" class="control-workspace" aria-label="Sostenuto"><div class="panel-readout blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</div></section>
+        </section>
 
         <div v-if="customLoading || customError" class="custom-notice" role="status"><span>{{ customError || 'Loading custom controls…' }}</span><button v-if="customError" @click="loadCustomViews">Retry</button></div>
         <section v-for="view in visibleCustomViews" :key="view.id" v-show="activeTab === 'custom-' + view.id" :id="'view-custom-' + view.id" :role="standaloneView ? 'region' : 'tabpanel'" :aria-labelledby="standaloneView ? 'title-custom-' + view.id : 'tab-custom-' + view.id" tabindex="0" class="tab-page custom-view">
@@ -134,8 +96,7 @@
             </section>
         </section>
         <section v-if="!standaloneView" v-show="activeTab === 'tracks'" id="view-tracks" role="tabpanel" aria-labelledby="tab-tracks" tabindex="0" class="tab-page tracks-layout">
-            <section class="tile tab-card track-inventory">
-                <div class="tab-heading"><h1>Tracks</h1><button :disabled="!connected" @click="refreshNames">Refresh names</button></div>
+            <section id="track-inventory" class="tile tab-card track-inventory" :class="{'is-current': tracksPane === 'tracks'}">
                 <label>Find a track<input type="search" v-model="trackSearch" placeholder="Track number or name"></label>
                 <p class="muted">{{ folderTrackName || 'Current organist folder' }} · {{ filteredTracks.length }} tracks</p>
                 <div class="track-list" aria-label="Tracks">
@@ -144,16 +105,14 @@
                 </div>
             </section>
             <div class="track-tools">
-                <section class="tile tab-card">
+                <section id="track-rename" class="tile tab-card selected-track-tools" :class="{'is-current': tracksPane === 'rename'}">
                     <h2>Selected track · {{ selectedNumber }}</h2><p>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</p>
-                    <button class="primary" :disabled="!connected" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button>
                     <p class="muted">Selecting a track in the list does not start playback.</p>
                     <form @submit.prevent="udp('renameTrack', {number: selectedNumber, name: renameText})" class="selection-form"><label>Rename selected track<input v-model="renameText" maxlength="15" required placeholder="New name"></label><button :disabled="!connected">Rename</button></form>
                 </section>
-                <section class="tile">
+                <section id="track-current" class="tile current-track-tools" :class="{'is-current': tracksPane === 'current'}">
                     <span class="eyebrow">Current track · {{ trackNum || '—' }} <span v-if="trackLocked">· Record protected</span></span>
                     <div class="panel-readout recording orange">{{ currentTrackName || 'No track selected' }}<small>{{ trackTime || '— : —' }}</small></div>
-                    <div class="button-row"><button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></div>
                     <div class="button-row"><button :disabled="!connected" @click="udp('trackDown')">Previous</button><button @click="openSheet('copy')">Copy</button><button :disabled="!connected" @click="udp('trackUp')">Next</button></div>
                     <div class="button-row"><button :disabled="!connected" @click="udp('toggleTrackLock')">{{ trackLocked ? 'Disable' : 'Enable' }} record protection for current track</button></div>
                 </section>
@@ -240,7 +199,6 @@
                     <p >Power comes from the configured controller or power probes; inactivity comes from controller input monitoring. If control and blower are monitored separately, select one of them. Missing input observations never count as inactivity.</p>
                     <p  v-if="alertLoaded">{{alertStatus.idleSeconds === null ? 'Input monitoring unavailable or still connecting.' : 'Time without input: ' + (alertStatus.idleSecondsIsLowerBound ? 'at least ' : '') + Math.floor(alertStatus.idleSeconds / 60) + ' minutes.'}}</p>
                     <p  v-if="!alertStatus.emailAvailable">Email delivery has not been configured for this Organ UI installation.</p>
-                    <button type="button"  @click="saveAlertSettings">{{alertSaving ? 'Saving…' : 'Save alert settings'}}</button>
                 </fieldset>
                 <p  v-if="alertStatus.pendingEmails">{{alertStatus.pendingEmails}} email deliveries pending.</p>
                 <div  v-for="event in alertStatus.events" :key="event.id">{{event.message}} <span >{{probeTime(event.observedAt)}}</span></div>
@@ -253,7 +211,26 @@
                 <section class="settings-section" v-if="namedUserVars.length"><h2>Organ settings</h2><div class="user-setting" v-for="item in namedUserVars"><span>{{ item.name }}<strong>{{ item.value }}</strong></span><button :disabled="!connected" @click="pulse('/UserDef/dec' + item.number)">Down</button><button :disabled="!connected" @click="pulse('/UserDef/inc' + item.number)">Up</button></div></section>
                 <p v-if="fugaraPairingCode">Fugara pairing: <strong>{{ fugaraPairingCode }}</strong></p>
                 <p class="muted">The timer runs on this page and resets when the page is reloaded.</p></div></section>
-        <footer><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span class="command-status" role="status">{{ commandStatus }}</span><a v-if="!standaloneView" href="/advanced">Advanced controls ↗</a></footer>
+        <footer class="console-footer">
+            <div v-if="!standaloneView" class="context-actions" :aria-label="pageTitle + ' controls'">
+                <template v-if="showTransport">
+                    <div class="transport-context"><span>Current track · <strong class="green">{{ trackNum || '—' }}</strong> · {{ currentTrackName || 'No track selected' }}<span v-if="trackLocked"> · Record protected</span></span><span>{{ trackTime || '— : —' }}</span></div>
+                    <div v-if="activeTab === 'tracks'" class="selected-track-action"><span>Selected track · {{ selectedNumber }}<strong>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</strong></span><button class="primary" :disabled="!connected" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button></div>
+                    <div class="button-row"><button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></div>
+                </template>
+                <div v-else-if="activeTab === 'controls' && controlPage === 'memory'" class="button-row memory-footer-actions">
+                    <button class="primary go-memory" form="control-memory" :disabled="!connected">Go to level</button>
+                    <button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button>
+                    <button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button><button :disabled="!connected" @click="udp('generalCancel')">General cancel</button>
+                </div>
+                <div v-else-if="activeTab === 'controls' && controlPage === 'timer'" class="button-row"><button @click="startTimer" :disabled="timerStarted !== null">Start</button><button @click="stopTimer">Stop</button><button @click="resetTimer">Reset</button></div>
+                <div v-else-if="activeTab === 'controls' && controlPage === 'transposer'" class="button-row"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></div>
+                <div v-else-if="activeTab === 'controls' && controlPage === 'sostenuto'" class="button-row"><button :disabled="!connected" @click="tap(2010)">Toggle</button><button :disabled="!connected" @click="tap(2011)">Release</button></div>
+                <div v-else-if="activeTab === 'probes'" class="button-row"><button :disabled="!alertLoaded || alertSaving" @click="saveAlertSettings">{{ alertSaving ? 'Saving…' : 'Save alert settings' }}</button></div>
+                <div v-else-if="activeTab === 'settings'" class="button-row"><button :disabled="customLoading" @click="loadCustomViews">Reload custom views</button><button :disabled="!connected" @click="tap(2001)">Refresh console buttons</button></div>
+            </div>
+            <div class="footer-status"><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span class="command-status" role="status">{{ commandStatus }}</span></div>
+        </footer>
     </div>
     <dialog v-if="!standaloneView" ref="sheet" @close="sheet = ''" @click="closeOnBackdrop" aria-labelledby="sheet-title">
         <header class="sheet-header"><h1 id="sheet-title">{{ sheetTitle }}</h1><button aria-label="Close" @click="closeSheet">×</button></header>

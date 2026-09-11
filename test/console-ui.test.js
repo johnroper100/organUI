@@ -97,6 +97,25 @@ test('tab navigation defaults to overview and browsing tracks sends no controlle
     assert.equal(sent.length, 0);
 });
 
+test('overview opens detailed controls without sending commands or resetting the timer', () => {
+    const {app, events, sent, advance} = harness();
+    events.memoryLevel(24);
+    app.startTimer();
+    app.showControl('memory');
+    assert.equal(app.activeTab, 'controls');
+    assert.equal(app.pageTitle, 'Memory level');
+    assert.equal(app.levelNumber, 24);
+    app.showControl('expression');
+    assert.equal(app.pageTitle, 'Expression & crescendo');
+    app.selectTab('tracks');
+    assert.equal(app.showTransport, true);
+    app.selectTab('overview');
+    advance(2000);
+    assert.equal(app.showTransport, false);
+    assert.equal(app.timerText, '00:00:02');
+    assert.equal(sent.length, 0);
+});
+
 test('tab keyboard navigation wraps, focuses the selected tab, and preserves the timer', () => {
     const {app, advance} = harness();
     let focused = -1, prevented = false;
@@ -106,7 +125,7 @@ test('tab keyboard navigation wraps, focuses the selected tab, and preserves the
     app.tabKeydown(event, 'overview');
     advance(2000);
     assert.equal(app.activeTab, 'settings');
-    assert.equal(focused, 3);
+    assert.equal(focused, app.tabs.findIndex(tab => tab.id === 'settings'));
     assert.equal(prevented, true);
     assert.equal(app.timerText, '00:00:02');
     event.key = 'Home';
@@ -115,16 +134,19 @@ test('tab keyboard navigation wraps, focuses the selected tab, and preserves the
     assert.equal(focused, 0);
 });
 
-test('controller feedback drives names, transposer and site-specific crescendo controls', () => {
+test('controller feedback drives names, transposer and crescendo through expression', () => {
     const {app, events} = harness();
     events.trackNum(4); events.udpTrackNames({4: 'BACH543A'});
     events.transposer(2); events.sostActive(1);
     events.stops([{number: 22, name: 'Crescendo B', active: 1}, {number: 23, name: 'Flute', active: 0}]);
+    app.expressions = [{name: 'Swell', value: .3}, {name: 'Crescendo', value: .5}];
     assert.equal(app.currentTrackName, 'BACH543A');
     assert.equal(app.transposeText, '+2');
     assert.equal(app.panelSummary('sostenuto'), 'On');
-    assert.equal(app.crescendoStops.length, 1);
-    assert.equal(app.crescendoStops[0].number, 22);
+    assert.equal(app.namedExpressions[1].name, 'Crescendo');
+    assert.equal(app.namedExpressions[1].value, .5);
+    assert.equal(app.controlPages.some(page => page.id === 'crescendo'), false);
+    assert.equal(app.customActive({type: 'stop', number: 22}), true);
 });
 
 test('probe readings retain stale values but never appear live while disconnected', () => {
@@ -155,6 +177,44 @@ test('probe readouts preserve missing measurements and convert pressure and powe
     assert.equal(app.probeMeasurements({probeType: 'power', currentAmps: 0, estimatedWatts: 0})[0].value, '0.00 A');
 });
 
+test('track footer keeps selected playback separate from current transport and respects guards', async () => {
+    const {app, sent} = harness();
+    const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
+    const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
+    const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
+    const footer = html.slice(html.indexOf('<footer class="console-footer"'), html.indexOf('</footer>') + '</footer>'.length);
+    let render;
+    try { render = compile(footer, {decodeEntities: text => text}); }
+    catch (error) { assert.fail(error.message); }
+    function buttons() {
+        const found = [];
+        function walk(node) {
+            if (!node || typeof node !== 'object') return;
+            if (node.type === 'button') found.push(node);
+            if (Array.isArray(node.children)) node.children.forEach(walk);
+        }
+        walk(render(app, []));
+        return Object.fromEntries(found.map(button => [button.children, button]));
+    }
+    app.connected = true;
+    app.trackNum = 12;
+    app.selectTab('tracks');
+    app.selectedNumber = 34;
+    const controls = buttons();
+    for (const label of ['Record', 'Stop', 'Pause', 'Play', 'Play selected track']) assert.equal(controls[label].props.disabled, false);
+    controls['Play selected track'].props.onClick();
+    controls.Play.props.onClick();
+    assert.equal(sent[0].payload.action, 'playTrack');
+    assert.equal(sent[0].payload.number, 34);
+    assert.equal(sent[1].payload.action, 'playToggle');
+    app.trackLocked = 1;
+    assert.equal(buttons().Record.props.disabled, true);
+    app.connected = false;
+    for (const button of Object.values(buttons())) assert.equal(button.props.disabled, true);
+    app.selectTab('overview');
+    assert.deepEqual(Object.keys(buttons()), []);
+});
+
 test('console and landing Vue templates compile without errors', async () => {
     const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
     const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
@@ -179,8 +239,8 @@ test('multiple custom tabs reload without duplication and standalone views selec
     const fetch = async () => ({ok: true, json: async () => config});
     const {app, sent} = harness({fetch});
     await app.loadCustomViews(); await app.loadCustomViews();
-    assert.equal(app.tabs.length, 6);
-    assert.equal(app.tabs[3].id, 'custom-installation');
+    assert.equal(app.tabs.length, 7);
+    assert.equal(app.tabs[4].id, 'custom-installation');
     app.selectTab('custom-settings');
     assert.equal(app.activeTab, 'custom-settings');
     assert.equal(sent.length, 0);
@@ -195,7 +255,7 @@ test('multiple custom tabs reload without duplication and standalone views selec
     assert.equal(standalone.visibleCustomViews.length, 0);
     await app.loadCustomViews();
     assert.equal(app.activeTab, 'overview');
-    assert.equal(app.tabs.length, 4);
+    assert.equal(app.tabs.length, 5);
 });
 
 test('invalid custom configuration removes stale controls and displays the server error', async () => {
