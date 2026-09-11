@@ -17,11 +17,10 @@ const app = createApp({
             activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'memory', label: 'Memory'}, {id: 'tracks', label: 'Tracks'}, {id: 'expression', label: 'Expression'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
             alertSettings: {enabled: false, dashboard: true, email: false, recovery: true, minutes: 240, source: 'organ'},
             alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null,
-            ...feedback, connected: false, probes: [], panel: 'timer', sheet: '', commandStatus: '',
+            ...feedback, connected: false, probes: [], panel: 'transposer', sheet: '', commandStatus: '',
             localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', tracksPane: 'tracks',
-            timerElapsed: 0, timerStarted: null, now: Date.now(), timerInterval: null,
             panels: [{id: 'sostenuto', label: 'Sostenuto'},
-                {id: 'timer', label: 'Timer'}, {id: 'transposer', label: 'Transposer'},
+                {id: 'transposer', label: 'Transposer'},
                 {id: 'recorder', label: 'Record / playback'},
                 {id: 'probes', label: 'Probes'}]
         };
@@ -50,10 +49,6 @@ const app = createApp({
             return this.expressions.map((exp, id) => ({...exp, id, value: Math.max(0, Math.min(1, Number(exp?.value) || 0))})).filter(exp => exp.name);
         },
         namedUserVars() { return this.userVars.map((item, i) => ({...item, number: i + 1})).filter(item => item.name); },
-        timerText() {
-            const seconds = Math.floor((this.timerElapsed + (this.timerStarted === null ? 0 : this.now - this.timerStarted)) / 1000);
-            return [Math.floor(seconds / 3600), Math.floor(seconds / 60) % 60, seconds % 60].map(n => String(n).padStart(2, '0')).join(':');
-        },
         sheetTitle() { return {memory: 'Memory select', library: 'Organist folder', tracks: 'Tracks', copy: 'Copy track', probes: 'Probe readings', settings: 'Settings'}[this.sheet] || ''; },
         inventoryEntries() {
             const library = this.sheet === 'library';
@@ -230,7 +225,7 @@ const app = createApp({
         },
         panelSummary(id) {
             return {sostenuto: this.sostActive === null ? '—' : this.sostActive ? 'On' : 'Off',
-                timer: this.timerText, transposer: this.transposeText,
+                transposer: this.transposeText,
                 recorder: this.currentTrackName || (this.trackNum ? 'Track ' + this.trackNum : '—'), probes: this.probeSummary}[id];
         },
         udp(action, values = {}) {
@@ -266,12 +261,6 @@ const app = createApp({
         },
         closeSheet() { this.$refs.sheet.close(); },
         closeOnBackdrop(event) { if (event.target === this.$refs.sheet) { const rect = event.target.getBoundingClientRect(); if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.closeSheet(); } },
-        keypad(key) {
-            const current = String(this.levelNumber || '');
-            if (key === 'Clear') this.levelNumber = '';
-            else if (key === '⌫') this.levelNumber = current.slice(0, -1);
-            else this.levelNumber = Number((current + key).slice(0, String(this.numLevels).length));
-        },
         goMemory() { this.udp(this.localMemory ? 'gotoLocalLevel' : 'gotoLevel', {number: this.levelNumber}); },
         chooseItem() { this.udp(this.sheet === 'library' ? 'gotoFolder' : 'playTrack', {number: this.selectedNumber}); },
         renameItem() { this.udp(this.sheet === 'library' ? 'renameFolder' : 'renameTrack', {number: this.selectedNumber, name: this.renameText}); },
@@ -281,9 +270,6 @@ const app = createApp({
                 this.commandStatus = error ? 'Name refresh timed out' : result?.ok ? 'Reading names from console' : result?.error || 'Could not refresh names';
             });
         },
-        startTimer() { if (this.timerStarted === null) { this.now = Date.now(); this.timerStarted = this.now; } },
-        stopTimer() { if (this.timerStarted !== null) { this.timerElapsed += Date.now() - this.timerStarted; this.timerStarted = null; } },
-        resetTimer() { this.timerStarted = null; this.timerElapsed = 0; }
     },
     mounted() {
         if (this.standaloneView) this.activeTab = 'custom-' + this.standaloneView;
@@ -291,9 +277,8 @@ const app = createApp({
         window.addEventListener('hashchange', this.selectHashTab);
         this.loadCustomViews();
         this.alertTimer = window.setInterval(() => { if (this.activeTab === 'settings') this.getAlertStatus(); }, 15000);
-        this.timerInterval = window.setInterval(() => { this.now = Date.now(); }, 200);
     },
-    beforeUnmount() { window.removeEventListener('hashchange', this.selectHashTab); window.clearInterval(this.alertTimer); window.clearInterval(this.timerInterval); }
+    beforeUnmount() { window.removeEventListener('hashchange', this.selectHashTab); window.clearInterval(this.alertTimer); }
 }).mount('#app');
 
 for (const name of Object.keys(feedback)) socket.on(name, value => { app[name] = value; });

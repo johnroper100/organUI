@@ -32,17 +32,13 @@
             <div class="overview-status" aria-label="Console status">
                 <article class="status-card memory-status">
                     <button class="status-card-readout" @click="showControl('memory')"><span>{{ localMemory ? 'Local memory level' : 'Memory level' }}</span><strong class="red">{{ shownMemory || '—' }}</strong></button>
-                    <footer class="status-card-controls" aria-label="Memory level controls"><button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button></footer>
+                    <footer class="status-card-controls" aria-label="Memory level controls"><button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button><button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button></footer>
                 </article>
                 <article class="status-card track-status">
                     <button class="status-card-readout" @click="selectTab('tracks')"><span>Current track</span><strong class="green">{{ trackNum || '—' }}</strong><small>{{ currentTrackName || 'Touch to browse tracks' }}<span v-if="trackLocked"> · Record protected</span></small></button>
                     <footer class="status-card-controls" aria-label="Current track controls"><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></footer>
                 </article>
-                <article class="status-card">
-                    <div class="status-card-readout"><span>Timer</span><strong class="pink status-timer">{{ timerText }}</strong></div>
-                    <footer class="status-card-controls" aria-label="Timer controls"><button :disabled="timerStarted !== null" @click="startTimer">Start</button><button :disabled="timerStarted === null" @click="stopTimer">Stop</button><button @click="resetTimer">Reset</button></footer>
-                </article>
-                <article class="status-card">
+                <article class="status-card transposer-status">
                     <div class="status-card-readout"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></div>
                     <footer class="status-card-controls" aria-label="Transposer controls"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></footer>
                 </article>
@@ -62,8 +58,6 @@
             <form id="control-memory" @submit.prevent="goMemory" class="control-workspace memory-workspace">
                 <label>{{ localMemory ? 'Local memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
                 <p class="muted">{{ localMemory ? 'Local memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
-                <h2 id="memory-select-heading">Memory select</h2>
-                <div class="keypad" role="group" aria-labelledby="memory-select-heading"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div>
             </form>
         </section>
         <section v-if="!standaloneView" v-show="activeTab === 'expression'" id="view-expression" role="tabpanel" aria-labelledby="tab-expression" tabindex="0" class="tab-page">
@@ -227,13 +221,21 @@
             </details>
         </section>
                 <p v-if="fugaraPairingCode">Fugara pairing: <strong>{{ fugaraPairingCode }}</strong></p>
-                <p class="muted">The timer runs on this page and resets when the page is reloaded.</p></div></section>
+                </div></section>
         <footer class="console-footer">
             <div v-if="!standaloneView" class="context-actions" :aria-label="pageTitle + ' controls'">
                 <template v-if="showTransport">
                     <div class="transport-context"><span>Current track · <strong class="green">{{ trackNum || '—' }}</strong> · {{ currentTrackName || 'No track selected' }}<span v-if="trackLocked"> · Record protected</span></span><span>{{ trackTime || '— : —' }}</span></div>
                     <div v-if="activeTab === 'tracks'" class="selected-track-action"><span>Selected track · {{ selectedNumber }}<strong>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</strong></span><button class="primary" :disabled="!connected" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button></div>
-                    <div class="button-row"><button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></div>
+                    <div class="button-row">
+                        <div class="record-controls" role="group" aria-label="Recording controls">
+                            <button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button>
+                            <button class="record-lock" :class="{selected: trackLocked}" :disabled="!connected" :aria-pressed="!!trackLocked" aria-label="Record protection for current track" :title="trackLocked ? 'Unlock recording for current track' : 'Lock recording for current track'" @click="udp('toggleTrackLock')">
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path :d="trackLocked ? 'M8 10V6a4 4 0 0 1 8 0v4' : 'M8 10V6a4 4 0 0 1 8 0'"/><path d="M12 14v3"/></svg>
+                            </button>
+                        </div>
+                        <button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button>
+                    </div>
                 </template>
                 <div v-else-if="activeTab === 'memory'" class="button-row memory-footer-actions">
                     <button class="primary go-memory" form="control-memory" :disabled="!connected">Go to level</button>
@@ -251,7 +253,6 @@
             <form v-if="sheet === 'memory'" @submit.prevent="goMemory" class="selection-form">
                 <div class="button-row"><button type="button" :class="{selected: !localMemory}" @click="localMemory = false">Memory level</button><button type="button" :class="{selected: localMemory}" @click="localMemory = true">Local memory level</button></div>
                 <label>Memory level<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
-                <div class="keypad"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div>
                 <button class="primary" :disabled="!connected">Go to level</button>
             </form>
             <template v-else-if="sheet === 'library' || sheet === 'tracks'">

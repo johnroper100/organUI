@@ -71,14 +71,6 @@ test('disconnected console does not queue organ commands for later replay', () =
     assert.match(app.commandStatus, /not sent/);
 });
 
-test('timer pauses and resumes without counting paused time', () => {
-    const {app, advance} = harness();
-    app.startTimer(); advance(65000); assert.equal(app.timerText, '00:01:05');
-    app.stopTimer(); advance(10000); assert.equal(app.timerText, '00:01:05');
-    app.startTimer(); advance(2000); assert.equal(app.timerText, '00:01:07');
-    app.resetTimer(); assert.equal(app.timerText, '00:00:00');
-});
-
 test('tab navigation defaults to overview and browsing tracks sends no controller commands', () => {
     const {app, events, sent} = harness();
     assert.equal(app.activeTab, 'overview');
@@ -97,10 +89,9 @@ test('tab navigation defaults to overview and browsing tracks sends no controlle
     assert.equal(sent.length, 0);
 });
 
-test('overview opens detailed controls without sending commands or resetting the timer', () => {
-    const {app, events, sent, advance} = harness();
+test('overview opens detailed controls without sending commands', () => {
+    const {app, events, sent} = harness();
     events.memoryLevel(24);
-    app.startTimer();
     app.showControl('memory');
     assert.equal(app.activeTab, 'memory');
     assert.equal(app.pageTitle, 'Memory');
@@ -111,24 +102,19 @@ test('overview opens detailed controls without sending commands or resetting the
     app.selectTab('tracks');
     assert.equal(app.showTransport, true);
     app.selectTab('overview');
-    advance(2000);
     assert.equal(app.showTransport, false);
-    assert.equal(app.timerText, '00:00:02');
     assert.equal(sent.length, 0);
 });
 
-test('tab keyboard navigation wraps, focuses the selected tab, and preserves the timer', () => {
-    const {app, advance} = harness();
+test('tab keyboard navigation wraps, focuses the selected tab', () => {
+    const {app} = harness();
     let focused = -1, prevented = false;
     const event = {key: 'ArrowLeft', preventDefault() { prevented = true; },
         currentTarget: {parentElement: {querySelectorAll() { return app.visibleTabs.map((_, index) => ({focus() { focused = index; }})); }}}};
-    app.startTimer();
     app.tabKeydown(event, 'overview');
-    advance(2000);
     assert.equal(app.activeTab, 'settings');
     assert.equal(focused, app.visibleTabs.findIndex(tab => tab.id === 'settings'));
     assert.equal(prevented, true);
-    assert.equal(app.timerText, '00:00:02');
     event.key = 'Home';
     app.tabKeydown(event, 'settings');
     assert.equal(app.activeTab, 'overview');
@@ -225,8 +211,8 @@ test('track footer keeps selected playback separate from current transport and r
     assert.deepEqual(Object.keys(buttons()), []);
 });
 
-test('overview footers operate in place and keep the local timer available offline', async () => {
-    const {app, sent, advance, socket} = harness();
+test('overview footers operate in place and disable controller commands offline', async () => {
+    const {app, sent, socket} = harness();
     const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
     const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
     const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
@@ -245,10 +231,19 @@ test('overview footers operate in place and keep the local timer available offli
     }
     const buttons = footer => footer.children.filter(child => child.type === 'button');
     app.connected = true;
-    app.localMemory = true;
+    app.memoryLevel = 4;
+    app.localMemoryLevel = 12;
+    const switcher = buttons(footers()['Memory level controls'])[0];
+    assert.equal(switcher.props['aria-pressed'], false);
+    switcher.props.onClick();
+    assert.equal(app.localMemory, true);
+    assert.equal(app.shownMemory, 12);
+    assert.equal(sent.length, 0);
     const controls = footers();
-    assert.equal(Object.keys(controls).length, 4);
-    buttons(controls['Memory level controls']).forEach(button => button.props.onClick());
+    assert.equal(buttons(controls['Memory level controls'])[0].props['aria-pressed'], true);
+    assert.equal(Object.keys(controls).length, 3);
+    assert.equal(controls['Timer controls'], undefined);
+    buttons(controls['Memory level controls']).slice(1).forEach(button => button.props.onClick());
     buttons(controls['Current track controls']).forEach(button => button.props.onClick());
     buttons(controls['Transposer controls']).forEach(button => button.props.onClick());
     assert.deepEqual(sent.filter(item => item.name === 'sendUDPcmd').map(item => item.payload.action), [
@@ -262,18 +257,13 @@ test('overview footers operate in place and keep the local timer available offli
     app.connected = false;
     socket.connected = false;
     const offline = footers();
+    const offlineSwitcher = buttons(offline['Memory level controls'])[0];
+    assert.equal(offlineSwitcher.props.disabled, undefined);
+    offlineSwitcher.props.onClick();
+    assert.equal(app.shownMemory, 4);
     for (const name of ['Memory level controls', 'Current track controls', 'Transposer controls']) {
-        buttons(offline[name]).forEach(button => assert.equal(button.props.disabled, true));
+        buttons(offline[name]).filter(button => !('aria-pressed' in button.props)).forEach(button => assert.equal(button.props.disabled, true));
     }
-    buttons(offline['Timer controls'])[0].props.onClick();
-    advance(2000);
-    assert.equal(app.timerText, '00:00:02');
-    assert.equal(buttons(footers()['Timer controls'])[0].props.disabled, true);
-    buttons(footers()['Timer controls'])[1].props.onClick();
-    advance(2000);
-    assert.equal(app.timerText, '00:00:02');
-    buttons(footers()['Timer controls'])[2].props.onClick();
-    assert.equal(app.timerText, '00:00:00');
     assert.equal(app.activeTab, 'overview');
 });
 
