@@ -75,7 +75,6 @@
                     <article class="tile tab-card custom-control" v-for="control in group.controls" :key="control.id">
                         <template v-if="control.type === 'button' || control.type === 'stop'">
                             <button class="custom-button" :disabled="!connected || customPending[view.id + '/' + control.id]" :class="{selected: connected && customActive(control)}" :aria-pressed="customBinding(control) ? customActive(control) : undefined" @click="runCustom(view, control)">{{ control.label }}</button>
-                            <output v-if="customBinding(control)">{{ customReadout(control) }}</output>
                         </template>
                         <template v-else-if="control.type === 'userVariable'">
                             <h3>{{ control.label }}</h3><output>{{ customReadout(control) }}</output>
@@ -184,7 +183,8 @@
                     </article>
                 </div>
                 <section class="tile tab-card alert-settings">
-            <h2>Organ left-on alert</h2>
+            <details>
+            <summary>Organ left-on alert</summary>
             <div>
                 <p>Standalone monitoring works without Fugara. Use one alert source for each organ to avoid duplicate notifications.</p>
                 <p role="status" v-if="alertMessage">{{alertMessage}}</p>
@@ -203,6 +203,7 @@
                 <p  v-if="alertStatus.pendingEmails">{{alertStatus.pendingEmails}} email deliveries pending.</p>
                 <div  v-for="event in alertStatus.events" :key="event.id">{{event.message}} <span >{{probeTime(event.observedAt)}}</span></div>
             </div>
+            </details>
         </section></section>
         <section v-if="!standaloneView" v-show="activeTab === 'settings'" id="view-settings" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" class="tab-page"><div class="tile tab-card"><h1>Settings</h1>
                 <div class="settings-links"><a href="/">Home</a><a href="/tuner">Tuner</a><a href="/advanced">Advanced controls</a></div>
