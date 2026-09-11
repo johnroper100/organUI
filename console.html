@@ -23,9 +23,6 @@
             <span v-if="activeTab === 'probes'" class="muted">{{ probeSummary }}</span>
             <button v-if="activeTab === 'tracks'" :disabled="!connected" @click="refreshNames">Refresh names</button>
         </header>
-        <nav v-if="!standaloneView" v-show="activeTab === 'controls'" class="control-page-tabs" aria-label="Console controls">
-                <button v-for="item in controlPages" :key="item.id" :class="{selected: controlPage === item.id}" :aria-pressed="controlPage === item.id" :aria-controls="'control-' + item.id" @click="showControl(item.id)">{{ item.label }}</button>
-        </nav>
         <nav v-if="!standaloneView" v-show="activeTab === 'tracks'" class="track-pages" aria-label="Track controls">
             <button :class="{selected: tracksPane === 'tracks'}" :aria-pressed="tracksPane === 'tracks'" aria-controls="track-inventory" @click="tracksPane = 'tracks'">Tracks</button>
             <button :class="{selected: tracksPane === 'rename'}" :aria-pressed="tracksPane === 'rename'" aria-controls="track-rename" @click="tracksPane = 'rename'">Rename</button>
@@ -42,15 +39,15 @@
                     <footer class="status-card-controls" aria-label="Current track controls"><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></footer>
                 </article>
                 <article class="status-card">
-                    <button class="status-card-readout" @click="showControl('timer')"><span>Timer</span><strong class="pink status-timer">{{ timerText }}</strong></button>
+                    <div class="status-card-readout"><span>Timer</span><strong class="pink status-timer">{{ timerText }}</strong></div>
                     <footer class="status-card-controls" aria-label="Timer controls"><button :disabled="timerStarted !== null" @click="startTimer">Start</button><button :disabled="timerStarted === null" @click="stopTimer">Stop</button><button @click="resetTimer">Reset</button></footer>
                 </article>
                 <article class="status-card">
-                    <button class="status-card-readout" @click="showControl('transposer')"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></button>
+                    <div class="status-card-readout"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></div>
                     <footer class="status-card-controls" aria-label="Transposer controls"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></footer>
                 </article>
                 <article class="status-card">
-                    <button class="status-card-readout" @click="showControl('sostenuto')"><span>Sostenuto</span><strong class="blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</strong></button>
+                    <div class="status-card-readout"><span>Sostenuto</span><strong class="blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</strong></div>
                     <footer class="status-card-controls" aria-label="Sostenuto controls"><button :disabled="!connected" @click="tap(2010)">Toggle</button><button :disabled="!connected" @click="tap(2011)">Release</button></footer>
                 </article>
                 <article class="status-card">
@@ -65,14 +62,16 @@
             </div>
         </main>
 
-        <section v-if="!standaloneView" v-show="activeTab === 'controls'" id="view-controls" role="tabpanel" aria-labelledby="tab-controls" tabindex="0" class="tab-page controls-workspace">
-            <form v-show="controlPage === 'memory'" id="control-memory" @submit.prevent="goMemory" class="control-workspace memory-workspace">
+        <section v-if="!standaloneView" v-show="activeTab === 'memory'" id="view-memory" role="tabpanel" aria-labelledby="tab-memory" tabindex="0" class="tab-page controls-workspace">
+            <form id="control-memory" @submit.prevent="goMemory" class="control-workspace memory-workspace">
                 <label>{{ localMemory ? 'Local memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
                 <p class="muted">{{ localMemory ? 'Local memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
                 <h2 id="memory-select-heading">Memory select</h2>
                 <div class="keypad" role="group" aria-labelledby="memory-select-heading"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div>
             </form>
-            <section v-show="controlPage === 'expression'" id="control-expression" class="control-workspace expression-workspace" aria-label="Expression and crescendo">
+        </section>
+        <section v-if="!standaloneView" v-show="activeTab === 'expression'" id="view-expression" role="tabpanel" aria-labelledby="tab-expression" tabindex="0" class="tab-page">
+            <section id="control-expression" class="control-workspace expression-workspace" aria-label="Expression and crescendo">
                 <div class="expression-bars" v-if="namedExpressions.length">
                     <label class="expression-channel" v-for="exp in namedExpressions" :key="exp.id" :class="{crescendo: /cres/i.test(exp.name)}">
                         <span class="bar-value">{{ Math.round(exp.value * 100) }}<small>%</small></span>
@@ -82,9 +81,6 @@
                 </div>
                 <div class="empty-state" v-else>Waiting for expression controls</div>
             </section>
-            <section v-show="controlPage === 'timer'" id="control-timer" class="control-workspace" aria-label="Timer"><div class="panel-readout timer pink">{{ timerText }}</div></section>
-            <section v-show="controlPage === 'transposer'" id="control-transposer" class="control-workspace" aria-label="Transposer"><span class="eyebrow">Transposer · semitones</span><div class="panel-readout yellow">{{ transposeText }}</div></section>
-            <section v-show="controlPage === 'sostenuto'" id="control-sostenuto" class="control-workspace" aria-label="Sostenuto"><div class="panel-readout blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</div></section>
         </section>
 
         <div v-if="customLoading || customError" class="custom-notice" role="status"><span>{{ customError || 'Loading custom controls…' }}</span><button v-if="customError" @click="loadCustomViews">Retry</button></div>
@@ -242,14 +238,11 @@
                     <div v-if="activeTab === 'tracks'" class="selected-track-action"><span>Selected track · {{ selectedNumber }}<strong>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</strong></span><button class="primary" :disabled="!connected" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button></div>
                     <div class="button-row"><button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></div>
                 </template>
-                <div v-else-if="activeTab === 'controls' && controlPage === 'memory'" class="button-row memory-footer-actions">
+                <div v-else-if="activeTab === 'memory'" class="button-row memory-footer-actions">
                     <button class="primary go-memory" form="control-memory" :disabled="!connected">Go to level</button>
                     <button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button>
                     <button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button><button :disabled="!connected" @click="udp('generalCancel')">General cancel</button>
                 </div>
-                <div v-else-if="activeTab === 'controls' && controlPage === 'timer'" class="button-row"><button @click="startTimer" :disabled="timerStarted !== null">Start</button><button @click="stopTimer">Stop</button><button @click="resetTimer">Reset</button></div>
-                <div v-else-if="activeTab === 'controls' && controlPage === 'transposer'" class="button-row"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></div>
-                <div v-else-if="activeTab === 'controls' && controlPage === 'sostenuto'" class="button-row"><button :disabled="!connected" @click="tap(2010)">Toggle</button><button :disabled="!connected" @click="tap(2011)">Release</button></div>
                 <div v-else-if="activeTab === 'probes'" class="button-row"><button :disabled="!alertLoaded || alertSaving" @click="saveAlertSettings">{{ alertSaving ? 'Saving…' : 'Save alert settings' }}</button></div>
                 <div v-else-if="activeTab === 'settings'" class="button-row"><button :disabled="customLoading" @click="loadCustomViews">Reload custom views</button><button :disabled="!connected" @click="tap(2001)">Refresh console buttons</button></div>
             </div>

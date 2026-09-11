@@ -14,11 +14,11 @@ const app = createApp({
         return {
             standaloneView: window.location?.pathname.match(/^\/console\/custom\/([^/]+)\/?$/)?.[1] || '',
             customViews: [], customError: '', customLoading: false, customDrafts: {}, customPending: {},
-            activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'controls', label: 'Console controls'}, {id: 'tracks', label: 'Tracks'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
+            activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'memory', label: 'Memory'}, {id: 'tracks', label: 'Tracks'}, {id: 'expression', label: 'Expression'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
             alertSettings: {enabled: false, dashboard: true, email: false, recovery: true, minutes: 240, source: 'organ'},
             alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null,
             ...feedback, connected: false, probes: [], panel: 'timer', sheet: '', commandStatus: '',
-            localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', controlPage: 'memory', tracksPane: 'tracks',
+            localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', tracksPane: 'tracks',
             timerElapsed: 0, timerStarted: null, now: Date.now(), timerInterval: null,
             panels: [{id: 'sostenuto', label: 'Sostenuto'},
                 {id: 'timer', label: 'Timer'}, {id: 'transposer', label: 'Transposer'},
@@ -28,15 +28,9 @@ const app = createApp({
     },
     computed: {
         pageTitle() {
-            return this.activeTab === 'controls' ? this.controlPages.find(item => item.id === this.controlPage)?.label
-                : this.tabs.find(item => item.id === this.activeTab)?.label;
+            return this.tabs.find(item => item.id === this.activeTab)?.label;
         },
         showTransport() { return this.activeTab === 'tracks'; },
-        controlPages() {
-            return [{id: 'memory', label: 'Memory level'},
-                {id: 'expression', label: 'Expression & crescendo'},
-                ...this.panels.filter(item => !['recorder', 'probes'].includes(item.id))];
-        },
         visibleCustomViews() { return this.customViews.filter(view => !this.standaloneView || view.id === this.standaloneView); },
         filteredTracks() {
             const query = this.trackSearch.trim().toLowerCase();
@@ -68,9 +62,7 @@ const app = createApp({
     },
     methods: {
         showControl(id) {
-            this.controlPage = id;
-            if (id === 'memory') this.levelNumber = Number(this.shownMemory) || 1;
-            this.selectTab('controls');
+            this.selectTab(id);
         },
         selectHashTab() {
             if (!this.standaloneView) this.selectTab(window.location?.hash.slice(1));
@@ -173,8 +165,9 @@ const app = createApp({
             } finally { this.customPending[key] = false; }
         },
         selectTab(id) {
+            if (id === 'controls') id = 'memory';
             if (!this.tabs.some(tab => tab.id === id)) return;
-            if (id === 'controls' && this.activeTab !== id && this.controlPage === 'memory') this.levelNumber = Number(this.shownMemory) || 1;
+            if (id === 'memory' && this.activeTab !== id) this.levelNumber = Number(this.shownMemory) || 1;
             if (id === 'tracks' && this.activeTab !== id) { this.selectedNumber = Number(this.trackNum) || 1; this.renameText = ''; }
             this.activeTab = id;
             if (id === 'probes') this.getAlertStatus();

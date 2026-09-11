@@ -102,11 +102,12 @@ test('overview opens detailed controls without sending commands or resetting the
     events.memoryLevel(24);
     app.startTimer();
     app.showControl('memory');
-    assert.equal(app.activeTab, 'controls');
-    assert.equal(app.pageTitle, 'Memory level');
+    assert.equal(app.activeTab, 'memory');
+    assert.equal(app.pageTitle, 'Memory');
     assert.equal(app.levelNumber, 24);
     app.showControl('expression');
-    assert.equal(app.pageTitle, 'Expression & crescendo');
+    assert.equal(app.activeTab, 'expression');
+    assert.equal(app.pageTitle, 'Expression');
     app.selectTab('tracks');
     assert.equal(app.showTransport, true);
     app.selectTab('overview');
@@ -145,7 +146,7 @@ test('controller feedback drives names, transposer and crescendo through express
     assert.equal(app.panelSummary('sostenuto'), 'On');
     assert.equal(app.namedExpressions[1].name, 'Crescendo');
     assert.equal(app.namedExpressions[1].value, .5);
-    assert.equal(app.controlPages.some(page => page.id === 'crescendo'), false);
+    assert.equal(app.tabs.some(page => page.id === 'crescendo'), false);
     assert.equal(app.customActive({type: 'stop', number: 22}), true);
 });
 
@@ -293,8 +294,8 @@ test('multiple custom tabs reload without duplication and standalone views selec
     const fetch = async () => ({ok: true, json: async () => config});
     const {app, sent} = harness({fetch});
     await app.loadCustomViews(); await app.loadCustomViews();
-    assert.equal(app.tabs.length, 7);
-    assert.equal(app.tabs[4].id, 'custom-installation');
+    assert.equal(app.tabs.length, 8);
+    assert.equal(app.tabs[5].id, 'custom-installation');
     app.selectTab('custom-settings');
     assert.equal(app.activeTab, 'custom-settings');
     assert.equal(sent.length, 0);
@@ -309,7 +310,7 @@ test('multiple custom tabs reload without duplication and standalone views selec
     assert.equal(standalone.visibleCustomViews.length, 0);
     await app.loadCustomViews();
     assert.equal(app.activeTab, 'overview');
-    assert.equal(app.tabs.length, 5);
+    assert.equal(app.tabs.length, 6);
 });
 
 test('invalid custom configuration removes stale controls and displays the server error', async () => {
