@@ -79,6 +79,42 @@ test('timer pauses and resumes without counting paused time', () => {
     app.resetTimer(); assert.equal(app.timerText, '00:00:00');
 });
 
+test('tab navigation defaults to overview and browsing tracks sends no controller commands', () => {
+    const {app, events, sent} = harness();
+    assert.equal(app.activeTab, 'overview');
+    events.trackNum(12);
+    events.udpTrackNames({12: 'Bach', 34: 'Widor'});
+    app.openSheet('tracks');
+    assert.equal(app.activeTab, 'tracks');
+    assert.equal(app.selectedNumber, 12);
+    assert.equal(app.sheet, '');
+    app.trackSearch = 'widor';
+    assert.equal(app.filteredTracks.length, 1);
+    assert.equal(app.filteredTracks[0].number, 34);
+    app.selectedNumber = 34;
+    app.selectTab('settings');
+    app.selectTab('overview');
+    assert.equal(sent.length, 0);
+});
+
+test('tab keyboard navigation wraps, focuses the selected tab, and preserves the timer', () => {
+    const {app, advance} = harness();
+    let focused = -1, prevented = false;
+    const event = {key: 'ArrowLeft', preventDefault() { prevented = true; },
+        currentTarget: {parentElement: {querySelectorAll() { return app.tabs.map((_, index) => ({focus() { focused = index; }})); }}}};
+    app.startTimer();
+    app.tabKeydown(event, 'overview');
+    advance(2000);
+    assert.equal(app.activeTab, 'settings');
+    assert.equal(focused, 3);
+    assert.equal(prevented, true);
+    assert.equal(app.timerText, '00:00:02');
+    event.key = 'Home';
+    app.tabKeydown(event, 'settings');
+    assert.equal(app.activeTab, 'overview');
+    assert.equal(focused, 0);
+});
+
 test('controller feedback drives names, transposer and site-specific crescendo controls', () => {
     const {app, events} = harness();
     events.trackNum(4); events.udpTrackNames({4: 'BACH543A'});
