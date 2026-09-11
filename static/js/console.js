@@ -6,12 +6,14 @@ const feedback = {
     localMemoryLevel: '', trackNum: '', trackTime: '', trackLocked: 0,
     transposer: '', sostActive: null, expressions: [], stops: [], userVars: [],
     trackDupSrc: '', trackDupTgt: '', udpTrackNames: {}, queriedFolderNames: {},
-    numTracks: 900, numFolders: 100, numLevels: 9999
+    numTracks: 900, numFolders: 100, numLevels: 9999, oscSpecialStatus: {}, userVarPage: ''
 };
 
 const app = createApp({
     data() {
         return {
+            standaloneView: window.location?.pathname.match(/^\/console\/custom\/([^/]+)\/?$/)?.[1] || '',
+            customViews: [], customError: '', customLoading: false, customDrafts: {}, customPending: {},
             activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'tracks', label: 'Tracks'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
             alertSettings: {enabled: false, dashboard: true, email: false, recovery: true, minutes: 240, source: 'organ'},
             alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null,
@@ -25,6 +27,7 @@ const app = createApp({
         };
     },
     computed: {
+        visibleCustomViews() { return this.customViews.filter(view => !this.standaloneView || view.id === this.standaloneView); },
         filteredTracks() {
             const query = this.trackSearch.trim().toLowerCase();
             return Array.from({length: this.numTracks}, (_, i) => ({number: i + 1, name: this.udpTrackNames[i + 1]})).filter(entry => !query || `${entry.number} ${entry.name || 'Unnamed track'}`.toLowerCase().includes(query));
@@ -56,6 +59,106 @@ const app = createApp({
         }
     },
     methods: {
+        selectHashTab() {
+            if (!this.standaloneView) this.selectTab(window.location?.hash.slice(1));
+        },
+        async loadCustomViews() {
+            this.customLoading = true;
+            this.customError = '';
+            try {
+                const response = await fetch('/api/console-controls', {cache: 'no-store'});
+                const config = await response.json();
+                if (!response.ok) throw new Error(config.error || 'Unable to load custom controls.');
+                this.customViews = config.views;
+                this.customDrafts = {};
+                this.tabs = this.tabs.filter(tab => !tab.id.startsWith('custom-'));
+                this.tabs.splice(this.tabs.length - 1, 0, ...config.views.map(view => ({id: 'custom-' + view.id, label: view.title})));
+                if (this.standaloneView) {
+                    this.activeTab = 'custom-' + this.standaloneView;
+                    const view = config.views.find(view => view.id === this.standaloneView);
+                    if (!view) throw new Error('This custom view is not configured.');
+                    document.title = view.title + ' · OrganUI';
+                } else {
+                    const requested = window.location?.hash.slice(1);
+                    if (requested && this.tabs.some(tab => tab.id === requested)) this.selectTab(requested);
+                    else if (!this.tabs.some(tab => tab.id === this.activeTab)) this.activeTab = 'overview';
+                }
+            } catch (error) {
+                this.customViews = [];
+                this.tabs = this.tabs.filter(tab => !tab.id.startsWith('custom-'));
+                if (!this.standaloneView && this.activeTab.startsWith('custom-')) this.activeTab = 'settings';
+                this.customError = error.message;
+            } finally { this.customLoading = false; }
+        },
+        customBinding(control) {
+            return control.type === 'stop' ? {type: 'stop', number: control.number} : control.type === 'userVariable' ? {type: 'userVariable', number: control.number} : control.feedback;
+        },
+        customValue(control) {
+            const binding = this.customBinding(control);
+            if (!binding) return undefined;
+            if (binding.type === 'stop') return this.stops.find(stop => Number(stop?.number) === binding.number)?.active;
+            if (binding.type === 'userVariable') return this.userVars[binding.number - 1]?.value;
+            if (binding.type === 'expression') return this.expressions[binding.number]?.value;
+            if (binding.type === 'special') return this.oscSpecialStatus[binding.number];
+            return this[binding.key];
+        },
+        customReadout(control) {
+            const value = this.customValue(control);
+            if (value === undefined || value === null || value === '') return 'Awaiting feedback';
+            if (control.type === 'stop') return Number(value) ? 'On' : 'Off';
+            return (control.valueLabels?.[String(value)] ?? String(value)) + (control.unit ? ' ' + control.unit : '');
+        },
+        customActive(control) {
+            const value = this.customValue(control);
+            return value !== undefined && value !== null && value !== '' && String(value) === String(control.activeValue ?? 1);
+        },
+        customInputValue(view, control) {
+            const value = this.customDrafts[view.id + '/' + control.id] ?? this.customValue(control);
+            return value ?? (control.type === 'range' ? control.min : '');
+        },
+        customSubstitute(value, input) {
+            if (value === '$value') return input;
+            if (Array.isArray(value)) return value.map(item => this.customSubstitute(item, input));
+            if (value && typeof value === 'object') return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, this.customSubstitute(item, input)]));
+            return value;
+        },
+        async runCustom(view, control, input) {
+            const key = view.id + '/' + control.id;
+            if (!socket.connected || this.customPending[key]) return;
+            if (control.type === 'stop') { this.udp('toggleStop', {number: control.number}); return; }
+            if (control.type === 'userVariable') { this.pulse('/UserDef/' + (input === 'down' ? 'dec' : 'inc') + control.number); return; }
+            if (control.type === 'select') {
+                const option = control.options.find(option => String(option.value) === String(input));
+                if (!option) return;
+                input = option.value;
+            }
+            if (control.type === 'range') {
+                input = Number(input);
+                if (!Number.isFinite(input) || input < control.min || input > control.max) return;
+            }
+            const action = this.customSubstitute(control.action, input);
+            if (!action) return;
+            if (['select', 'range'].includes(control.type) && !control.feedback) this.customDrafts[key] = input;
+            if (action.type === 'udp') { this.udp(action.command.action, action.command); return; }
+            if (action.type === 'osc' && action.mode !== 'send') { this.pulse(action.cmd); return; }
+            this.customPending[key] = true;
+            this.commandStatus = 'Sending…';
+            try {
+                const method = action.type === 'osc' ? 'POST' : action.method || 'POST';
+                const body = action.type === 'osc' ? {cmd: action.cmd, state: action.value} : action.body;
+                const response = await fetch(action.type === 'osc' ? '/api/osc' : action.path, {
+                    method, headers: {'Content-Type': 'application/json'},
+                    ...(method !== 'GET' && body !== undefined ? {body: JSON.stringify(body)} : {}),
+                    signal: AbortSignal.timeout(5000)
+                });
+                const result = await response.json().catch(() => ({}));
+                if (!response.ok || result.ok === false) throw new Error(result.error || result.message || `Command failed (${response.status})`);
+                this.commandStatus = 'Command sent';
+            } catch (error) {
+                delete this.customDrafts[key];
+                this.commandStatus = error.name === 'TimeoutError' ? 'No server acknowledgement · check console before retrying' : error.message;
+            } finally { this.customPending[key] = false; }
+        },
         selectTab(id) {
             if (!this.tabs.some(tab => tab.id === id)) return;
             if (id === 'tracks' && this.activeTab !== id) { this.selectedNumber = Number(this.trackNum) || 1; this.renameText = ''; }
@@ -175,8 +278,15 @@ const app = createApp({
         stopTimer() { if (this.timerStarted !== null) { this.timerElapsed += Date.now() - this.timerStarted; this.timerStarted = null; } },
         resetTimer() { this.timerStarted = null; this.timerElapsed = 0; }
     },
-    mounted() { this.alertTimer = window.setInterval(() => { if (this.activeTab === 'probes') this.getAlertStatus(); }, 15000); this.timerInterval = window.setInterval(() => { this.now = Date.now(); }, 200); },
-    beforeUnmount() { window.clearInterval(this.alertTimer); window.clearInterval(this.timerInterval); }
+    mounted() {
+        if (this.standaloneView) this.activeTab = 'custom-' + this.standaloneView;
+        else this.selectHashTab();
+        window.addEventListener('hashchange', this.selectHashTab);
+        this.loadCustomViews();
+        this.alertTimer = window.setInterval(() => { if (this.activeTab === 'probes') this.getAlertStatus(); }, 15000);
+        this.timerInterval = window.setInterval(() => { this.now = Date.now(); }, 200);
+    },
+    beforeUnmount() { window.removeEventListener('hashchange', this.selectHashTab); window.clearInterval(this.alertTimer); window.clearInterval(this.timerInterval); }
 }).mount('#app');
 
 for (const name of Object.keys(feedback)) socket.on(name, value => { app[name] = value; });

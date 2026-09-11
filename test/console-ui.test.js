@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { buildRemoteCommands } = require('../lib/opus-udp-protocol');
 const root = path.join(__dirname, '..');
 
-function harness() {
+function harness({fetch: fetchMock, pathname = '/console', hash = ''} = {}) {
     const sent = [], events = {}, pending = [];
     let app, now = 1000;
     const socket = {
@@ -22,8 +22,8 @@ function harness() {
     };
     const source = fs.readFileSync(path.join(root, 'static/js/console.js'), 'utf8').replace(/^import .*;\r?\n/u, '');
     vm.runInNewContext(source, {
-        io: () => socket, Date: {now: () => now},
-        window: {setTimeout: fn => pending.push(fn)},
+        io: () => socket, Date: {now: () => now}, fetch: fetchMock, AbortSignal, document: {},
+        window: {location: {pathname, hash}, setTimeout: fn => pending.push(fn)},
         createApp(options) {
             app = options.data();
             for (const [key, fn] of Object.entries(options.methods)) app[key] = fn.bind(app);
@@ -155,10 +155,11 @@ test('probe readouts preserve missing measurements and convert pressure and powe
     assert.equal(app.probeMeasurements({probeType: 'power', currentAmps: 0, estimatedWatts: 0})[0].value, '0.00 A');
 });
 
-test('console Vue template compiles without errors', async () => {
+test('console and landing Vue templates compile without errors', async () => {
     const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
     const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
-    const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
+    for (const file of ['console.html', 'landing.html']) {
+    const html = fs.readFileSync(path.join(root, file), 'utf8');
     const template = html.slice(html.indexOf('<div id="app"'), html.indexOf('<script src="/socket.io'));
     const errors = [];
     // This template uses literal Unicode, with no encoded HTML entities.
@@ -170,4 +171,86 @@ test('console Vue template compiles without errors', async () => {
         assert.fail(error.message);
     }
     assert.deepEqual(errors, []);
+    }
+});
+
+test('multiple custom tabs reload without duplication and standalone views select only their own controls', async () => {
+    let config = {views: [{id: 'installation', title: 'Installation', groups: []}, {id: 'settings', title: 'Organ settings', groups: []}]};
+    const fetch = async () => ({ok: true, json: async () => config});
+    const {app, sent} = harness({fetch});
+    await app.loadCustomViews(); await app.loadCustomViews();
+    assert.equal(app.tabs.length, 6);
+    assert.equal(app.tabs[3].id, 'custom-installation');
+    app.selectTab('custom-settings');
+    assert.equal(app.activeTab, 'custom-settings');
+    assert.equal(sent.length, 0);
+    const {app: standalone} = harness({fetch, pathname: '/console/custom/settings'});
+    await standalone.loadCustomViews();
+    assert.equal(standalone.activeTab, 'custom-settings');
+    assert.equal(standalone.visibleCustomViews.length, 1);
+    assert.equal(standalone.visibleCustomViews[0].id, 'settings');
+    config = {views: []};
+    await standalone.loadCustomViews();
+    assert.match(standalone.customError, /not configured/);
+    assert.equal(standalone.visibleCustomViews.length, 0);
+    await app.loadCustomViews();
+    assert.equal(app.activeTab, 'overview');
+    assert.equal(app.tabs.length, 4);
+});
+
+test('invalid custom configuration removes stale controls and displays the server error', async () => {
+    const {app} = harness({fetch: async () => ({ok: false, json: async () => ({error: 'Invalid control'})})});
+    app.customViews = [{id: 'old'}];
+    app.activeTab = 'custom-old';
+    await app.loadCustomViews();
+    assert.equal(app.customViews.length, 0);
+    assert.equal(app.activeTab, 'settings');
+    assert.equal(app.customError, 'Invalid control');
+    assert.equal(app.customLoading, false);
+});
+
+test('custom stop and user-variable controls use live feedback and paired commands', async () => {
+    const {app, events, sent, pending, socket} = harness();
+    const stop = {id: 'nazard', type: 'stop', number: 13};
+    const variable = {id: 'setting', type: 'userVariable', number: 2};
+    assert.equal(app.customReadout(stop), 'Awaiting feedback');
+    events.stops([{number: 13, active: 1}]);
+    events.userVars([{value: '10'}, {value: '20'}]);
+    assert.equal(app.customActive(stop), true);
+    assert.equal(app.customReadout(stop), 'On');
+    assert.equal(app.customReadout(variable), '20');
+    await app.runCustom({id: 'test'}, stop);
+    await app.runCustom({id: 'test'}, variable, 'down');
+    pending.shift()();
+    assert.deepEqual(buildRemoteCommands(sent[0].payload), ['CA Toggle Stop 13']);
+    assert.equal(sent[1].payload.cmd, '/UserDef/dec2');
+    assert.equal(sent[2].payload.state, 0);
+    socket.connected = false;
+    await app.runCustom({id: 'test'}, stop);
+    assert.equal(sent.length, 3);
+});
+
+test('selectors preserve option types, sliders validate limits, and API failures clear pending state', async () => {
+    const requests = [];
+    let ok = true;
+    const {app, sent} = harness({fetch: async (url, request) => {
+        requests.push({url, request});
+        return {ok, status: ok ? 202 : 503, json: async () => ok ? {ok: true} : {error: 'No controller'}};
+    }});
+    const view = {id: 'test'};
+    const select = {id: 'level', type: 'select', options: [{label: 'Ten', value: 10}], action: {type: 'udp', command: {action: 'gotoLevel', number: '$value'}}};
+    await app.runCustom(view, select, '10');
+    assert.equal(sent[0].payload.number, 10);
+    await app.runCustom(view, select, '99');
+    assert.equal(sent.length, 1);
+    const range = {id: 'expression', type: 'range', min: 0, max: 1, action: {type: 'osc', mode: 'send', cmd: '/faders/fader0', value: '$value'}};
+    await app.runCustom(view, range, '.5');
+    assert.equal(requests[0].url, '/api/osc');
+    assert.deepEqual(JSON.parse(requests[0].request.body), {cmd: '/faders/fader0', state: .5});
+    await app.runCustom(view, range, '2');
+    assert.equal(requests.length, 1);
+    ok = false;
+    await app.runCustom(view, {id: 'api', type: 'button', action: {type: 'api', path: '/api/udp', body: {action: 'generalCancel'}}});
+    assert.equal(app.commandStatus, 'No controller');
+    assert.equal(app.customPending['test/api'], false);
 });

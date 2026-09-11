@@ -1,4 +1,5 @@
 (() => {
+    if (window.location.pathname.startsWith('/console/custom/')) return;
     const banner = document.createElement('div');
     banner.className = 'alert alert-warning m-3';
     banner.setAttribute('role', 'alert');
@@ -12,7 +13,7 @@
             banner.hidden = !(status.settings.enabled && status.settings.dashboard && status.active);
             banner.textContent = 'Organ left on without input. ' + (status.observation === 'unknown' || status.idleSeconds === null ? 'Awaiting current power and activity observations. ' : '') ;
             const link = document.createElement('a');
-            link.href = '/probes'; link.textContent = 'Review monitoring alerts';
+            link.href = '/console#probes'; link.textContent = 'Review monitoring alerts';
             banner.append(link);
         } catch { /* Retain an existing warning until power off is confirmed. */ }
     }

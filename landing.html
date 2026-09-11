@@ -1,71 +1,43 @@
 <!doctype html>
 <html lang="en">
-
 <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Organ Control UI - Landing</title>
-    <link href="/static/css/bootstrap.min.css" rel="stylesheet">
-    <link href="/static/css/style.css" rel="stylesheet">
-    <script type="importmap">
-        {
-            "imports": {
-            "vue": "/static/js/vue.esm-browser.js"
-            }
-        }
-    </script>
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+    <meta name="color-scheme" content="dark">
+    <title>OrganUI</title>
+    <link rel="stylesheet" href="/static/css/console.css">
+    <script type="importmap">{"imports":{"vue":"/static/js/vue.esm-browser.js"}}</script>
 </head>
-
 <body>
-    <div id="app">
-        <div class="container-fluid mt-5">
-            <h3 class="display-6 text-center">{{siteName}}</h3>
-            <h1 class="display-3 text-center mb-5">Pipe Organ Interface</h1>
-            <div class="row justify-content-center">
-                <div class="col-12 col-md-5">
-                    <div class="alert alert-info text-center" v-if="fugaraPairingCode">
-                        <div class="small text-uppercase fw-semibold">Fugara pairing code</div>
-                        <div class="fs-4 font-monospace user-select-all">{{fugaraPairingCode}}</div>
-                    </div>
-                    <h1>I am the:</h1>
-                    <a href="/console" class="btn btn-outline-primary mb-3 btn-lg w-100 p-4">Console</a>
-                    <a href="/organist" class="btn btn-outline-secondary mb-3 btn-lg w-100 p-4">Organist</a>
-                    <a href="/tuner" class="btn btn-outline-secondary mb-3 btn-lg w-100 p-2">Organ Technician</a>
-                    <a href="/probes" class="btn btn-outline-primary mb-3 btn-lg w-100 p-2">Probes</a>
-                    <a href="/advanced" class="btn btn-outline-danger mb-3 btn-lg w-100 p-2">Advanced OSC / UDP</a>
-                </div>
-            </div>
+    <div id="app" v-cloak>
+        <div class="console-shell landing-shell">
+            <header class="landing-header">
+                <div class="landing-brand">ORGAN<span>UI</span></div>
+                <p class="muted">{{ siteName || 'Pipe organ interface' }}</p>
+            </header>
+            <main class="landing-main">
+                <h1>I am the:</h1>
+                <nav class="landing-choices" aria-label="Choose your role">
+                    <a class="tile landing-choice" href="/console">Organist</a>
+                    <a class="tile landing-choice" href="/tuner">Organ Technician</a>
+                </nav>
+                <p class="landing-pairing muted" v-if="fugaraPairingCode">Fugara pairing code <strong>{{fugaraPairingCode}}</strong></p>
+            </main>
+            <footer><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected' }}</span></footer>
         </div>
     </div>
-    <script src="/static/js/bootstrap.bundle.min.js"></script>
     <script src="/socket.io/socket.io.js"></script>
     <script type="module">
         import { createApp } from 'vue'
-        var socket = io();
-
+        const socket = io();
         const app = createApp({
-            data() {
-                return {
-                    siteName: "",
-                    fugaraPairingCode: "",
-                    uptime: "No Uptime"
-                }
-            },
+            data() { return {siteName: '', fugaraPairingCode: '', connected: false}; }
         }).mount('#app');
-
-        socket.on('siteName', function (name) {
-            app.siteName = name;
-        });
-
-        socket.on('fugaraPairingCode', function (pairingCode) {
-            app.fugaraPairingCode = pairingCode || "";
-        });
-
-        socket.on('uptime', function (time) {
-            app.uptime = time;
-        });
+        socket.on('siteName', name => { app.siteName = name; });
+        socket.on('fugaraPairingCode', code => { app.fugaraPairingCode = code || ''; });
+        socket.on('connect', () => { app.connected = true; });
+        socket.on('disconnect', () => { app.connected = false; });
+        socket.on('connect_error', () => { app.connected = false; });
     </script>
-    <script src="/static/js/left-on-banner.js"></script>
 </body>
-
 </html>

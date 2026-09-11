@@ -171,7 +171,7 @@ Plenum temperature/humidity, power, and wind-pressure probes send historical
 data directly to Fugara. They also broadcast the latest reading on UDP port
 `47612`. organUI
 listens to that independent local stream and provides an on-site dashboard at
-`/probes`; Fugara availability is not required to view current readings.
+`/console#probes`; Fugara availability is not required to view current readings.
 
 ```json
 {
@@ -204,9 +204,13 @@ npm test
 
 The browser UI is available at:
 
-- `/organist` for performance controls
+Builder-defined views are configured in [`console-controls.json`](console-controls.json).
+Each view gets a console tab and a standalone `/console/custom/<id>` page.
+See the [builder guide](docs/console-controls.md) for multiple-view examples,
+control types, command bindings and live feedback.
+
 - `/tuner` for tuning, stops, naming, and recorder controls
-- `/probes` for locally broadcast environment, power, and wind-pressure readings
+- `/console#probes` for locally broadcast environment, power, and wind-pressure readings
 - `/console` for the responsive touch console: large memory and track readouts, expression bars, and selectable timer, record/playback, transposer, sostenuto, crescendo, and probe panels. Wide screens use the four-panel layout with a control rail; portrait tablets place the control strip between panel rows; phones stack the readouts and provide a control picker; shallow landscape displays use compact spacing with touch targets of at least 44 CSS pixels. Phone dialogs open as bottom sheets and respect safe areas. Labels follow the Opus references: organist folder, memory level/local memory level, record protection, and transposer Neutral. Probes retains last readings with explicit stale/disconnected status and links to diagnostics. Settings contains site-defined controls and Fugara pairing. The timer is local to the page and resets on reload. Expression channels and crescendo selectors use controller-provided names.
 - `/advanced` for complete OSC-family and remote UDP command coverage
 

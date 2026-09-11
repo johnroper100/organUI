@@ -8,10 +8,9 @@ const assert = require('node:assert/strict');
 test('every Organ UI page displays the Fugara pairing code', () => {
     for (const file of [
         'landing.html',
-        'organist.html',
+        'console.html',
         'tuner.html',
-        'advanced.html',
-        'probes.html'
+        'advanced.html'
     ]) {
         const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
         assert.match(
@@ -21,7 +20,7 @@ test('every Organ UI page displays the Fugara pairing code', () => {
         );
         assert.match(
             html,
-            /\{\{fugaraPairingCode\}\}/u,
+            /\{\{\s*fugaraPairingCode\s*\}\}/u,
             `${file} does not render the pairing code`
         );
         assert.match(
@@ -41,7 +40,7 @@ test('every Organ UI page displays the Fugara pairing code', () => {
     );
 });
 
-for (const file of ['organist.html', 'tuner.html']) {
+for (const file of ['tuner.html']) {
     test(`${file} has valid module-script syntax and UDP controls`, () => {
         const html = fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
         const scripts = [
@@ -64,28 +63,23 @@ for (const file of ['organist.html', 'tuner.html']) {
 
 test('probe dashboard has valid module syntax and consumes local readings', () => {
     const html = fs.readFileSync(
-        path.join(__dirname, '..', 'probes.html'),
+        path.join(__dirname, '..', 'console.html'),
         'utf8'
     );
-    const scripts = [
-        ...html.matchAll(/<script type="module">([\s\S]*?)<\/script>/gu)
-    ];
-
-    assert.equal(scripts.length, 1);
-    const source = scripts[0][1].replace(
-        "import { createApp } from 'vue'",
+    const source = fs.readFileSync(path.join(__dirname, '..', 'static/js/console.js'), 'utf8').replace(
+        "import { createApp } from 'vue';",
         'const createApp = null'
     );
     assert.doesNotThrow(() => new Function(source));
-    assert.match(html, /socket\.on\('probeReadings'/u);
+    assert.match(source, /socket\.on\('probeReadings'/u);
     assert.match(html, /probe\.name/u);
     assert.match(html, /probe\.serialNo/u);
-    assert.match(html, /probe\.temperature/u);
-    assert.match(html, /probe\.humidity/u);
-    assert.match(html, /probe\.currentAmps/u);
-    assert.match(html, /probe\.estimatedWatts/u);
+    assert.match(source, /probe\.temperature/u);
+    assert.match(source, /probe\.humidity/u);
+    assert.match(source, /probe\.currentAmps/u);
+    assert.match(source, /probe\.estimatedWatts/u);
     assert.match(html, /probe\.loadState/u);
-    assert.match(html, /probe\.pressureInH2O/u);
+    assert.match(source, /probe\.pressureInH2O/u);
     assert.match(html, /probe\.displayPressureUnit/u);
     assert.match(html, /probe\.pressureFullScaleInH2O/u);
     assert.match(html, /probe\.macAddress/u);

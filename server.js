@@ -3,6 +3,7 @@ const path = require('path');
 const http = require('http');
 const os = require('os');
 const fs = require('fs');
+const { loadConsoleControls } = require('./lib/console-controls');
 const { Bonjour } = require('bonjour-service');
 const { Server: SocketServer } = require('socket.io');
 const { Server: OSCServer } = require('node-osc');
@@ -1486,6 +1487,15 @@ app.post('/api/udp', (req, res) => {
     });
 });
 
+app.get('/api/console-controls', (_req, res) => {
+    res.set('Cache-Control', 'no-store');
+    try {
+        res.json(loadConsoleControls(path.join(__dirname, 'console-controls.json')));
+    } catch (error) {
+        res.status(400).json({error: `Console controls configuration: ${error.message}`});
+    }
+});
+
 app.get('/api/probes', (_req, res) => {
     res.json(probeBroadcastMonitor.list());
 });
@@ -1510,20 +1520,16 @@ app.get('/tuner', (req, res) => {
     res.sendFile(path.join(__dirname, 'tuner.html'));
 });
 
-app.get('/organist', (req, res) => {
-    res.sendFile(path.join(__dirname, 'organist.html'));
-});
-
 app.get('/advanced', (req, res) => {
     res.sendFile(path.join(__dirname, 'advanced.html'));
 });
 
-app.get('/console', (req, res) => {
+app.get('/console/custom/:viewId', (req, res) => {
     res.sendFile(path.join(__dirname, 'console.html'));
 });
 
-app.get('/probes', (req, res) => {
-    res.sendFile(path.join(__dirname, 'probes.html'));
+app.get('/console', (req, res) => {
+    res.sendFile(path.join(__dirname, 'console.html'));
 });
 
 app.use('/static', express.static(path.join(__dirname, 'static')));

@@ -11,15 +11,15 @@
 <body>
 <div id="app" v-cloak>
     <div class="console-shell">
-        <header class="console-header">
+        <header class="console-header" v-if="!standaloneView">
             <button class="folder-button" @click="openSheet('library')"><small>Organist folder</small><span>{{ folderTrackName || 'Select folder' }}</span></button>
             <div class="brand"><a href="/">ORGAN<span>UI</span></a><small>{{ siteName || 'Organ console' }}</small></div>
             <button @click="selectTab('settings')">Settings</button>
         </header>
-        <nav class="console-tabs" role="tablist" aria-label="Console views">
+        <nav v-if="!standaloneView" class="console-tabs" role="tablist" aria-label="Console views">
             <button v-for="item in tabs" :key="item.id" :id="'tab-' + item.id" role="tab" :aria-selected="activeTab === item.id" :aria-controls="'view-' + item.id" :tabindex="activeTab === item.id ? 0 : -1" :class="{selected: activeTab === item.id}" @click="selectTab(item.id)" @keydown="tabKeydown($event, item.id)">{{ item.label }}</button>
         </nav>
-        <main v-show="activeTab === 'overview'" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" class="console-grid">
+        <main v-if="!standaloneView" v-show="activeTab === 'overview'" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" class="console-grid">
             <section class="tile memory" aria-label="Memory level">
                 <button class="display-button" @click="openSheet('memory')">
                     <span class="eyebrow">{{ localMemory ? 'Local memory level' : 'Memory level' }}</span>
@@ -102,7 +102,38 @@
             </section>
         </main>
 
-        <section v-show="activeTab === 'tracks'" id="view-tracks" role="tabpanel" aria-labelledby="tab-tracks" tabindex="0" class="tab-page tracks-layout">
+        <div v-if="customLoading || customError" class="custom-notice" role="status"><span>{{ customError || 'Loading custom controls…' }}</span><button v-if="customError" @click="loadCustomViews">Retry</button></div>
+        <section v-for="view in visibleCustomViews" :key="view.id" v-show="activeTab === 'custom-' + view.id" :id="'view-custom-' + view.id" :role="standaloneView ? 'region' : 'tabpanel'" :aria-labelledby="standaloneView ? 'title-custom-' + view.id : 'tab-custom-' + view.id" tabindex="0" class="tab-page custom-view">
+            <div class="tab-heading"><h1 :id="'title-custom-' + view.id">{{ view.title }}</h1><a v-if="!standaloneView" :href="'/console/custom/' + view.id">Open standalone view</a></div>
+            <p v-if="view.description" class="muted">{{ view.description }}</p>
+            <p v-if="!view.groups.length" class="muted">No controls configured.</p>
+            <section v-for="(group, groupIndex) in view.groups" :key="groupIndex" class="custom-group">
+                <h2>{{ group.title }}</h2><p class="muted" v-if="group.description">{{ group.description }}</p>
+                <div class="custom-grid">
+                    <article class="tile tab-card custom-control" v-for="control in group.controls" :key="control.id">
+                        <template v-if="control.type === 'button' || control.type === 'stop'">
+                            <button class="custom-button" :disabled="!connected || customPending[view.id + '/' + control.id]" :class="{selected: connected && customActive(control)}" :aria-pressed="customBinding(control) ? customActive(control) : undefined" @click="runCustom(view, control)">{{ control.label }}</button>
+                            <output v-if="customBinding(control)">{{ customReadout(control) }}</output>
+                        </template>
+                        <template v-else-if="control.type === 'userVariable'">
+                            <h3>{{ control.label }}</h3><output>{{ customReadout(control) }}</output>
+                            <div class="button-row"><button :disabled="!connected" :aria-label="'Decrease ' + control.label" @click="runCustom(view, control, 'down')">Down</button><button :disabled="!connected" :aria-label="'Increase ' + control.label" @click="runCustom(view, control, 'up')">Up</button></div>
+                        </template>
+                        <template v-else-if="control.type === 'display'"><h3>{{ control.label }}</h3><output>{{ customReadout(control) }}</output></template>
+                        <label v-else-if="control.type === 'select'">{{ control.label }}
+                            <select :value="customInputValue(view, control)" :disabled="!connected || customPending[view.id + '/' + control.id]" @change="runCustom(view, control, $event.target.value)"><option disabled value="">Select…</option><option v-for="option in control.options" :key="String(option.value)" :value="option.value">{{ option.label }}</option></select>
+                            <output v-if="control.feedback">{{ customReadout(control) }}</output>
+                        </label>
+                        <label v-else-if="control.type === 'range'">{{ control.label }}
+                            <input type="range" :min="control.min" :max="control.max" :step="control.step" :value="customInputValue(view, control)" :disabled="!connected || customPending[view.id + '/' + control.id]" @change="runCustom(view, control, $event.target.value)">
+                            <output>{{ control.feedback ? customReadout(control) : customInputValue(view, control) }}</output>
+                        </label>
+                        <p v-if="control.description" class="muted">{{ control.description }}</p>
+                    </article>
+                </div>
+            </section>
+        </section>
+        <section v-if="!standaloneView" v-show="activeTab === 'tracks'" id="view-tracks" role="tabpanel" aria-labelledby="tab-tracks" tabindex="0" class="tab-page tracks-layout">
             <section class="tile tab-card track-inventory">
                 <div class="tab-heading"><h1>Tracks</h1><button :disabled="!connected" @click="refreshNames">Refresh names</button></div>
                 <label>Find a track<input type="search" v-model="trackSearch" placeholder="Track number or name"></label>
@@ -128,7 +159,7 @@
                 </section>
             </div>
         </section>
-        <section v-show="activeTab === 'probes'" id="view-probes" role="tabpanel" aria-labelledby="tab-probes" tabindex="0" class="tab-page"><h1>Probes</h1>
+        <section v-if="!standaloneView" v-show="activeTab === 'probes'" id="view-probes" role="tabpanel" aria-labelledby="tab-probes" tabindex="0" class="tab-page"><h1>Probes</h1>
                 <p class="muted" role="status">{{ probeSummary }}<span v-if="!connected && probes.length"> · Showing last received readings.</span><span v-else-if="probes.length > liveProbeCount"> · Stale readings are the last values received.</span></p>
                 <div class="empty-state" v-if="!probes.length">{{ connected ? 'Waiting for probe broadcasts on the local network.' : 'Connect to the server to receive probe readings.' }}</div>
                 <div class="probe-grid" v-else>
@@ -215,15 +246,16 @@
                 <div  v-for="event in alertStatus.events" :key="event.id">{{event.message}} <span >{{probeTime(event.observedAt)}}</span></div>
             </div>
         </section></section>
-        <section v-show="activeTab === 'settings'" id="view-settings" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" class="tab-page"><div class="tile tab-card"><h1>Settings</h1>
-                <div class="settings-links"><a href="/">Home</a><a href="/organist">Organist</a><a href="/tuner">Tuner</a><a href="/advanced">Advanced controls</a></div>
+        <section v-if="!standaloneView" v-show="activeTab === 'settings'" id="view-settings" role="tabpanel" aria-labelledby="tab-settings" tabindex="0" class="tab-page"><div class="tile tab-card"><h1>Settings</h1>
+                <div class="settings-links"><a href="/">Home</a><a href="/tuner">Tuner</a><a href="/advanced">Advanced controls</a></div>
+                <section class="settings-section"><h2>Custom views</h2><button :disabled="customLoading" @click="loadCustomViews">Reload custom views</button><p v-if="!customViews.length && !customLoading" class="muted">No custom views loaded.</p><div class="settings-links"><a v-for="view in customViews" :key="view.id" :href="'/console/custom/' + view.id">{{ view.title }}</a></div></section>
                 <section class="settings-section"><h2>Console</h2><p>{{ siteName || 'Waiting for site name' }}</p><p class="muted">{{ remoteTarget || 'Waiting for controller' }}</p><button :disabled="!connected" @click="tap(2001)">Refresh console buttons</button></section>
                 <section class="settings-section" v-if="namedUserVars.length"><h2>Organ settings</h2><div class="user-setting" v-for="item in namedUserVars"><span>{{ item.name }}<strong>{{ item.value }}</strong></span><button :disabled="!connected" @click="pulse('/UserDef/dec' + item.number)">Down</button><button :disabled="!connected" @click="pulse('/UserDef/inc' + item.number)">Up</button></div></section>
                 <p v-if="fugaraPairingCode">Fugara pairing: <strong>{{ fugaraPairingCode }}</strong></p>
                 <p class="muted">The timer runs on this page and resets when the page is reloaded.</p></div></section>
-        <footer><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span class="command-status" role="status">{{ commandStatus }}</span><a href="/advanced">Advanced controls ↗</a></footer>
+        <footer><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span class="command-status" role="status">{{ commandStatus }}</span><a v-if="!standaloneView" href="/advanced">Advanced controls ↗</a></footer>
     </div>
-    <dialog ref="sheet" @close="sheet = ''" @click="closeOnBackdrop" aria-labelledby="sheet-title">
+    <dialog v-if="!standaloneView" ref="sheet" @close="sheet = ''" @click="closeOnBackdrop" aria-labelledby="sheet-title">
         <header class="sheet-header"><h1 id="sheet-title">{{ sheetTitle }}</h1><button aria-label="Close" @click="closeSheet">×</button></header>
         <div class="sheet-body">
             <form v-if="sheet === 'memory'" @submit.prevent="goMemory" class="selection-form">

@@ -157,7 +157,7 @@ Typical configurations are:
 Not every Organ UI data source is an organ-status adapter. Plenum probes are a
 separate stream: probes send history directly to Fugara and broadcast current
 readings on the LAN. Organ UI listens on UDP `47612` and provides the local
-`/probes` dashboard. A power probe only contributes to organ on/off status when
+`/console#probes` dashboard. A power probe only contributes to organ on/off status when
 selected by `organ.powerSensing`.
 
 Keeping these domains separate allows one Organ UI process and web application
