@@ -182,7 +182,8 @@ test('track footer keeps selected playback separate from current transport and r
     const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
     const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
     const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
-    const footer = html.slice(html.indexOf('<footer class="console-footer"'), html.indexOf('</footer>') + '</footer>'.length);
+    const footerStart = html.indexOf('<footer class="console-footer"');
+    const footer = html.slice(footerStart, html.indexOf('</footer>', footerStart) + '</footer>'.length);
     let render;
     try { render = compile(footer, {decodeEntities: text => text}); }
     catch (error) { assert.fail(error.message); }
@@ -213,6 +214,59 @@ test('track footer keeps selected playback separate from current transport and r
     for (const button of Object.values(buttons())) assert.equal(button.props.disabled, true);
     app.selectTab('overview');
     assert.deepEqual(Object.keys(buttons()), []);
+});
+
+test('overview footers operate in place and keep the local timer available offline', async () => {
+    const {app, sent, advance, socket} = harness();
+    const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
+    const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
+    const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
+    const start = html.indexOf('<main v-if="!standaloneView"');
+    const render = compile(html.slice(start, html.indexOf('</main>', start) + 7), {decodeEntities: text => text});
+    function footers() {
+        const found = {};
+        function walk(node, insideButton = false) {
+            if (!node || typeof node !== 'object') return;
+            if (node.type === 'button') assert.equal(insideButton, false, 'buttons must not be nested');
+            if (node.type === 'footer') found[node.props['aria-label']] = node;
+            if (Array.isArray(node.children)) node.children.forEach(child => walk(child, insideButton || node.type === 'button'));
+        }
+        walk(render(app, []));
+        return found;
+    }
+    const buttons = footer => footer.children.filter(child => child.type === 'button');
+    app.connected = true;
+    app.localMemory = true;
+    const controls = footers();
+    assert.equal(Object.keys(controls).length, 5);
+    buttons(controls['Memory level controls']).forEach(button => button.props.onClick());
+    buttons(controls['Current track controls']).forEach(button => button.props.onClick());
+    buttons(controls['Transposer controls']).forEach(button => button.props.onClick());
+    buttons(controls['Sostenuto controls']).forEach(button => button.props.onClick());
+    assert.deepEqual(sent.filter(item => item.name === 'sendUDPcmd').map(item => item.payload.action), [
+        'localMemoryLevelDown', 'localMemoryLevelUp', 'pause', 'playToggle',
+        'transposerDown', 'transposerNeutral', 'transposerUp'
+    ]);
+    assert.deepEqual(sent.filter(item => item.name === 'sendOSCcmd').map(item => item.payload.cmd), [
+        '/OPTICS/special2037', '/OPTICS/special2010', '/OPTICS/special2011'
+    ]);
+    assert.equal(app.activeTab, 'overview');
+    app.connected = false;
+    socket.connected = false;
+    const offline = footers();
+    for (const name of ['Memory level controls', 'Current track controls', 'Transposer controls', 'Sostenuto controls']) {
+        buttons(offline[name]).forEach(button => assert.equal(button.props.disabled, true));
+    }
+    buttons(offline['Timer controls'])[0].props.onClick();
+    advance(2000);
+    assert.equal(app.timerText, '00:00:02');
+    assert.equal(buttons(footers()['Timer controls'])[0].props.disabled, true);
+    buttons(footers()['Timer controls'])[1].props.onClick();
+    advance(2000);
+    assert.equal(app.timerText, '00:00:02');
+    buttons(footers()['Timer controls'])[2].props.onClick();
+    assert.equal(app.timerText, '00:00:00');
+    assert.equal(app.activeTab, 'overview');
 });
 
 test('console and landing Vue templates compile without errors', async () => {

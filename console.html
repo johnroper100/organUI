@@ -33,13 +33,35 @@
         </nav>
         <main v-if="!standaloneView" v-show="activeTab === 'overview'" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" class="console-grid">
             <div class="overview-status" aria-label="Console status">
-                <button class="status-card memory-status" @click="showControl('memory')"><span>{{ localMemory ? 'Local memory level' : 'Memory level' }}</span><strong class="red">{{ shownMemory || '—' }}</strong></button>
-                <button class="status-card track-status" @click="selectTab('tracks')"><span>Current track</span><strong class="green">{{ trackNum || '—' }}</strong><small>{{ currentTrackName || 'Touch to browse tracks' }}<span v-if="trackLocked"> · Record protected</span></small></button>
-                <button class="status-card" @click="showControl('timer')"><span>Timer</span><strong class="pink status-timer">{{ timerText }}</strong></button>
-                <button class="status-card" @click="showControl('transposer')"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></button>
-                <button class="status-card" @click="showControl('sostenuto')"><span>Sostenuto</span><strong class="blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</strong></button>
-                <button class="status-card" @click="selectTab('probes')"><span>Probes</span><strong class="probe-summary">{{ probeSummary }}</strong></button>
-                <button class="status-card expression-status" @click="showControl('expression')"><span>Expression & crescendo</span><span class="expression-summary" v-if="namedExpressions.length"><small v-for="exp in namedExpressions" :key="exp.id">{{ exp.name }} <strong>{{ Math.round(exp.value * 100) }}%</strong></small></span><small v-else>Waiting for expression controls</small></button>
+                <article class="status-card memory-status">
+                    <button class="status-card-readout" @click="showControl('memory')"><span>{{ localMemory ? 'Local memory level' : 'Memory level' }}</span><strong class="red">{{ shownMemory || '—' }}</strong></button>
+                    <footer class="status-card-controls" aria-label="Memory level controls"><button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button></footer>
+                </article>
+                <article class="status-card track-status">
+                    <button class="status-card-readout" @click="selectTab('tracks')"><span>Current track</span><strong class="green">{{ trackNum || '—' }}</strong><small>{{ currentTrackName || 'Touch to browse tracks' }}<span v-if="trackLocked"> · Record protected</span></small></button>
+                    <footer class="status-card-controls" aria-label="Current track controls"><button :disabled="!connected" @click="tap(2037)">Stop</button><button :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></footer>
+                </article>
+                <article class="status-card">
+                    <button class="status-card-readout" @click="showControl('timer')"><span>Timer</span><strong class="pink status-timer">{{ timerText }}</strong></button>
+                    <footer class="status-card-controls" aria-label="Timer controls"><button :disabled="timerStarted !== null" @click="startTimer">Start</button><button :disabled="timerStarted === null" @click="stopTimer">Stop</button><button @click="resetTimer">Reset</button></footer>
+                </article>
+                <article class="status-card">
+                    <button class="status-card-readout" @click="showControl('transposer')"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></button>
+                    <footer class="status-card-controls" aria-label="Transposer controls"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></footer>
+                </article>
+                <article class="status-card">
+                    <button class="status-card-readout" @click="showControl('sostenuto')"><span>Sostenuto</span><strong class="blue">{{ sostActive === null ? '—' : sostActive ? 'On' : 'Off' }}</strong></button>
+                    <footer class="status-card-controls" aria-label="Sostenuto controls"><button :disabled="!connected" @click="tap(2010)">Toggle</button><button :disabled="!connected" @click="tap(2011)">Release</button></footer>
+                </article>
+                <article class="status-card">
+                    <button class="status-card-readout" @click="selectTab('probes')"><span>Probes</span><strong class="probe-summary">{{ probeSummary }}</strong></button>
+                </article>
+                <article class="status-card expression-status">
+                    <button class="status-card-readout" @click="showControl('expression')"><span>Expression & crescendo</span><span class="expression-summary" v-if="namedExpressions.length"><small v-for="exp in namedExpressions" :key="exp.id">{{ exp.name }} <strong>{{ Math.round(exp.value * 100) }}%</strong></small></span><small v-else>Waiting for expression controls</small></button>
+                    <footer v-if="namedExpressions.length" class="status-card-controls expression-quick-controls" aria-label="Expression and crescendo controls">
+                        <label v-for="exp in namedExpressions" :key="exp.id"><span>{{ exp.name }}</span><input type="range" min="0" max="1" step="0.01" :value="exp.value" :aria-label="exp.name" :disabled="!connected" @input="moveFader(exp.id, $event.target.value)"></label>
+                    </footer>
+                </article>
             </div>
         </main>
 
@@ -47,7 +69,8 @@
             <form v-show="controlPage === 'memory'" id="control-memory" @submit.prevent="goMemory" class="control-workspace memory-workspace">
                 <label>{{ localMemory ? 'Local memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
                 <p class="muted">{{ localMemory ? 'Local memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
-                <details><summary>Memory select</summary><div class="keypad"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div></details>
+                <h2 id="memory-select-heading">Memory select</h2>
+                <div class="keypad" role="group" aria-labelledby="memory-select-heading"><button type="button" v-for="key in ['1','2','3','4','5','6','7','8','9','Clear','0','⌫']" @click="keypad(key)">{{ key }}</button></div>
             </form>
             <section v-show="controlPage === 'expression'" id="control-expression" class="control-workspace expression-workspace" aria-label="Expression and crescendo">
                 <div class="expression-bars" v-if="namedExpressions.length">
