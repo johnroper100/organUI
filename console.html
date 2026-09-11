@@ -26,13 +26,12 @@
         <nav v-if="!standaloneView" v-show="activeTab === 'tracks'" class="track-pages" aria-label="Track controls">
             <button :class="{selected: tracksPane === 'tracks'}" :aria-pressed="tracksPane === 'tracks'" aria-controls="track-inventory" @click="tracksPane = 'tracks'">Tracks</button>
             <button :class="{selected: tracksPane === 'rename'}" :aria-pressed="tracksPane === 'rename'" aria-controls="track-rename" @click="tracksPane = 'rename'">Rename</button>
-            <button :class="{selected: tracksPane === 'current'}" :aria-pressed="tracksPane === 'current'" aria-controls="track-current" @click="tracksPane = 'current'">Current track</button>
         </nav>
         <main v-if="!standaloneView" v-show="activeTab === 'overview'" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" class="console-grid">
             <div class="overview-status" aria-label="Console status">
                 <article class="status-card memory-status">
-                    <button class="status-card-readout" @click="showControl('memory')"><span>{{ localMemory ? 'Local memory level' : 'Memory level' }}</span><strong class="red">{{ shownMemory || '—' }}</strong></button>
-                    <footer class="status-card-controls" aria-label="Memory level controls"><button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button><button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button></footer>
+                    <button class="status-card-readout" @click="showControl('memory')"><span>{{ localMemory ? 'Divisional memory level' : 'Memory level' }}</span><strong class="red">{{ shownMemory || '—' }}</strong></button>
+                    <footer class="status-card-controls" aria-label="Memory level controls"><button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use divisional' }}</button><button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button></footer>
                 </article>
                 <article class="status-card track-status">
                     <button class="status-card-readout" @click="selectTab('tracks')"><span>Current track</span><strong class="green">{{ trackNum || '—' }}</strong><small>{{ currentTrackName || 'Touch to browse tracks' }}<span v-if="trackLocked"> · Record protected</span></small></button>
@@ -56,8 +55,8 @@
 
         <section v-if="!standaloneView" v-show="activeTab === 'memory'" id="view-memory" role="tabpanel" aria-labelledby="tab-memory" tabindex="0" class="tab-page controls-workspace">
             <form id="control-memory" @submit.prevent="goMemory" class="control-workspace memory-workspace">
-                <label>{{ localMemory ? 'Local memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
-                <p class="muted">{{ localMemory ? 'Local memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
+                <label>{{ localMemory ? 'Divisional memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
+                <p class="muted">{{ localMemory ? 'Divisional memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
             </form>
         </section>
         <section v-if="!standaloneView" v-show="activeTab === 'expression'" id="view-expression" role="tabpanel" aria-labelledby="tab-expression" tabindex="0" class="tab-page">
@@ -117,12 +116,6 @@
                     <h2>Selected track · {{ selectedNumber }}</h2><p>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</p>
                     <p class="muted">Selecting a track in the list does not start playback.</p>
                     <form @submit.prevent="udp('renameTrack', {number: selectedNumber, name: renameText})" class="selection-form"><label>Rename selected track<input v-model="renameText" maxlength="15" required placeholder="New name"></label><button :disabled="!connected">Rename</button></form>
-                </section>
-                <section id="track-current" class="tile current-track-tools" :class="{'is-current': tracksPane === 'current'}">
-                    <span class="eyebrow">Current track · {{ trackNum || '—' }} <span v-if="trackLocked">· Record protected</span></span>
-                    <div class="panel-readout recording orange">{{ currentTrackName || 'No track selected' }}<small>{{ trackTime || '— : —' }}</small></div>
-                    <div class="button-row"><button :disabled="!connected" @click="udp('trackDown')">Previous</button><button @click="openSheet('copy')">Copy</button><button :disabled="!connected" @click="udp('trackUp')">Next</button></div>
-                    <div class="button-row"><button :disabled="!connected" @click="udp('toggleTrackLock')">{{ trackLocked ? 'Disable' : 'Enable' }} record protection for current track</button></div>
                 </section>
             </div>
         </section>
@@ -240,7 +233,7 @@
                 <div v-else-if="activeTab === 'memory'" class="button-row memory-footer-actions">
                     <button class="primary go-memory" form="control-memory" :disabled="!connected">Go to level</button>
                     <button :disabled="!connected" @click="changeMemory('Down')">Down</button><button :disabled="!connected" @click="changeMemory('Up')">Up</button>
-                    <button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use local' }}</button><button :disabled="!connected" @click="udp('generalCancel')">General cancel</button>
+                    <button :aria-pressed="localMemory" @click="localMemory = !localMemory">{{ localMemory ? 'Use memory' : 'Use divisional' }}</button><button :disabled="!connected" @click="udp('generalCancel')">General cancel</button>
                 </div>
                 <div v-else-if="activeTab === 'settings'" class="button-row"><button :disabled="!alertLoaded || alertSaving" @click="saveAlertSettings">{{ alertSaving ? 'Saving…' : 'Save alert settings' }}</button><button :disabled="customLoading" @click="loadCustomViews">Reload custom views</button><button :disabled="!connected" @click="tap(2001)">Refresh console buttons</button></div>
             </div>
@@ -251,7 +244,7 @@
         <header class="sheet-header"><h1 id="sheet-title">{{ sheetTitle }}</h1><button aria-label="Close" @click="closeSheet">×</button></header>
         <div class="sheet-body">
             <form v-if="sheet === 'memory'" @submit.prevent="goMemory" class="selection-form">
-                <div class="button-row"><button type="button" :class="{selected: !localMemory}" @click="localMemory = false">Memory level</button><button type="button" :class="{selected: localMemory}" @click="localMemory = true">Local memory level</button></div>
+                <div class="button-row"><button type="button" :class="{selected: !localMemory}" @click="localMemory = false">Memory level</button><button type="button" :class="{selected: localMemory}" @click="localMemory = true">Divisional memory level</button></div>
                 <label>Memory level<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
                 <button class="primary" :disabled="!connected">Go to level</button>
             </form>
