@@ -27,6 +27,7 @@ const app = createApp({
         };
     },
     computed: {
+        visibleTabs() { return this.tabs.filter(tab => tab.id !== 'probes' || this.probes.length); },
         pageTitle() {
             return this.tabs.find(item => item.id === this.activeTab)?.label;
         },
@@ -166,18 +167,18 @@ const app = createApp({
         },
         selectTab(id) {
             if (id === 'controls') id = 'memory';
-            if (!this.tabs.some(tab => tab.id === id)) return;
+            if (!this.visibleTabs.some(tab => tab.id === id)) return;
             if (id === 'memory' && this.activeTab !== id) this.levelNumber = Number(this.shownMemory) || 1;
             if (id === 'tracks' && this.activeTab !== id) { this.selectedNumber = Number(this.trackNum) || 1; this.renameText = ''; }
             this.activeTab = id;
-            if (id === 'probes') this.getAlertStatus();
+            if (id === 'settings') this.getAlertStatus();
         },
         tabKeydown(event, id) {
-            const index = this.tabs.findIndex(tab => tab.id === id);
-            const next = {ArrowRight: (index + 1) % this.tabs.length, ArrowLeft: (index + this.tabs.length - 1) % this.tabs.length, Home: 0, End: this.tabs.length - 1}[event.key];
+            const index = this.visibleTabs.findIndex(tab => tab.id === id);
+            const next = {ArrowRight: (index + 1) % this.visibleTabs.length, ArrowLeft: (index + this.visibleTabs.length - 1) % this.visibleTabs.length, Home: 0, End: this.visibleTabs.length - 1}[event.key];
             if (next === undefined) return;
             event.preventDefault();
-            this.selectTab(this.tabs[next].id);
+            this.selectTab(this.visibleTabs[next].id);
             event.currentTarget.parentElement.querySelectorAll('[role="tab"]')[next].focus();
         },
         async getAlertStatus(initial = false) {
@@ -289,14 +290,17 @@ const app = createApp({
         else this.selectHashTab();
         window.addEventListener('hashchange', this.selectHashTab);
         this.loadCustomViews();
-        this.alertTimer = window.setInterval(() => { if (this.activeTab === 'probes') this.getAlertStatus(); }, 15000);
+        this.alertTimer = window.setInterval(() => { if (this.activeTab === 'settings') this.getAlertStatus(); }, 15000);
         this.timerInterval = window.setInterval(() => { this.now = Date.now(); }, 200);
     },
     beforeUnmount() { window.removeEventListener('hashchange', this.selectHashTab); window.clearInterval(this.alertTimer); window.clearInterval(this.timerInterval); }
 }).mount('#app');
 
 for (const name of Object.keys(feedback)) socket.on(name, value => { app[name] = value; });
-socket.on('probeReadings', readings => { app.probes = Array.isArray(readings) ? readings : []; });
+socket.on('probeReadings', readings => {
+    app.probes = Array.isArray(readings) ? readings : [];
+    if (!app.probes.length && app.activeTab === 'probes') app.selectTab('overview');
+});
 socket.on('remoteReply', value => { app.commandStatus = value; });
 socket.on('connect', () => { app.connected = true; app.commandStatus = ''; });
 socket.on('disconnect', () => { app.connected = false; app.commandStatus = 'Connection lost'; });

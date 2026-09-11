@@ -121,12 +121,12 @@ test('tab keyboard navigation wraps, focuses the selected tab, and preserves the
     const {app, advance} = harness();
     let focused = -1, prevented = false;
     const event = {key: 'ArrowLeft', preventDefault() { prevented = true; },
-        currentTarget: {parentElement: {querySelectorAll() { return app.tabs.map((_, index) => ({focus() { focused = index; }})); }}}};
+        currentTarget: {parentElement: {querySelectorAll() { return app.visibleTabs.map((_, index) => ({focus() { focused = index; }})); }}}};
     app.startTimer();
     app.tabKeydown(event, 'overview');
     advance(2000);
     assert.equal(app.activeTab, 'settings');
-    assert.equal(focused, app.tabs.findIndex(tab => tab.id === 'settings'));
+    assert.equal(focused, app.visibleTabs.findIndex(tab => tab.id === 'settings'));
     assert.equal(prevented, true);
     assert.equal(app.timerText, '00:00:02');
     event.key = 'Home';
@@ -152,8 +152,14 @@ test('controller feedback drives names, transposer and crescendo through express
 
 test('probe readings retain stale values but never appear live while disconnected', () => {
     const {app, events} = harness();
+    assert.equal(app.visibleTabs.some(tab => tab.id === 'probes'), false);
+    app.selectTab('probes');
+    assert.equal(app.activeTab, 'overview');
     events.connect();
     events.probeReadings([{serialNo: 'env-1', online: true}, {serialNo: 'power-1', online: false}]);
+    assert.equal(app.visibleTabs.some(tab => tab.id === 'probes'), true);
+    app.selectTab('probes');
+    assert.equal(app.activeTab, 'probes');
     assert.equal(app.panelSummary('probes'), '1 / 2 live');
     assert.equal(app.probeStatus(app.probes[1]), 'Stale');
     events.disconnect();
@@ -165,6 +171,8 @@ test('probe readings retain stale values but never appear live while disconnecte
     assert.equal(app.panelSummary('probes'), '0 / 1 live');
     events.probeReadings(null);
     assert.equal(app.probeSummary, 'Waiting');
+    assert.equal(app.visibleTabs.some(tab => tab.id === 'probes'), false);
+    assert.equal(app.activeTab, 'overview');
 });
 
 test('probe readouts preserve missing measurements and convert pressure and power units', () => {
@@ -239,23 +247,22 @@ test('overview footers operate in place and keep the local timer available offli
     app.connected = true;
     app.localMemory = true;
     const controls = footers();
-    assert.equal(Object.keys(controls).length, 5);
+    assert.equal(Object.keys(controls).length, 4);
     buttons(controls['Memory level controls']).forEach(button => button.props.onClick());
     buttons(controls['Current track controls']).forEach(button => button.props.onClick());
     buttons(controls['Transposer controls']).forEach(button => button.props.onClick());
-    buttons(controls['Sostenuto controls']).forEach(button => button.props.onClick());
     assert.deepEqual(sent.filter(item => item.name === 'sendUDPcmd').map(item => item.payload.action), [
         'localMemoryLevelDown', 'localMemoryLevelUp', 'pause', 'playToggle',
         'transposerDown', 'transposerNeutral', 'transposerUp'
     ]);
     assert.deepEqual(sent.filter(item => item.name === 'sendOSCcmd').map(item => item.payload.cmd), [
-        '/OPTICS/special2037', '/OPTICS/special2010', '/OPTICS/special2011'
+        '/OPTICS/special2037'
     ]);
     assert.equal(app.activeTab, 'overview');
     app.connected = false;
     socket.connected = false;
     const offline = footers();
-    for (const name of ['Memory level controls', 'Current track controls', 'Transposer controls', 'Sostenuto controls']) {
+    for (const name of ['Memory level controls', 'Current track controls', 'Transposer controls']) {
         buttons(offline[name]).forEach(button => assert.equal(button.props.disabled, true));
     }
     buttons(offline['Timer controls'])[0].props.onClick();
