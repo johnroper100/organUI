@@ -41,8 +41,15 @@
                     <div class="status-card-readout"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></div>
                     <footer class="status-card-controls" aria-label="Transposer controls"><button :disabled="!connected" @click="udp('transposerDown')">Down</button><button :disabled="!connected" @click="udp('transposerNeutral')">Neutral</button><button :disabled="!connected" @click="udp('transposerUp')">Up</button></footer>
                 </article>
-                <article v-if="probes.length" class="status-card">
-                    <button class="status-card-readout" @click="selectTab('probes')"><span>Probes</span><strong class="probe-summary">{{ probeSummary }}</strong></button>
+                <article v-if="probes.length" class="status-card overview-probes">
+                    <button class="status-card-readout" @click="selectTab('probes')">
+                        <span>Probes <small>{{ probeSummary }}</small></span>
+                        <span class="overview-probe" v-for="probe in probes" :key="probe.serialNo">
+                            <span class="overview-probe-heading"><span>{{ probe.name || probe.serialNo }}</span><span class="probe-status" :class="{live: connected && probe.online}">{{ probeStatus(probe) }}</span></span>
+                            <span class="overview-probe-measurement" v-for="measurement in probeMeasurements(probe)" :key="measurement.label"><small>{{ measurement.label }}</small><strong>{{ measurement.value }}</strong></span>
+                            <small v-if="probe.probeType === 'power'">{{ probe.loadState === 'on' ? 'Load on' : 'Load off' }}</small>
+                        </span>
+                    </button>
                 </article>
                 <article class="status-card expression-status">
                     <button class="status-card-readout" @click="showControl('expression')"><span>Expression & crescendo</span><span class="expression-summary" v-if="namedExpressions.length"><small v-for="exp in namedExpressions" :key="exp.id">{{ exp.name }} <strong>{{ Math.round(exp.value * 100) }}%</strong></small></span><small v-else>Waiting for expression controls</small></button>

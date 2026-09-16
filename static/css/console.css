@@ -68,6 +68,13 @@ summary { cursor: pointer; min-height: 48px; padding-block: 12px; color: var(--a
 .memory-status { border-top: 3px solid #ff393a; }.track-status { border-top: 3px solid #29d13c; }
 .expression-summary { display: flex; flex-wrap: wrap; gap: 5px 16px; }.expression-summary strong { color: #89c9e6; font-weight: 400; }
 .status-card .probe-summary { font-size: 24px; color: #89c9e6; }
+.overview-probes .status-card-readout { gap: 12px; }
+.overview-probe { display: grid; gap: 6px; width: 100%; min-width: 0; }
+.overview-probe + .overview-probe { border-top: 1px solid #3e4448; padding-top: 12px; }
+.overview-probe-heading { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; font-size: 14px; overflow-wrap: anywhere; }
+.overview-probe-heading > span:first-child { min-width: 0; }
+.overview-probe-measurement { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 4px 10px; }
+.overview-probe-measurement strong { color: #89c9e6; font-size: 20px; font-weight: 400; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
 .control-workspace { display: flex; flex-direction: column; min-height: 140px; max-width: 720px; margin: auto; padding: 12px; }
 .memory-workspace > label { font-size: 16px; }
 .number-input { text-align: center; font-size: 48px !important; }
@@ -149,7 +156,7 @@ dialog { background: #191d20; color: #dbdcdd; border: 1px solid #41484e; border-
     .expression-status { grid-column: 3 / -1; }
 }
 @media (max-width: 620px) {
-    .memory-status, .track-status, .transposer-status { grid-column: 1 / -1; }
+    .memory-status, .track-status, .transposer-status, .overview-probes { grid-column: 1 / -1; }
     .console-shell { padding-inline: max(12px,env(safe-area-inset-left)) max(12px,env(safe-area-inset-right)); }
     .brand a { font-size: 20px; }.brand small { font-size: 11px; }
     .console-tabs button { font-size: 13px; }.page-header { padding-block: 8px; }.page-header h1 { font-size: 18px; }
