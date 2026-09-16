@@ -218,6 +218,7 @@ const data = {
     oscSpecialStatus: {},
     vibrateFeedback: { count: 0, lastReceived: '' },
     remoteReply: '',
+    udpAvailable: false,
     remoteTarget: 'Discovering controller',
     queriedFolderNames: {},
     nameInventoryStatus: {
@@ -301,6 +302,7 @@ const opusUdpTransport = new OpusUDPTransport({
     onControllerDiscovered: (host) => {
         console.log(`Discovered Opus-Two UDP controller at ${host}:${opusUdpPort}`);
         updateScalar('remoteTarget', 'remoteTarget', `${host} (SSDP)`);
+        updateUDPCapability();
         if (
             !beginCapacityDiscovery()
             &&
@@ -659,6 +661,7 @@ function updateArrayValue(eventName, values, index, value) {
 }
 
 function updateRemoteTarget() {
+    updateUDPCapability();
     const host = opusUdpTransport.targetHost;
     const source = opusUdpTransport.targetSource;
     const label = host === null
@@ -666,6 +669,13 @@ function updateRemoteTarget() {
         : `${host} (${source})`;
     updateScalar('remoteTarget', 'remoteTarget', label);
 }
+
+let lastUDPReplyAt = 0;
+function updateUDPCapability() {
+    updateScalar('udpAvailable', 'udpAvailable',
+        opusUdpTransport.discoveredHost !== null || Date.now() - lastUDPReplyAt < 15000);
+}
+setInterval(updateUDPCapability, 1000).unref();
 
 function sendRawOSCCommand(cmd, state) {
     const validation = validateOSCCommand({ cmd, state });
@@ -906,7 +916,7 @@ function dispatchOSCCommand(cmd, state) {
     }
 
     for (const request of mapping.requests) {
-        const result = sendUDPRequest(request);
+        const result = data.udpAvailable ? sendUDPRequest(request) : { ok: false };
         if (!result.ok) {
             // Preserve control if discovery has not completed yet. The release
             // is remembered so momentary OSC controls cannot remain pressed.
@@ -924,6 +934,9 @@ function handleRemoteReply(reply, rinfo) {
     if (typeof reply !== 'string') {
         return;
     }
+
+    lastUDPReplyAt = Date.now();
+    updateUDPCapability();
 
     updateScalar('remoteReply', 'remoteReply', reply);
     capacityDiscovery?.handleReply(reply);
@@ -1322,6 +1335,7 @@ io.on('connection', (socket) => {
     sendSubscribeMessage();
 
     const initialState = {
+        udpAvailable: data.udpAvailable,
         trackNum: data.trackNum,
         trackTime: data.trackTime,
         trackLocked: data.trackLocked,

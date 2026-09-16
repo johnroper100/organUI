@@ -1,6 +1,11 @@
 import { createApp } from 'vue';
 
 const socket = io();
+const oscFallbacks = {
+    memoryLevelUp: 2038, memoryLevelDown: 2039, generalCancel: 2000,
+    trackUp: 2031, trackDown: 2032, toggleTrackLock: 2034,
+    recordToggle: 2035, playToggle: 2036
+};
 const feedback = {
     siteName: '', fugaraPairingCode: '', remoteTarget: '', folderTrackName: '', memoryLevel: '',
     localMemoryLevel: '', trackNum: '', trackTime: '', trackLocked: 0,
@@ -17,7 +22,7 @@ const app = createApp({
             activeTab: 'overview', trackSearch: '', tabs: [{id: 'overview', label: 'Overview'}, {id: 'memory', label: 'Memory'}, {id: 'tracks', label: 'Tracks'}, {id: 'expression', label: 'Expression'}, {id: 'probes', label: 'Probes'}, {id: 'settings', label: 'Settings'}],
             alertSettings: {enabled: false, dashboard: true, email: false, recovery: true, minutes: 240, source: 'organ'},
             alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null,
-            ...feedback, connected: false, probes: [], panel: 'transposer', sheet: '', commandStatus: '',
+            ...feedback, udpAvailable: false, connected: false, probes: [], panel: 'transposer', sheet: '', commandStatus: '',
             localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', tracksPane: 'tracks',
             panels: [{id: 'sostenuto', label: 'Sostenuto'},
                 {id: 'transposer', label: 'Transposer'},
@@ -57,6 +62,15 @@ const app = createApp({
         }
     },
     methods: {
+        canCommand(action) { return this.udpAvailable || Object.hasOwn(oscFallbacks, action) || action === 'toggleStop'; },
+        visibleCustomControls(group) {
+            return group.controls.filter(control => {
+                const action = control.action;
+                if (action?.type === 'udp') return this.canCommand(action.command.action);
+                if (action?.type === 'api' && action.path === '/api/udp') return this.canCommand(action.body?.action) && this.udpAvailable;
+                return true;
+            });
+        },
         showControl(id) {
             this.selectTab(id);
         },
@@ -230,6 +244,12 @@ const app = createApp({
         },
         udp(action, values = {}) {
             if (!socket.connected) { this.commandStatus = 'Disconnected · command not sent'; return; }
+            if (!this.udpAvailable) {
+                if (action === 'toggleStop') { this.pulse('/Stops/push' + values.number); return; }
+                if (Object.hasOwn(oscFallbacks, action)) { this.tap(oscFallbacks[action]); return; }
+                this.commandStatus = 'Controller capability unavailable';
+                return;
+            }
             this.commandStatus = 'Sending…';
             socket.timeout(5000).emit('sendUDPcmd', {action, ...values}, (error, result) => {
                 this.commandStatus = error ? 'No server acknowledgement · check console before retrying' : result?.ok ? 'Command sent' : result?.error || 'Command not accepted';
@@ -282,11 +302,19 @@ const app = createApp({
 }).mount('#app');
 
 for (const name of Object.keys(feedback)) socket.on(name, value => { app[name] = value; });
+socket.on('udpAvailable', value => {
+    app.udpAvailable = value === true;
+    if (!app.udpAvailable) {
+        app.localMemory = false;
+        app.tracksPane = 'tracks';
+        if (app.sheet) app.closeSheet();
+    }
+});
 socket.on('probeReadings', readings => {
     app.probes = Array.isArray(readings) ? readings : [];
     if (!app.probes.length && app.activeTab === 'probes') app.selectTab('overview');
 });
 socket.on('remoteReply', value => { app.commandStatus = value; });
 socket.on('connect', () => { app.connected = true; app.commandStatus = ''; });
-socket.on('disconnect', () => { app.connected = false; app.commandStatus = 'Connection lost'; });
+socket.on('disconnect', () => { app.connected = false; app.udpAvailable = false; app.localMemory = false; app.commandStatus = 'Connection lost'; });
 socket.on('connect_error', () => { app.connected = false; app.commandStatus = 'Unable to connect to server'; });

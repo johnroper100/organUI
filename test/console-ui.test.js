@@ -8,7 +8,7 @@ const vm = require('node:vm');
 const { buildRemoteCommands } = require('../lib/opus-udp-protocol');
 const root = path.join(__dirname, '..');
 
-function harness({fetch: fetchMock, pathname = '/console', hash = ''} = {}) {
+function harness({fetch: fetchMock, pathname = '/console', hash = '', udpAvailable = true} = {}) {
     const sent = [], events = {}, pending = [];
     let app, now = 1000;
     const socket = {
@@ -26,6 +26,7 @@ function harness({fetch: fetchMock, pathname = '/console', hash = ''} = {}) {
         window: {location: {pathname, hash}, setTimeout: fn => pending.push(fn)},
         createApp(options) {
             app = options.data();
+            app.udpAvailable = udpAvailable;
             for (const [key, fn] of Object.entries(options.methods)) app[key] = fn.bind(app);
             for (const [key, fn] of Object.entries(options.computed)) Object.defineProperty(app, key, {get: fn.bind(app)});
             return {mount: () => app};
@@ -47,6 +48,71 @@ test('console maps memory, library and recording selection to valid controller c
         ['CA Dec Mem Level'], ['CA Inc Local Mem Level'], ['CA Goto Local Level 20'],
         ['CA Goto Folder 3'], ['RP Play 12']
     ]);
+});
+
+test('OSC-only consoles keep fallback commands and reject UDP-only actions until discovery', () => {
+    const {app, events, sent, pending} = harness({udpAvailable: false});
+    assert.equal(app.canCommand('pause'), false);
+    app.udp('pause');
+    app.udp('gotoLevel', {number: 12});
+    assert.equal(sent.length, 0);
+    app.changeMemory('Up');
+    app.udp('playToggle');
+    app.udp('toggleStop', {number: 13});
+    assert.deepEqual(sent.map(item => item.payload.cmd), ['/OPTICS/special2038', '/OPTICS/special2036', '/Stops/push13']);
+    pending.forEach(fn => fn());
+    assert.deepEqual(sent.slice(3).map(item => item.payload.state), [0, 0, 0]);
+    events.udpAvailable(true);
+    assert.equal(app.canCommand('pause'), true);
+    app.udp('pause');
+    assert.equal(sent.at(-1).name, 'sendUDPcmd');
+    app.localMemory = true;
+    app.tracksPane = 'rename';
+    events.udpAvailable(false);
+    assert.equal(app.localMemory, false);
+    assert.equal(app.tracksPane, 'tracks');
+    assert.equal(app.canCommand('pause'), false);
+});
+
+test('UDP-only controls are absent from rendered controls until capability arrives', async () => {
+    const {app, events} = harness({udpAvailable: false});
+    const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
+    const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
+    const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
+    const start = html.indexOf('<footer class="console-footer"');
+    const render = compile(html.slice(start, html.indexOf('</footer>', start) + 9), {decodeEntities: text => text});
+    function labels() {
+        const found = [];
+        function walk(node) {
+            if (!node || typeof node !== 'object') return;
+            if (node.type === 'button') found.push(node.children);
+            if (Array.isArray(node.children)) node.children.forEach(walk);
+        }
+        walk(render(app, []));
+        return found;
+    }
+    app.selectTab('tracks');
+    for (const label of ['Record', 'Play', 'Stop', 'Previous track', 'Next track']) assert.ok(labels().includes(label));
+    for (const label of ['Pause', 'Play selected track']) assert.ok(!labels().includes(label));
+    events.udpAvailable(true);
+    for (const label of ['Pause', 'Play selected track', 'Previous track', 'Next track']) assert.ok(labels().includes(label));
+    events.udpAvailable(false);
+    for (const label of ['Pause', 'Play selected track']) assert.ok(!labels().includes(label));
+    app.selectTab('memory');
+    assert.ok(!labels().includes('Go to level'));
+    assert.ok(!labels().includes('Use divisional'));
+    assert.ok(labels().includes('Up'));
+    events.udpAvailable(true);
+    assert.ok(labels().includes('Go to level'));
+    assert.ok(labels().includes('Use divisional'));
+    const group = {controls: [
+        {id: 'pause', action: {type: 'udp', command: {action: 'pause'}}},
+        {id: 'play', action: {type: 'udp', command: {action: 'playToggle'}}}
+    ]};
+    assert.equal(app.visibleCustomControls(group).length, 2);
+    events.udpAvailable(false);
+    assert.equal(app.visibleCustomControls(group).length, 1);
+    assert.equal(app.visibleCustomControls(group)[0].id, 'play');
 });
 
 test('console sends paired OSC pulses and preserves expression channel indices', () => {
@@ -247,7 +313,7 @@ test('overview footers operate in place and disable controller commands offline'
     buttons(controls['Current track controls']).forEach(button => button.props.onClick());
     buttons(controls['Transposer controls']).forEach(button => button.props.onClick());
     assert.deepEqual(sent.filter(item => item.name === 'sendUDPcmd').map(item => item.payload.action), [
-        'localMemoryLevelDown', 'localMemoryLevelUp', 'pause', 'playToggle',
+        'localMemoryLevelDown', 'localMemoryLevelUp', 'trackDown', 'trackUp', 'pause', 'playToggle',
         'transposerDown', 'transposerNeutral', 'transposerUp'
     ]);
     assert.deepEqual(sent.filter(item => item.name === 'sendOSCcmd').map(item => item.payload.cmd), [
