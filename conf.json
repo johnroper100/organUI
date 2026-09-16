@@ -3,7 +3,7 @@
     "numFolders": 999,
     "numLevels": 999,
     "numTracks": 999,
-    "udpPort": 5005,
+    "udpPort": 8000,
     "organ": {
         "integrationMode": "control-and-monitor",
         "powerSensing": {
