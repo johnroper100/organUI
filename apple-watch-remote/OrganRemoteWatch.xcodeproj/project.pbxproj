@@ -384,6 +384,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8LT2R62DJP;
+				/* The iOS stub must not thin assets for the selected Watch model. */
+				ENABLE_ONLY_ACTIVE_RESOURCES = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_KEY_CFBundleDisplayName = OrganWatchRemote;
@@ -412,6 +414,8 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = 8LT2R62DJP;
+				/* The iOS stub must not thin assets for the selected Watch model. */
+				ENABLE_ONLY_ACTIVE_RESOURCES = NO;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				INFOPLIST_KEY_CFBundleDisplayName = OrganWatchRemote;
