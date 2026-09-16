@@ -14,6 +14,10 @@ over Bonjour, so it does not depend on a fixed IP address.
 
 ## Build Notes
 
+The app targets Apple Watch Series 10 and newer running watchOS 27.0 or later.
+Build with Xcode and the watchOS 27 SDK or newer. The OS requirement does not
+exclude other Apple Watch models that support watchOS 27.
+
 1. Open [OrganRemoteWatch.xcodeproj](./OrganRemoteWatch.xcodeproj) in Xcode on
    a Mac.
 2. Set your Apple Developer team and replace the placeholder bundle ID.
