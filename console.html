@@ -35,7 +35,7 @@
                 </article>
                 <article class="status-card track-status">
                     <button class="status-card-readout" @click="selectTab('tracks')"><span>Current track</span><strong class="green">{{ trackNum || '—' }}</strong><small>{{ currentTrackName || 'Touch to browse tracks' }}<span v-if="trackLocked"> · Record protected</span></small></button>
-                    <footer class="status-card-controls" aria-label="Current track controls"><button :disabled="!connected" @click="udp('trackDown')">Previous</button><button :disabled="!connected" @click="udp('trackUp')">Next</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button v-if="canCommand('pause')" :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></footer>
+                    <footer class="status-card-controls" aria-label="Current track controls"><button :disabled="!connected" @click="udp('trackDown')">Back</button><button :disabled="!connected" @click="udp('trackUp')">Next</button><button :disabled="!connected" @click="tap(2037)">Stop</button><button v-if="canCommand('pause')" :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button></footer>
                 </article>
                 <article v-if="udpAvailable" class="status-card transposer-status">
                     <div class="status-card-readout"><span>Transposer</span><strong class="yellow">{{ transposeText }}</strong></div>
@@ -228,8 +228,8 @@
                     <div class="transport-context"><span>Current track · <strong class="green">{{ trackNum || '—' }}</strong> · {{ currentTrackName || 'No track selected' }}<span v-if="trackLocked"> · Record protected</span></span><span>{{ trackTime || '— : —' }}</span></div>
                     <div v-if="activeTab === 'tracks' && udpAvailable" class="selected-track-action"><span>Selected track · {{ selectedNumber }}<strong>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</strong></span><button class="primary" :disabled="!connected" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button></div>
                     <div class="button-row">
-                        <button :disabled="!connected" @click="udp('trackDown')">Previous track</button>
-                        <button :disabled="!connected" @click="udp('trackUp')">Next track</button>
+                        <button :disabled="!connected" @click="udp('trackDown')">Back</button>
+                        <button :disabled="!connected" @click="udp('trackUp')">Next</button>
                         <div class="record-controls" role="group" aria-label="Recording controls">
                             <button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button>
                             <button class="record-lock" :class="{selected: trackLocked}" :disabled="!connected" :aria-pressed="!!trackLocked" aria-label="Record protection for current track" :title="trackLocked ? 'Unlock recording for current track' : 'Lock recording for current track'" @click="udp('toggleTrackLock')">
