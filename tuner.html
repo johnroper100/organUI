@@ -607,7 +607,9 @@
                         'sendUDPcmd',
                         {action: action, ...values},
                         (result) => {
-                            if (!result?.ok) {
+                            if (result?.ok && result.transport === 'osc') {
+                                this.remoteReply = 'Queued via OSC: ' + result.commands.join(' · ');
+                            } else if (!result?.ok) {
                                 this.remoteReply =
                                     result?.error || 'UDP command was not accepted';
                             }

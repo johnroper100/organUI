@@ -19,6 +19,18 @@ track/folder renaming, and direct folder selection—use UDP. Faders, tuning
 controls, the dedicated Stop control, and other features not covered by the
 remote API continue to use OSC.
 
+Once a controller address is known, the gateway also sends its SSDP registration
+directly to that address on UDP 1900, using the same source socket as API commands.
+This supplements multicast registration on networks where multicast is unavailable.
+OSC controls are redirected to the remote API only after receiving a UDP API reply;
+until then they retain their native OSC behavior. API controls also use their
+documented OSC equivalents while UDP is unavailable or capacity discovery runs.
+These include memory up/down, track movement/playback, recording, record protection,
+general cancel, and stop/button controls. Commands without an OSC equivalent
+(such as transposer, pause, local memory, and name queries) report that UDP is
+required. A read-only OLED query checks the API every five seconds; after 15
+seconds without a reply, controls return to OSC automatically.
+
 Discovery does not require a fixed controller address:
 
 1. A controller learned from its SSDP announcement is preferred.

@@ -1194,7 +1194,7 @@
                         {action: action, ...values},
                         result => {
                             this.commandStatus = result?.ok
-                                ? "Sent: " + result.commands.join(" · ")
+                                ? (result.transport === 'osc' ? "Queued via OSC: " : "Sent via UDP: ") + result.commands.join(" · ")
                                 : result?.error || "UDP command was not accepted";
                         }
                     );

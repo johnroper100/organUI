@@ -232,7 +232,7 @@ const app = createApp({
             if (!socket.connected) { this.commandStatus = 'Disconnected · command not sent'; return; }
             this.commandStatus = 'Sending…';
             socket.timeout(5000).emit('sendUDPcmd', {action, ...values}, (error, result) => {
-                this.commandStatus = error ? 'No server acknowledgement · check console before retrying' : result?.ok ? 'Command sent' : result?.error || 'Command not accepted';
+                this.commandStatus = error ? 'No server acknowledgement · check console before retrying' : result?.ok ? (result.transport === 'osc' ? 'Queued via OSC' : 'Command sent') : result?.error || 'Command not accepted';
             });
         },
         pulse(cmd) {

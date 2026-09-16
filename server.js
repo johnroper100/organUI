@@ -4,6 +4,7 @@ const http = require('http');
 const os = require('os');
 const fs = require('fs');
 const { loadConsoleControls } = require('./lib/console-controls');
+const {buildOSCFallback, OSCFallbackQueue} = require('./lib/remote-osc-fallback');
 const { Bonjour } = require('bonjour-service');
 const { Server: SocketServer } = require('socket.io');
 const { Server: OSCServer } = require('node-osc');
@@ -590,6 +591,9 @@ function handleCapacityDiscoveryFailure(error) {
     console.warn(
         `Capacity discovery failed; using configured limits: ${error.message}`
     );
+    if (!opusUdpTransport.hasReplied) {
+        console.warn(`No remote UDP API reply from ${opusUdpTransport.targetHost}:${opusUdpPort}. OSC discovery alone does not confirm UDP API connectivity; check controller API support and UDP 1900/5005 reachability.`);
+    }
     applyRuntimeCapacity({
         numTracks: conf.numTracks,
         numFolders: conf.numFolders,
@@ -687,20 +691,31 @@ function sendRawOSCCommand(cmd, state) {
 }
 
 const oscFallbackPresses = new Set();
+const oscFallbackQueue = new OSCFallbackQueue({
+    send: sendRawOSCCommand,
+    onError: () => console.warn('OSC fallback command could not be sent')
+});
 
 function sendUDPRequest(request) {
-    if (capacityDiscovery?.running) {
-        return {
-            ok: false,
-            error: 'controller capacity discovery is in progress'
-        };
-    }
-
     let commands;
     try {
         commands = buildRemoteCommands(request, remoteLimits);
     } catch (error) {
         return { ok: false, error: error.message };
+    }
+
+    if (!opusUdpTransport.hasReplied || capacityDiscovery?.running) {
+        let fallback;
+        try { fallback = buildOSCFallback(request, remoteLimits); }
+        catch (error) { return {ok: false, error: error.message}; }
+        if (fallback === null) {
+            return {ok: false, error: `${request.action} requires the UDP API; no OSC equivalent is available${capacityDiscovery?.running ? ' during capacity discovery' : ' while UDP is disconnected'}`};
+        }
+        if (opusUdpTransport.targetHost === null && oscTransport.targetHost === null) {
+            return {ok: false, error: 'no controller has been discovered'};
+        }
+        oscFallbackQueue.enqueue(fallback);
+        return {ok: true, transport: 'osc', commands: fallback.map(command => command.cmd)};
     }
 
     for (const command of commands) {
@@ -735,7 +750,7 @@ function sendUDPRequest(request) {
     }
 
     updateRemoteTarget();
-    return { ok: true, commands };
+    return { ok: true, transport: 'udp', commands };
 }
 
 function inventoryKnownCount(names) {
@@ -895,14 +910,22 @@ function dispatchOSCCommand(cmd, state) {
         return false;
     }
 
+    if (state === 0 && oscFallbackPresses.has(cmd)) {
+        oscFallbackPresses.delete(cmd);
+        return sendRawOSCCommand(cmd, state);
+    }
+
     const mapping = mapOSCCommandToRemote(validation.value);
     if (mapping === null) {
         return sendRawOSCCommand(cmd, state);
     }
 
-    if (state === 0 && oscFallbackPresses.has(cmd)) {
-        oscFallbackPresses.delete(cmd);
-        return sendRawOSCCommand(cmd, state);
+    // Knowing the host from OSC or SSDP does not prove the remote API works.
+    // Preserve native OSC controls until a UDP response confirms that path.
+    if (!opusUdpTransport.hasReplied) {
+        const sent = sendRawOSCCommand(cmd, state);
+        if (sent && state !== 0) oscFallbackPresses.add(cmd);
+        return sent;
     }
 
     for (const request of mapping.requests) {
@@ -1600,6 +1623,7 @@ function shutdown(exitCode = 0) {
         nameInventoryTimer = null;
     }
     capacityDiscovery?.cancel();
+    oscFallbackQueue.close();
 
     for (const [command, releaseTimeout] of pendingMomentaryReleases) {
         clearTimeout(releaseTimeout);

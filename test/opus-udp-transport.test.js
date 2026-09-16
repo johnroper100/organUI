@@ -149,8 +149,13 @@ test('discovers with SSDP, advertises, and sends framed commands', async () => {
     assert.deepEqual(discovered, ['10.0.0.20']);
     assert.equal(transport.targetHost, '10.0.0.20');
     assert.equal(transport.targetSource, 'ssdp');
+    assert.equal(transport.hasReplied, false);
 
     assert.equal(transport.send('RP Track Up'), true);
+    const registration = commandSocket.sent.at(-2);
+    assert.equal(registration.host, '10.0.0.20');
+    assert.equal(registration.port, SSDP_PORT);
+    assert.match(registration.buffer.toString('ascii'), /NT:urn:Opus-Two API/u);
     const datagram = commandSocket.sent.at(-1);
     assert.equal(datagram.host, '10.0.0.20');
     assert.equal(datagram.port, 5005);
@@ -161,10 +166,53 @@ test('discovers with SSDP, advertises, and sends framed commands', async () => {
         { address: '10.0.0.20' }
     );
     assert.deepEqual(replies, ['OK']);
+    assert.equal(transport.hasReplied, true);
 
     transport.close();
     assert.equal(commandSocket.closed, true);
     assert.equal(ssdpSocket.closed, true);
+});
+
+test('registers the OSC-discovered host without multicast and renews registration', async () => {
+    const commandSocket = new FakeSocket();
+    const ssdpSocket = new FakeSocket();
+    let host = '10.0.0.20';
+    const transport = new OpusUDPTransport({
+        fallbackHostProvider: () => host,
+        beaconIntervalMs: 60000,
+        networkInterfaces: () => ({}),
+        createCommandSocket: () => commandSocket,
+        createSSDPSocket: () => ssdpSocket
+    });
+    try {
+        // Commands queued before listening still register before transmission.
+        transport.send('Query Get Track Name 1');
+        await nextTurn();
+        assert.deepEqual(commandSocket.sent.map(packet => packet.port), [1900, 5005]);
+        assert.ok(commandSocket.sent.every(packet => packet.host === host));
+        transport.send('Query Get Track Name 2');
+        assert.deepEqual(commandSocket.sent.map(packet => packet.port), [1900, 5005, 5005]);
+        commandSocket.emit('message', encodeEframe('OK'), {address: '10.0.0.99'});
+        assert.equal(transport.hasReplied, false);
+        commandSocket.emit('message', encodeEframe('OK'), {address: host});
+        assert.equal(transport.hasReplied, true);
+        transport.lastReplyAt = Date.now() - transport.controllerTimeoutMs - 1;
+        assert.equal(transport.hasReplied, false);
+        transport._maintainConnection();
+        assert.equal(commandSocket.sent.at(-1).buffer.subarray(14).toString('ascii').replace(/\0+$/u, ''), 'Query OLED');
+        commandSocket.emit('message', encodeEframe('OK'), {address: host});
+        assert.equal(transport.hasReplied, true);
+        transport.lastDirectAdvertisementAt = 0;
+        transport.advertise();
+        assert.equal(commandSocket.sent.at(-1).port, SSDP_PORT);
+        host = '10.0.0.30';
+        assert.equal(transport.hasReplied, false);
+        transport.send('Query Get Track Name 1');
+        assert.equal(commandSocket.sent.at(-2).port, SSDP_PORT);
+        assert.equal(commandSocket.sent.at(-2).host, host);
+    } finally {
+        transport.close();
+    }
 });
 
 test('prefers SSDP over OSC discovery and configured fallback addresses', () => {
