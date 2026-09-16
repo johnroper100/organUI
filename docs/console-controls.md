@@ -3,8 +3,19 @@
 Edit `console-controls.json` in the OrganUI directory. Each entry in `views`
 creates a tab in `/console` and a standalone page at `/console/custom/<id>`.
 The standalone page contains that view's controls and connection/command status.
-No separate HTML file is needed. The supplied installation view preserves the
-former Organist page's Nazard (stop 13) and Crescendo B (stop 22) controls.
+No separate HTML file is needed. The supplied installation view contains the
+Berkshire special controls: Pedal Gross Quint (OSC 43), Manual I/Manual II/Pedal
+sostenuto (44–46), Undo (47), Set (48), Generals 1–4 (49–52), and Next (53).
+The standalone address remains `/console/custom/installation`.
+
+Gross Quint and sostenuto use OSC `/Stops/pushN` toggles. Undo, generals, and
+Next use momentary `/Stops/triggerN` pulses. Set uses a selector because custom
+buttons send a fixed pulse rather than remaining held: select **On - capture**,
+press a general, then select **Off - recall** to release Set. Always release Set
+before recalling or leaving the page. The selector shows the last requested
+value, not confirmed controller feedback. Only physical tabs are saved; blind
+and OSC stops are not included. These numbers are OSC button IDs, not native
+combination-action stop IDs, so the controls explicitly use the OSC transport.
 
 After editing, refresh a page or choose **Settings → Reload custom views** in
 the console. Other open pages retain their configuration until refreshed.

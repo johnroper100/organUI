@@ -3,28 +3,144 @@
   "views": [
     {
       "id": "installation",
-      "title": "Installation",
-      "description": "Custom controls for this organ.",
+      "title": "Berkshire",
+      "description": "Berkshire special controls. Physical tabs, blind combinations, and OSC stops are additive; saving captures only the physical tabs.",
       "groups": [
         {
-          "title": "Stop controls",
+          "title": "Special stops and sostenuto",
           "controls": [
             {
-              "id": "swell-nazard",
-              "type": "stop",
-              "label": "Swell Nazard 2 2/3'",
-              "number": 13
+              "id": "gross-quint",
+              "type": "button",
+              "label": "Pedal Gross Quint 10 2/3'",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/push43"
+              },
+              "feedback": {
+                "type": "stop",
+                "number": 43
+              }
+            },
+            {
+              "id": "manual-i-sostenuto",
+              "type": "button",
+              "label": "Manual I Sostenuto",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/push44"
+              },
+              "feedback": {
+                "type": "stop",
+                "number": 44
+              }
+            },
+            {
+              "id": "manual-ii-sostenuto",
+              "type": "button",
+              "label": "Manual II Sostenuto",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/push45"
+              },
+              "feedback": {
+                "type": "stop",
+                "number": 45
+              }
+            },
+            {
+              "id": "pedal-sostenuto",
+              "type": "button",
+              "label": "Pedal Sostenuto",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/push46"
+              },
+              "feedback": {
+                "type": "stop",
+                "number": 46
+              }
             }
           ]
         },
         {
-          "title": "Console controls",
+          "title": "Combination action",
           "controls": [
             {
-              "id": "crescendo-b",
-              "type": "stop",
-              "label": "Crescendo B",
-              "number": 22
+              "id": "undo",
+              "type": "button",
+              "label": "Undo",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/trigger47"
+              }
+            },
+            {
+              "id": "set",
+              "type": "select",
+              "label": "Set",
+              "description": "To save the physical tabs: choose On, press a general, then choose Off before recalling. Always release Set with Off when finished.",
+              "options": [
+                {
+                  "label": "Off - recall",
+                  "value": 0
+                },
+                {
+                  "label": "On - capture",
+                  "value": 1
+                }
+              ],
+              "action": {
+                "type": "osc",
+                "mode": "send",
+                "cmd": "/Stops/trigger48",
+                "value": "$value"
+              }
+            },
+            {
+              "id": "general-1",
+              "type": "button",
+              "label": "General 1",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/trigger49"
+              }
+            },
+            {
+              "id": "general-2",
+              "type": "button",
+              "label": "General 2",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/trigger50"
+              }
+            },
+            {
+              "id": "general-3",
+              "type": "button",
+              "label": "General 3",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/trigger51"
+              }
+            },
+            {
+              "id": "general-4",
+              "type": "button",
+              "label": "General 4",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/trigger52"
+              }
+            },
+            {
+              "id": "next",
+              "type": "button",
+              "label": "Next",
+              "action": {
+                "type": "osc",
+                "cmd": "/Stops/trigger53"
+              }
             }
           ]
         }

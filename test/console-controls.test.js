@@ -9,9 +9,16 @@ const root = path.join(__dirname, '..');
 const config = controls => ({version: 1, views: [{id: 'test', title: 'Test', groups: [{title: 'Controls', controls}]}]});
 const button = action => ({id: 'button', type: 'button', label: 'Command', action});
 
-test('shipped controls preserve former installation controls and documented multi-view example validates', () => {
+test('shipped Berkshire controls use OSC toggles, momentary actions and explicit Set release; documented example validates', () => {
     const shipped = loadConsoleControls(path.join(root, 'console-controls.json'));
-    assert.deepEqual(shipped.views[0].groups.flatMap(group => group.controls.map(control => control.number)), [13, 22]);
+    assert.equal(shipped.views[0].id, 'installation');
+    const [specials, combinations] = shipped.views[0].groups;
+    assert.deepEqual(specials.controls.map(control => control.action.cmd), [43, 44, 45, 46].map(number => '/Stops/push' + number));
+    assert.ok(specials.controls.every(control => control.action.type === 'osc'));
+    const set = combinations.controls.find(control => control.id === 'set');
+    assert.deepEqual(set.options.map(option => option.value), [0, 1]);
+    assert.deepEqual(set.action, {type: 'osc', mode: 'send', cmd: '/Stops/trigger48', value: '$value'});
+    assert.deepEqual(combinations.controls.filter(control => control !== set).map(control => control.action), [47, 49, 50, 51, 52, 53].map(number => ({type: 'osc', cmd: '/Stops/trigger' + number})));
     const docs = fs.readFileSync(path.join(root, 'docs/console-controls.md'), 'utf8');
     const example = JSON.parse(docs.match(/```json\s*([\s\S]*?)```/)[1]);
     assert.equal(validateConsoleControls(example).views.length, 2);
