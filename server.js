@@ -674,10 +674,11 @@ function updateRemoteTarget() {
     updateScalar('remoteTarget', 'remoteTarget', label);
 }
 
-let lastUDPReplyAt = 0;
 function updateUDPCapability() {
+    // SSDP identifies a controller, but only a live API reply establishes
+    // command support. Match sendUDPRequest while capacity probes run too.
     updateScalar('udpAvailable', 'udpAvailable',
-        opusUdpTransport.discoveredHost !== null || Date.now() - lastUDPReplyAt < 15000);
+        opusUdpTransport.hasReplied && !capacityDiscovery?.running);
 }
 setInterval(updateUDPCapability, 1000).unref();
 
@@ -958,11 +959,9 @@ function handleRemoteReply(reply, rinfo) {
         return;
     }
 
-    lastUDPReplyAt = Date.now();
-    updateUDPCapability();
-
     updateScalar('remoteReply', 'remoteReply', reply);
     capacityDiscovery?.handleReply(reply);
+    updateUDPCapability();
     if (netAddressIsUseful(rinfo?.address)) {
         updateScalar(
             'remoteTarget',

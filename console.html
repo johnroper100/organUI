@@ -13,7 +13,7 @@
     <div class="console-shell">
         <header class="console-header" v-if="!standaloneView">
             <div class="brand"><a href="/">ORGAN<span>UI</span></a><small>{{ siteName || 'Organ console' }}</small></div>
-            <button v-if="udpAvailable" class="folder-button" @click="openSheet('library')"><small>Organist folder</small><span>{{ folderTrackName || 'Select folder' }}</span></button>
+            <button class="folder-button" @click="openSheet('library')"><small>Organist folder <span v-if="organistNumber">{{ organistNumber }}</span></small><span>{{ currentFolderName }}</span></button>
         </header>
         <nav v-if="!standaloneView" class="console-tabs" role="tablist" aria-label="Console views">
             <button v-for="item in visibleTabs" :key="item.id" :id="'tab-' + item.id" role="tab" :aria-selected="activeTab === item.id" :aria-controls="'view-' + item.id" :tabindex="activeTab === item.id ? 0 : -1" :class="{selected: activeTab === item.id}" @click="selectTab(item.id)" @keydown="tabKeydown($event, item.id)">{{ item.label }}</button>
@@ -25,7 +25,8 @@
         </header>
         <nav v-if="!standaloneView" v-show="activeTab === 'tracks'" class="track-pages" aria-label="Track controls">
             <button :class="{selected: tracksPane === 'tracks'}" :aria-pressed="tracksPane === 'tracks'" aria-controls="track-inventory" @click="tracksPane = 'tracks'">Tracks</button>
-            <button v-if="udpAvailable" :class="{selected: tracksPane === 'rename'}" :aria-pressed="tracksPane === 'rename'" aria-controls="track-rename" @click="tracksPane = 'rename'">Rename</button>
+            <button :class="{selected: tracksPane === 'rename'}" :aria-pressed="tracksPane === 'rename'" aria-controls="track-rename" @click="tracksPane = 'rename'">Rename</button>
+            <button :disabled="!connected" @click="openSheet('copy')">Copy track</button>
         </nav>
         <main v-if="!standaloneView" v-show="activeTab === 'overview'" id="view-overview" role="tabpanel" aria-labelledby="tab-overview" tabindex="0" class="console-grid">
             <div class="overview-status" aria-label="Console status">
@@ -51,8 +52,8 @@
                         </span>
                     </button>
                 </article>
-                <article class="status-card expression-status">
-                    <button class="status-card-readout" @click="showControl('expression')"><span>Expression & crescendo</span><span class="expression-summary" v-if="namedExpressions.length"><small v-for="exp in namedExpressions" :key="exp.id">{{ exp.name }} <strong>{{ Math.round(exp.value * 100) }}%</strong></small></span><small v-else>Waiting for expression controls</small></button>
+                <article v-if="namedExpressions.length" class="status-card expression-status">
+                    <button class="status-card-readout" @click="showControl('expression')"><span>Expression & crescendo</span><span class="expression-summary"><small v-for="exp in namedExpressions" :key="exp.id">{{ exp.name }} <strong>{{ Math.round(exp.value * 100) }}%</strong></small></span></button>
                     <footer v-if="namedExpressions.length" class="status-card-controls expression-quick-controls" aria-label="Expression and crescendo controls">
                         <label v-for="exp in namedExpressions" :key="exp.id"><span>{{ exp.name }}</span><input type="range" min="0" max="1" step="0.01" :value="exp.value" :aria-label="exp.name" :disabled="!connected" @input="moveFader(exp.id, $event.target.value)"></label>
                     </footer>
@@ -65,8 +66,12 @@
                 <label>{{ localMemory ? 'Divisional memory level' : 'Memory level' }}<input class="number-input red" type="number" min="1" :max="numLevels" v-model.number="levelNumber" required></label>
                 <p class="muted">{{ localMemory ? 'Divisional memory level' : 'Memory level' }} · {{ shownMemory || '—' }}</p>
             </form>
+            <div v-else class="control-workspace memory-workspace">
+                <span class="eyebrow">Memory level</span><output class="panel-readout red">{{ memoryLevel || '—' }}</output>
+                <p class="muted">Use Down and Up to select the memory level. Direct level selection and divisional memory require the remote API.</p>
+            </div>
         </section>
-        <section v-if="!standaloneView" v-show="activeTab === 'expression'" id="view-expression" role="tabpanel" aria-labelledby="tab-expression" tabindex="0" class="tab-page">
+        <section v-if="!standaloneView && namedExpressions.length" v-show="activeTab === 'expression'" id="view-expression" role="tabpanel" aria-labelledby="tab-expression" tabindex="0" class="tab-page">
             <section id="control-expression" class="control-workspace expression-workspace" aria-label="Expression and crescendo">
                 <div class="expression-bars" v-if="namedExpressions.length">
                     <label class="expression-channel" v-for="exp in namedExpressions" :key="exp.id" :class="{crescendo: /cres/i.test(exp.name)}">
@@ -75,7 +80,6 @@
                         <span class="bar-label">{{ exp.name }}</span>
                     </label>
                 </div>
-                <div class="empty-state" v-else>Waiting for expression controls</div>
             </section>
         </section>
 
@@ -110,19 +114,35 @@
             </section>
         </section>
         <section v-if="!standaloneView" v-show="activeTab === 'tracks'" id="view-tracks" role="tabpanel" aria-labelledby="tab-tracks" tabindex="0" class="tab-page tracks-layout">
-            <section v-if="udpAvailable" id="track-inventory" class="tile tab-card track-inventory" :class="{'is-current': tracksPane === 'tracks'}">
+            <section id="track-inventory" class="tile tab-card track-inventory" :class="{'is-current': tracksPane === 'tracks'}">
+                <template v-if="udpAvailable">
                 <label>Find a track<input type="search" v-model="trackSearch" placeholder="Track number or name"></label>
-                <p class="muted">{{ folderTrackName || 'Current organist folder' }} · {{ filteredTracks.length }} tracks</p>
+                <p class="muted">{{ currentFolderName }} · {{ filteredTracks.length }} tracks</p>
                 <div class="track-list" aria-label="Tracks">
                     <button v-for="entry in filteredTracks" :key="entry.number" :class="{selected: selectedNumber === entry.number}" :aria-pressed="selectedNumber === entry.number" @click="selectedNumber = entry.number; renameText = ''"><span class="green">{{ entry.number }}</span><span>{{ entry.name || 'Unnamed track' }}</span><small v-if="Number(trackNum) === entry.number">Current</small></button>
                     <p class="empty-state" v-if="!filteredTracks.length">No tracks match your search.</p>
                 </div>
+                </template>
+                <template v-else>
+                    <h2>Current track · {{ trackNum || '—' }}</h2>
+                    <p class="muted">{{ currentFolderName }}</p>
+                    <div class="button-row" aria-label="Browse current track"><button :disabled="!connected" @click="udp('trackDown', {count: 10})">Back 10</button><button :disabled="!connected" @click="udp('trackUp', {count: 10})">Forward 10</button></div>
+                    <label>Track to play<input type="number" min="1" :max="numTracks" v-model.number="selectedNumber" required></label>
+                    <p class="muted">Use Back and Next below to browse without playing. Entering a number does not change the current track; press Play selected track to start it.</p>
+                </template>
             </section>
-            <div v-if="udpAvailable" class="track-tools">
+            <div class="track-tools">
                 <section id="track-rename" class="tile tab-card selected-track-tools" :class="{'is-current': tracksPane === 'rename'}">
+                    <template v-if="udpAvailable">
                     <h2>Selected track · {{ selectedNumber }}</h2><p>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</p>
                     <p class="muted">Selecting a track in the list does not start playback.</p>
                     <form @submit.prevent="udp('renameTrack', {number: selectedNumber, name: renameText})" class="selection-form"><label>Rename selected track<input v-model="renameText" maxlength="15" required placeholder="New name"></label><button :disabled="!connected">Rename</button></form>
+                    </template>
+                    <template v-else>
+                        <h2>Current track · {{ trackNum || '—' }}</h2>
+                        <p class="muted">Use Back and Next to choose the current track before naming it.</p>
+                        <button :disabled="!connected" @click="openNameEditor('track')">Rename current track</button>
+                    </template>
                 </section>
             </div>
         </section>
@@ -225,18 +245,18 @@
         <footer class="console-footer">
             <div v-if="!standaloneView" class="context-actions" :aria-label="pageTitle + ' controls'">
                 <template v-if="showTransport">
-                    <div class="transport-context"><span>Current track · <strong class="green">{{ trackNum || '—' }}</strong> · {{ currentTrackName || 'No track selected' }}<span v-if="trackLocked"> · Record protected</span></span><span>{{ trackTime || '— : —' }}</span></div>
-                    <div v-if="activeTab === 'tracks' && udpAvailable" class="selected-track-action"><span>Selected track · {{ selectedNumber }}<strong>{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</strong></span><button class="primary" :disabled="!connected" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button></div>
+                    <div class="transport-context"><span>Current track · <strong class="green">{{ trackNum || '—' }}</strong><span v-if="currentTrackName"> · {{ currentTrackName }}</span><span v-if="trackLocked"> · Record protected</span></span><span>{{ trackTime || '— : —' }}</span></div>
+                    <div v-if="activeTab === 'tracks'" class="selected-track-action"><span>Selected track · {{ selectedNumber }}<strong v-if="udpAvailable">{{ udpTrackNames[selectedNumber] || 'Unnamed track' }}</strong></span><button class="primary" :disabled="!connected || !validSelectedTrack" @click="udp('playTrack', {number: selectedNumber})">Play selected track</button></div>
                     <div class="button-row">
                         <button :disabled="!connected" @click="udp('trackDown')">Back</button>
                         <button :disabled="!connected" @click="udp('trackUp')">Next</button>
                         <div class="record-controls" role="group" aria-label="Recording controls">
-                            <button class="orange" :disabled="!connected || !!trackLocked" @click="udp('recordToggle')">Record</button>
+                            <button class="orange" :class="{selected: oscSpecialStatus[2035] === 1}" :aria-pressed="oscSpecialStatus[2035] === 1" :disabled="!connected || (!!trackLocked && oscSpecialStatus[2035] !== 1)" @click="udp('recordToggle')">Record</button>
                             <button class="record-lock" :class="{selected: trackLocked}" :disabled="!connected" :aria-pressed="!!trackLocked" aria-label="Record protection for current track" :title="trackLocked ? 'Unlock recording for current track' : 'Lock recording for current track'" @click="udp('toggleTrackLock')">
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="10" width="16" height="11" rx="2"/><path :d="trackLocked ? 'M8 10V6a4 4 0 0 1 8 0v4' : 'M8 10V6a4 4 0 0 1 8 0'"/><path d="M12 14v3"/></svg>
                             </button>
                         </div>
-                        <button :disabled="!connected" @click="tap(2037)">Stop</button><button v-if="canCommand('pause')" :disabled="!connected" @click="udp('pause')">Pause</button><button :disabled="!connected" @click="udp('playToggle')">Play</button>
+                        <button :disabled="!connected" @click="tap(2037)">Stop</button><button v-if="canCommand('pause')" :disabled="!connected" @click="udp('pause')">Pause</button><button :class="{selected: oscSpecialStatus[2036] === 1}" :aria-pressed="oscSpecialStatus[2036] === 1" :disabled="!connected" @click="udp('playToggle')">Play</button>
                     </div>
                 </template>
                 <div v-else-if="activeTab === 'memory'" class="button-row memory-footer-actions">
@@ -246,7 +266,7 @@
                 </div>
                 <div v-else-if="activeTab === 'settings'" class="button-row"><button :disabled="!alertLoaded || alertSaving" @click="saveAlertSettings">{{ alertSaving ? 'Saving…' : 'Save alert settings' }}</button><button :disabled="customLoading" @click="loadCustomViews">Reload custom views</button><button :disabled="!connected" @click="tap(2001)">Refresh console buttons</button></div>
             </div>
-            <div class="footer-status"><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span class="command-status" role="status">{{ commandStatus }}</span></div>
+            <div class="footer-status"><span class="connection" :class="{online: connected}">{{ connected ? 'Server connected' : 'Disconnected · controls unavailable' }}</span><span v-if="connected">{{ udpAvailable ? 'OSC + remote API' : 'OSC controls' }}</span><span class="command-status" role="status">{{ commandStatus }}</span></div>
         </footer>
     </div>
     <dialog v-if="!standaloneView" ref="sheet" @close="sheet = ''" @click="closeOnBackdrop" aria-labelledby="sheet-title">
@@ -266,9 +286,25 @@
                 <form @submit.prevent="renameItem" class="inline-form"><label>Rename selected {{ sheet === 'library' ? 'folder' : 'track' }}<input v-model="renameText" maxlength="15" required placeholder="New name"></label><button :disabled="!connected">Rename</button></form>
                 <div class="button-row"><button :disabled="!connected" @click="refreshNames">Refresh names</button><button v-if="sheet === 'tracks'" :disabled="!connected" @click="udp('toggleTrackLock')">{{ trackLocked ? 'Disable' : 'Enable' }} record protection</button></div>
             </template>
+            <template v-else-if="sheet === 'library'">
+                <h2>{{ currentFolderName }}</h2><p v-if="organistNumber" class="muted">Folder {{ organistNumber }}</p>
+                <div class="button-row"><button :disabled="!connected" @click="tap(2041)">Previous folder</button><button :disabled="!connected" @click="tap(2040)">Next folder</button></div>
+                <p class="muted">Use Previous and Next to select the current organist folder.</p>
+                <button :disabled="!connected" @click="openNameEditor('folder')">Rename current folder</button>
+            </template>
+            <template v-else-if="sheet === 'name'">
+                <p>Current {{ nameTarget }} · {{ nameTarget === 'folder' ? currentFolderName : (trackNum || '—') }}</p>
+                <label>Name on controller<output class="name-preview" aria-live="polite">{{ folderTrackName || 'Use the keyboard below to enter a name' }}</output></label>
+                <div class="name-keyboard" aria-label="Name entry keyboard">
+                    <div class="name-key-row" v-for="row in nameKeys" :key="row"><button v-for="key in row" :key="key" :disabled="!connected" @click="nameKey(key.charCodeAt(0))">{{ key }}</button></div>
+                    <div class="button-row"><button :disabled="!connected" @click="nameKey(28)">Shift</button><button :disabled="!connected" @click="nameKey(32)">Space</button><button :disabled="!connected" @click="nameKey(8)">Delete</button><button :disabled="!connected" @click="nameKey(27)">Clear</button></div>
+                </div>
+                <p class="muted">The preview is the controller’s shared name buffer. Clear it to start a new name; Shift changes the next character.</p>
+                <button class="primary" :disabled="!connected || !folderTrackName.trim()" @click="saveCurrentName">Save to current {{ nameTarget }}</button>
+            </template>
             <template v-else-if="sheet === 'copy'">
                 <div class="copy-grid"><section class="tile" v-for="(title, i) in ['Source track', 'Destination track']"><span class="eyebrow">{{ title }}</span><div class="copy-readout">{{ (i ? trackDupTgt : trackDupSrc) || '—' }}</div><div class="button-row"><button :disabled="!connected" @click="tap(i ? 2051 : 2049)">−10</button><button :disabled="!connected" @click="tap(i ? 2047 : 2045)">−1</button><button :disabled="!connected" @click="tap(i ? 2046 : 2044)">+1</button><button :disabled="!connected" @click="tap(i ? 2050 : 2048)">+10</button></div></section></div>
-                <p class="muted">Copy the source recording to the destination shown above.</p><button class="primary" :disabled="!connected || !trackDupSrc || !trackDupTgt" @click="tap(2052)">Copy track →</button>
+                <p class="muted">Copy the source recording to the destination shown above, replacing the destination recording.</p><p v-if="trackLocked" class="muted">Disable record protection in Tracks to enable copying.</p><button class="primary" :disabled="!connected || !copyReady" @click="tap(2052)">Copy track →</button>
             </template>
             <p class="sheet-status" role="status">{{ commandStatus }}</p>
         </div>

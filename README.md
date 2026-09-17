@@ -31,6 +31,18 @@ general cancel, and stop/button controls. Commands without an OSC equivalent
 required. A read-only OLED query checks the API every five seconds; after 15
 seconds without a reply, controls return to OSC automatically.
 
+The console adapts automatically to OSC-only organs. Memory shows the current
+level with Up/Down controls. Tracks provides current-track feedback, single and
+ten-track navigation, playback by number, recording, protection, and copying.
+The organist folder remains accessible for previous/next navigation. Rename
+uses the controller's OSC keyboard and live name buffer to save to the current
+track or folder; the folder heading shows the actual folder name independently.
+With a responding remote API, the console adds searchable inventories, direct
+folder/memory selection, full-text rename, pause, and transposer controls.
+Remote API controls stay hidden during capacity discovery or when replies expire.
+Expression and crescendo controls, including their tab and overview card, appear
+only when the controller supplies named expression channels.
+
 Discovery does not require a fixed controller address:
 
 1. A controller learned from its SSDP announcement is preferred.

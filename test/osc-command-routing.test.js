@@ -17,7 +17,7 @@ test('keeps OSC controls and their releases native until the UDP API replies', (
     const transport = {hasReplied: false};
     const context = vm.createContext({
         validateOSCCommand, mapOSCCommandToRemote, console,
-        oscFallbackPresses: new Set(), opusUdpTransport: transport,
+        oscFallbackPresses: new Set(), opusUdpTransport: transport, data: {udpAvailable: true},
         sendRawOSCCommand(cmd, state) { osc.push({cmd, state}); return true; },
         sendUDPRequest(request) { udp.push(request); return {ok: true}; }
     });
@@ -63,4 +63,27 @@ test('API actions use OSC before UDP readiness, UDP after readiness, and OSC dur
     transport.hasReplied = false;
     assert.equal(send({action: 'memoryLevelUp'}).transport, 'osc');
     assert.equal(osc.length, 3);
+});
+
+test('console capability matches command readiness rather than SSDP discovery', () => {
+    const source = fs.readFileSync(path.join(__dirname, '../server.js'), 'utf8');
+    const functionSource = source.slice(source.indexOf('function updateUDPCapability('), source.indexOf('setInterval(updateUDPCapability'));
+    const transport = {discoveredHost: '10.0.0.20', hasReplied: false};
+    const discovery = {running: false};
+    let available;
+    const context = vm.createContext({opusUdpTransport: transport, capacityDiscovery: discovery,
+        updateScalar(key, event, value) { available = value; }});
+    vm.runInContext(functionSource, context);
+    context.updateUDPCapability();
+    assert.equal(available, false, 'announcements alone cannot enable UDP controls');
+    transport.hasReplied = true;
+    discovery.running = true;
+    context.updateUDPCapability();
+    assert.equal(available, false, 'probes temporarily reserve the remote API');
+    discovery.running = false;
+    context.updateUDPCapability();
+    assert.equal(available, true);
+    transport.hasReplied = false;
+    context.updateUDPCapability();
+    assert.equal(available, false, 'expired replies restore OSC even while SSDP continues');
 });

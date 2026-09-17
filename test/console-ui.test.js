@@ -6,6 +6,8 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { buildRemoteCommands } = require('../lib/opus-udp-protocol');
+const { buildOSCFallback } = require('../lib/remote-osc-fallback');
+const { validateOSCCommand } = require('../lib/osc-protocol');
 const root = path.join(__dirname, '..');
 
 function harness({fetch: fetchMock, pathname = '/console', hash = '', udpAvailable = true} = {}) {
@@ -51,7 +53,7 @@ test('console maps memory, library and recording selection to valid controller c
 });
 
 test('OSC-only consoles keep fallback commands and reject UDP-only actions until discovery', () => {
-    const {app, events, sent, pending} = harness({udpAvailable: false});
+    const {app, events, sent} = harness({udpAvailable: false});
     assert.equal(app.canCommand('pause'), false);
     app.udp('pause');
     app.udp('gotoLevel', {number: 12});
@@ -59,9 +61,8 @@ test('OSC-only consoles keep fallback commands and reject UDP-only actions until
     app.changeMemory('Up');
     app.udp('playToggle');
     app.udp('toggleStop', {number: 13});
-    assert.deepEqual(sent.map(item => item.payload.cmd), ['/OPTICS/special2038', '/OPTICS/special2036', '/Stops/push13']);
-    pending.forEach(fn => fn());
-    assert.deepEqual(sent.slice(3).map(item => item.payload.state), [0, 0, 0]);
+    assert.ok(sent.every(item => item.name === 'sendUDPcmd'));
+    assert.deepEqual(sent.flatMap(item => buildOSCFallback(item.payload).map(command => command.cmd)), ['/OPTICS/special2038', '/OPTICS/special2036', '/Stops/push13']);
     events.udpAvailable(true);
     assert.equal(app.canCommand('pause'), true);
     app.udp('pause');
@@ -92,12 +93,13 @@ test('UDP-only controls are absent from rendered controls until capability arriv
         return found;
     }
     app.selectTab('tracks');
-    for (const label of ['Record', 'Play', 'Stop', 'Previous track', 'Next track']) assert.ok(labels().includes(label));
-    for (const label of ['Pause', 'Play selected track']) assert.ok(!labels().includes(label));
+    for (const label of ['Record', 'Play', 'Stop', 'Back', 'Next', 'Play selected track']) assert.ok(labels().includes(label));
+    assert.ok(!labels().includes('Pause'));
     events.udpAvailable(true);
-    for (const label of ['Pause', 'Play selected track', 'Previous track', 'Next track']) assert.ok(labels().includes(label));
+    for (const label of ['Pause', 'Play selected track', 'Back', 'Next']) assert.ok(labels().includes(label));
     events.udpAvailable(false);
-    for (const label of ['Pause', 'Play selected track']) assert.ok(!labels().includes(label));
+    assert.ok(!labels().includes('Pause'));
+    assert.ok(labels().includes('Play selected track'));
     app.selectTab('memory');
     assert.ok(!labels().includes('Go to level'));
     assert.ok(!labels().includes('Use divisional'));
@@ -162,6 +164,7 @@ test('overview opens detailed controls without sending commands', () => {
     assert.equal(app.activeTab, 'memory');
     assert.equal(app.pageTitle, 'Memory');
     assert.equal(app.levelNumber, 24);
+    events.expressions([{name: 'Swell', value: .3}]);
     app.showControl('expression');
     assert.equal(app.activeTab, 'expression');
     assert.equal(app.pageTitle, 'Expression');
@@ -431,4 +434,157 @@ test('selectors preserve option types, sliders validate limits, and API failures
     await app.runCustom(view, {id: 'api', type: 'button', action: {type: 'api', path: '/api/udp', body: {action: 'generalCancel'}}});
     assert.equal(app.commandStatus, 'No controller');
     assert.equal(app.customPending['test/api'], false);
+});
+
+async function renderConsole(app) {
+    const vueSource = fs.readFileSync(path.join(root, 'static/js/vue.esm-browser.js'), 'utf8');
+    const {compile} = await import('data:text/javascript;base64,' + Buffer.from(vueSource).toString('base64'));
+    const html = fs.readFileSync(path.join(root, 'console.html'), 'utf8');
+    const render = compile(html.slice(html.indexOf('<div id="app"'), html.indexOf('<script src="/socket.io')), {decodeEntities: text => text});
+    return () => {
+        const nodes = [];
+        function walk(node) {
+            if (!node || typeof node !== 'object') return;
+            nodes.push(node);
+            if (Array.isArray(node.children)) node.children.forEach(walk);
+        }
+        walk(render(app, []));
+        return nodes;
+    };
+}
+
+test('OSC workspaces render memory feedback, track selection and names without UDP inventories', async () => {
+    const {app, events, sent} = harness({udpAvailable: false});
+    events.connect();
+    events.memoryLevel('24');
+    events.trackNum('Prelude');
+    events.namingCurrentFolder('Sunday');
+    events.organistNumber('3');
+    events.folderTrackName('New name draft');
+    assert.equal(app.currentFolderName, 'Sunday');
+    app.selectTab('memory');
+    const nodes = await renderConsole(app);
+    assert.ok(nodes().some(node => node.type === 'output' && node.children === '24'));
+    app.selectTab('tracks');
+    assert.ok(nodes().some(node => node.type === 'h2' && node.children === 'Current track · Prelude'));
+    const button = label => nodes().find(node => node.type === 'button' && node.children === label);
+    button('Back 10').props.onClick();
+    button('Forward 10').props.onClick();
+    app.selectedNumber = 42;
+    button('Play selected track').props.onClick();
+    assert.deepEqual(sent.flatMap(item => buildOSCFallback(item.payload).map(command => command.cmd)), [
+        ...Array(10).fill('/OPTICS/special2032'), ...Array(10).fill('/OPTICS/special2031'), '/OPTICS/special2142'
+    ]);
+    for (const value of [0, 1.5, 901, '', NaN]) {
+        app.selectedNumber = value;
+        assert.equal(button('Play selected track').props.disabled, true);
+    }
+    app.selectedNumber = 42;
+    events.disconnect();
+    assert.equal(button('Play selected track').props.disabled, true);
+    assert.equal(button('Back 10').props.disabled, true);
+});
+
+test('OSC folder navigation and naming use current feedback and paired keyboard commands', async () => {
+    const {app, events, sent, pending, socket} = harness({udpAvailable: false});
+    app.$refs = {sheet: {showModal() {}, close() { app.sheet = ''; }}};
+    events.connect();
+    events.namingCurrentFolder('Sunday');
+    app.openSheet('library');
+    const nodes = await renderConsole(app);
+    const button = label => nodes().find(node => node.type === 'button' && node.children === label);
+    button('Previous folder').props.onClick();
+    button('Next folder').props.onClick();
+    button('Rename current folder').props.onClick();
+    assert.equal(app.sheet, 'name');
+    assert.equal(button('Save to current folder').props.disabled, true);
+    button('a').props.onClick();
+    button('Shift').props.onClick();
+    button('Space').props.onClick();
+    button('Delete').props.onClick();
+    button('Clear').props.onClick();
+    events.folderTrackName('Sunday service');
+    assert.equal(app.currentFolderName, 'Sunday');
+    button('Save to current folder').props.onClick();
+    app.openNameEditor('track');
+    button('Save to current track').props.onClick();
+    assert.deepEqual(sent.map(item => item.payload.cmd), [
+        '/OPTICS/special2041', '/OPTICS/special2040',
+        ...[97, 28, 32, 8, 27, 15, 14].map(code => '/OPTICS/specialkb' + code)
+    ]);
+    const presses = sent.length;
+    pending.forEach(fn => fn());
+    assert.equal(sent.length, presses * 2);
+    assert.ok(sent.every(item => validateOSCCommand(item.payload).ok));
+    assert.ok(sent.slice(presses).every(item => item.payload.state === 0));
+    socket.connected = false;
+    events.disconnect();
+    assert.equal(button('Save to current track').props.disabled, true);
+    assert.equal(button('a').props.disabled, true);
+    app.saveCurrentName();
+    assert.equal(sent.length, presses * 2);
+});
+
+test('copy controls remain available in both modes with controller feedback and write protection', async () => {
+    const {app, events, sent} = harness({udpAvailable: false});
+    app.$refs = {sheet: {showModal() {}, close() { app.sheet = ''; }}};
+    events.connect();
+    app.selectTab('tracks');
+    const nodes = await renderConsole(app);
+    const button = label => nodes().find(node => node.type === 'button' && node.children === label);
+    button('Copy track').props.onClick();
+    events.trackDupSrc('[source]'); events.trackDupTgt('[target]');
+    assert.equal(button('Copy track →').props.disabled, true);
+    events.trackDupSrc('12 Prelude'); events.trackDupTgt('34 Empty');
+    assert.equal(button('Copy track →').props.disabled, false);
+    events.trackLocked(1);
+    assert.equal(button('Copy track →').props.disabled, true);
+    events.trackLocked(0);
+    button('Copy track →').props.onClick();
+    assert.equal(sent.at(-1).payload.cmd, '/OPTICS/special2052');
+    events.udpAvailable(true);
+    assert.equal(button('Copy track →').props.disabled, false);
+    events.disconnect();
+    assert.equal(button('Copy track →').props.disabled, true);
+});
+
+test('custom API and UDP controls expose the same OSC fallbacks', () => {
+    const {app, events} = harness({udpAvailable: false});
+    const actions = ['playTrack', 'toggleButton', 'setButton', 'clearButton', 'pause', 'gotoLevel'];
+    for (const type of ['udp', 'api']) {
+        const controls = actions.map(action => ({id: action, action: type === 'udp'
+            ? {type, command: {action}} : {type, path: '/api/udp', body: {action}}}));
+        assert.deepEqual(Array.from(app.visibleCustomControls({controls}), control => control.id), actions.slice(0, 4));
+        events.udpAvailable(true);
+        assert.equal(app.visibleCustomControls({controls}).length, actions.length);
+        events.udpAvailable(false);
+    }
+});
+
+test('expression controls appear only after named channels are discovered', async () => {
+    const {app, events} = harness({udpAvailable: false});
+    const nodes = await renderConsole(app);
+    const hasExpressionTab = () => app.visibleTabs.some(tab => tab.id === 'expression');
+    const hasExpressionCard = () => nodes().some(node => node.props?.class?.includes('expression-status'));
+    const hasExpressionWorkspace = () => nodes().some(node => node.props?.id === 'view-expression');
+    assert.equal(hasExpressionTab(), false);
+    assert.equal(hasExpressionCard(), false);
+    assert.equal(hasExpressionWorkspace(), false);
+    events.expressions([{name: '', value: .4}]);
+    assert.equal(hasExpressionTab(), false);
+    assert.equal(hasExpressionCard(), false);
+    app.showControl('expression');
+    assert.equal(app.activeTab, 'overview');
+    events.expressions([{name: '', value: 0}, {name: 'Swell', value: .4}]);
+    assert.equal(hasExpressionTab(), true);
+    assert.equal(hasExpressionCard(), true);
+    assert.equal(hasExpressionWorkspace(), true);
+    assert.equal(app.namedExpressions[0].id, 1);
+    app.showControl('expression');
+    assert.equal(app.activeTab, 'expression');
+    events.expressions([]);
+    assert.equal(app.activeTab, 'overview');
+    assert.equal(hasExpressionTab(), false);
+    assert.equal(hasExpressionCard(), false);
+    assert.equal(hasExpressionWorkspace(), false);
 });

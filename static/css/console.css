@@ -132,6 +132,10 @@ footer { border-top: 1px solid #3e4448; flex-shrink: 0; padding: 6px 0 max(8px,e
 dialog { background: #191d20; color: #dbdcdd; border: 1px solid #41484e; border-radius: 12px; width: min(760px,calc(100% - 24px)); max-height: calc(100dvh - 24px); padding: 0; }dialog::backdrop { background: #080b0ed9; }
 .sheet-header { display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid #3d444a; padding: 8px 16px; position: sticky; top: 0; background: #191d20; z-index: 1; }.sheet-header h1 { font-size: 22px; font-weight: 400; margin: 0; overflow-wrap: anywhere; }.sheet-header button { background: transparent; font-size: 32px; }.sheet-body { padding: 20px; }.sheet-status { min-height: 22px; margin-bottom: 0; }
 .copy-grid { display: grid; grid-template-columns: repeat(auto-fit,minmax(min(100%,260px),1fr)); gap: 16px; }.copy-readout { padding: 28px 12px; font-size: 30px; text-align: center; overflow-wrap: anywhere; }.copy-grid .button-row { padding: 8px; }
+.name-preview { display: block; min-height: 64px; margin-block: 8px 16px; padding: 12px; background: #22272b; border: 1px solid #495055; border-radius: 6px; overflow-wrap: anywhere; }
+.name-keyboard { display: grid; gap: 6px; }
+.name-key-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(48px,1fr)); gap: 6px; }
+.name-key-row button { min-width: 0; min-height: 48px; padding: 8px; }
 
 .landing-shell { max-width: 880px; height: auto; min-height: 100svh; overflow: visible; }
 .landing-header { padding: 32px 0 16px; text-align: center; }.landing-brand { font-size: 25px; letter-spacing: .24em; font-weight: 300; color: #c4c7c9; }.landing-brand span { color: #858b8f; }.landing-header p { overflow-wrap: anywhere; }

@@ -1,13 +1,16 @@
 import { createApp } from 'vue';
 
 const socket = io();
-const oscFallbacks = {
-    memoryLevelUp: 2038, memoryLevelDown: 2039, generalCancel: 2000,
-    trackUp: 2031, trackDown: 2032, toggleTrackLock: 2034,
-    recordToggle: 2035, playToggle: 2036
-};
+// The server validates and serializes these actions using its OSC fallback
+// when the remote API is unavailable (including repeated presses).
+const oscFallbacks = new Set([
+    'memoryLevelUp', 'memoryLevelDown', 'generalCancel',
+    'trackUp', 'trackDown', 'toggleTrackLock', 'recordToggle', 'playToggle',
+    'playTrack', 'toggleStop', 'toggleButton', 'setButton', 'clearButton'
+]);
 const feedback = {
     siteName: '', fugaraPairingCode: '', remoteTarget: '', folderTrackName: '', memoryLevel: '',
+    namingCurrentFolder: '', organistNumber: '',
     localMemoryLevel: '', trackNum: '', trackTime: '', trackLocked: 0,
     transposer: '', sostActive: null, expressions: [], stops: [], userVars: [],
     trackDupSrc: '', trackDupTgt: '', udpTrackNames: {}, queriedFolderNames: {},
@@ -24,6 +27,7 @@ const app = createApp({
             alertStatus: {}, alertRecipients: '', alertMessage: '', alertLoaded: false, alertSaving: false, alertTimer: null,
             ...feedback, udpAvailable: false, connected: false, probes: [], panel: 'transposer', sheet: '', commandStatus: '',
             localMemory: false, levelNumber: 1, selectedNumber: 1, renameText: '', tracksPane: 'tracks',
+            nameTarget: 'track', nameKeys: ['1234567890', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm', "-.,'!?()"],
             panels: [{id: 'sostenuto', label: 'Sostenuto'},
                 {id: 'transposer', label: 'Transposer'},
                 {id: 'recorder', label: 'Record / playback'},
@@ -31,7 +35,7 @@ const app = createApp({
         };
     },
     computed: {
-        visibleTabs() { return this.tabs.filter(tab => tab.id !== 'probes' || this.probes.length); },
+        visibleTabs() { return this.tabs.filter(tab => (tab.id !== 'probes' || this.probes.length) && (tab.id !== 'expression' || this.namedExpressions.length)); },
         pageTitle() {
             return this.tabs.find(item => item.id === this.activeTab)?.label;
         },
@@ -45,6 +49,9 @@ const app = createApp({
         probeSummary() { return !this.connected ? 'Disconnected' : this.probes.length ? `${this.liveProbeCount} / ${this.probes.length} live` : 'Waiting'; },
         shownMemory() { return this.localMemory ? this.localMemoryLevel : this.memoryLevel; },
         currentTrackName() { return this.udpTrackNames[this.trackNum] || ''; },
+        currentFolderName() { return this.namingCurrentFolder || (this.organistNumber ? 'Folder ' + this.organistNumber : 'Current organist folder'); },
+        validSelectedTrack() { return Number.isInteger(this.selectedNumber) && this.selectedNumber >= 1 && this.selectedNumber <= this.numTracks; },
+        copyReady() { return !!this.trackDupSrc && !!this.trackDupTgt && this.trackDupSrc !== '[source]' && this.trackDupTgt !== '[target]' && !this.trackLocked; },
         transposeText() {
             if (this.transposer === '' || this.transposer == null) return '—';
             const value = Number(this.transposer);
@@ -54,7 +61,7 @@ const app = createApp({
             return this.expressions.map((exp, id) => ({...exp, id, value: Math.max(0, Math.min(1, Number(exp?.value) || 0))})).filter(exp => exp.name);
         },
         namedUserVars() { return this.userVars.map((item, i) => ({...item, number: i + 1})).filter(item => item.name); },
-        sheetTitle() { return {memory: 'Memory select', library: 'Organist folder', tracks: 'Tracks', copy: 'Copy track', probes: 'Probe readings', settings: 'Settings'}[this.sheet] || ''; },
+        sheetTitle() { return {memory: 'Memory select', library: 'Organist folder', tracks: 'Tracks', name: 'Rename current ' + this.nameTarget, copy: 'Copy track', probes: 'Probe readings', settings: 'Settings'}[this.sheet] || ''; },
         inventoryEntries() {
             const library = this.sheet === 'library';
             const names = library ? this.queriedFolderNames : this.udpTrackNames;
@@ -62,12 +69,12 @@ const app = createApp({
         }
     },
     methods: {
-        canCommand(action) { return this.udpAvailable || Object.hasOwn(oscFallbacks, action) || action === 'toggleStop'; },
+        canCommand(action) { return this.udpAvailable || oscFallbacks.has(action); },
         visibleCustomControls(group) {
             return group.controls.filter(control => {
                 const action = control.action;
                 if (action?.type === 'udp') return this.canCommand(action.command.action);
-                if (action?.type === 'api' && action.path === '/api/udp') return this.canCommand(action.body?.action) && this.udpAvailable;
+                if (action?.type === 'api' && action.path === '/api/udp') return this.canCommand(action.body?.action);
                 return true;
             });
         },
@@ -244,9 +251,7 @@ const app = createApp({
         },
         udp(action, values = {}) {
             if (!socket.connected) { this.commandStatus = 'Disconnected · command not sent'; return; }
-            if (!this.udpAvailable) {
-                if (action === 'toggleStop') { this.pulse('/Stops/push' + values.number); return; }
-                if (Object.hasOwn(oscFallbacks, action)) { this.tap(oscFallbacks[action]); return; }
+            if (!this.canCommand(action)) {
                 this.commandStatus = 'Controller capability unavailable';
                 return;
             }
@@ -262,6 +267,16 @@ const app = createApp({
             this.commandStatus = 'Command sent';
         },
         tap(number) { this.pulse('/OPTICS/special' + number); },
+        nameKey(code) { this.pulse('/OPTICS/specialkb' + code); },
+        openNameEditor(target) {
+            this.nameTarget = target;
+            if (this.sheet) { this.sheet = 'name'; return; }
+            this.openSheet('name');
+        },
+        saveCurrentName() {
+            if (!this.folderTrackName.trim()) return;
+            this.nameKey(this.nameTarget === 'folder' ? 15 : 14);
+        },
         changeMemory(direction) { this.udp((this.localMemory ? 'localMemoryLevel' : 'memoryLevel') + direction); },
         moveFader(id, value) {
             if (!socket.connected) return;
@@ -285,7 +300,7 @@ const app = createApp({
         chooseItem() { this.udp(this.sheet === 'library' ? 'gotoFolder' : 'playTrack', {number: this.selectedNumber}); },
         renameItem() { this.udp(this.sheet === 'library' ? 'renameFolder' : 'renameTrack', {number: this.selectedNumber, name: this.renameText}); },
         refreshNames() {
-            if (!socket.connected) return;
+            if (!socket.connected || !this.udpAvailable) return;
             socket.timeout(5000).emit('refreshNameInventory', (error, result) => {
                 this.commandStatus = error ? 'Name refresh timed out' : result?.ok ? 'Reading names from console' : result?.error || 'Could not refresh names';
             });
@@ -301,7 +316,10 @@ const app = createApp({
     beforeUnmount() { window.removeEventListener('hashchange', this.selectHashTab); window.clearInterval(this.alertTimer); }
 }).mount('#app');
 
-for (const name of Object.keys(feedback)) socket.on(name, value => { app[name] = value; });
+for (const name of Object.keys(feedback)) socket.on(name, value => {
+    app[name] = value;
+    if (name === 'expressions' && !app.namedExpressions.length && app.activeTab === 'expression') app.selectTab('overview');
+});
 socket.on('udpAvailable', value => {
     app.udpAvailable = value === true;
     if (!app.udpAvailable) {
@@ -316,5 +334,5 @@ socket.on('probeReadings', readings => {
 });
 socket.on('remoteReply', value => { app.commandStatus = value; });
 socket.on('connect', () => { app.connected = true; app.commandStatus = ''; });
-socket.on('disconnect', () => { app.connected = false; app.udpAvailable = false; app.localMemory = false; app.commandStatus = 'Connection lost'; });
+socket.on('disconnect', () => { app.connected = false; app.udpAvailable = false; app.localMemory = false; app.tracksPane = 'tracks'; app.commandStatus = 'Connection lost'; });
 socket.on('connect_error', () => { app.connected = false; app.commandStatus = 'Unable to connect to server'; });
