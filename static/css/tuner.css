@@ -1,0 +1,5 @@
+.tuner-name-editor { max-width: 760px; margin: auto; }
+.tuner-name-preview { display: block; min-height: 64px; margin: 8px 0 16px; padding: 12px; border: 1px solid #adb5bd; border-radius: 6px; overflow-wrap: anywhere; }
+.tuner-name-keyboard { display: grid; gap: 6px; }
+.tuner-name-row { display: grid; grid-template-columns: repeat(auto-fit,minmax(48px,1fr)); gap: 6px; }
+.tuner-name-row button { min-width: 0; min-height: 48px; padding: 8px; }

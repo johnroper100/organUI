@@ -57,7 +57,7 @@ for (const file of ['tuner.html']) {
         assert.match(html, /sendUDPcmd\('playTrack'/u);
         assert.match(html, /renameItem\('renameTrack'/u);
         assert.match(html, /renameItem\('renameFolder'/u);
-        assert.match(html, /UDP(?: target)?: \{\{remoteTarget\}\}/u);
+        assert.match(html, /Controller: \{\{remoteTarget\}\}/u);
     });
 }
 

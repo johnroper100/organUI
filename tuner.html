@@ -7,6 +7,7 @@
     <title>Organ Control UI - Tuner</title>
     <link href="/static/css/bootstrap.min.css" rel="stylesheet">
     <link href="/static/css/style.css" rel="stylesheet">
+    <link href="/static/css/tuner.css" rel="stylesheet">
     <script type="importmap">
         {
             "imports": {
@@ -30,15 +31,15 @@
                 <div class="col-12 col-md-4">
                     <h4 class="text-md-center">{{uptime}}</h4>
                     <div class="small text-md-center">
-                        UDP: {{remoteTarget}}
+                        {{ connected ? (udpAvailable ? 'OSC + remote API' : 'OSC controls') : 'Disconnected · controls unavailable' }} · {{remoteTarget}}
                         <span v-if="remoteReply"> · {{remoteReply}}</span>
                     </div>
                 </div>
                 <div class="col-12 col-md-4 text-md-end">
                     <h4 class="d-inline-block">Folder: {{namingCurrentFolder}}</h4>
                     <div class="d-inline-block">
-                        <button class="btn btn-sm btn-outline-light ms-3" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">↑</button>
-                        <button class="btn btn-sm btn-outline-light ms-3" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">↓</button>
+                        <button :disabled="!connected" class="btn btn-sm btn-outline-light ms-3" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">↑</button>
+                        <button :disabled="!connected" class="btn btn-sm btn-outline-light ms-3" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">↓</button>
                     </div>
                 </div>
             </div>
@@ -77,7 +78,7 @@
                         <button @click="page = 4" type="button" class="btn w-100" :class="{'btn-outline-primary': page == 4, 'btn-outline-secondary': page != 4}">Naming</button>
                     </div>
                 </div>
-                <div class="col-3 d-flex p-0">
+                <div v-if="namedExpressions.length" class="col-3 d-flex p-0">
                     <div class="container-fluid">
                         <button @click="page = 5" type="button" class="btn w-100" :class="{'btn-outline-primary': page == 5, 'btn-outline-secondary': page != 5}">Faders</button>
                     </div>
@@ -123,113 +124,113 @@
                     </div>
                     <div class="row">
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[0] == 0, 'btn-danger': pitchStatus[0] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2020', 1)" @touchend="sendOSCcmd('/OPTICS/special2020', 0, $event)">-2 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[0] == 0, 'btn-danger': pitchStatus[0] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2020', 1)" @touchend="sendOSCcmd('/OPTICS/special2020', 0, $event)">-2 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[1] == 0, 'btn-danger': pitchStatus[1] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2021', 1)" @touchend="sendOSCcmd('/OPTICS/special2021', 0, $event)">-1 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[1] == 0, 'btn-danger': pitchStatus[1] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2021', 1)" @touchend="sendOSCcmd('/OPTICS/special2021', 0, $event)">-1 oct</button>
                         </div>
                         <div class="col-4 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[2] == 0, 'btn-danger': pitchStatus[2] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2022', 1)" @touchend="sendOSCcmd('/OPTICS/special2022', 0, $event)">Unison</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[2] == 0, 'btn-danger': pitchStatus[2] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2022', 1)" @touchend="sendOSCcmd('/OPTICS/special2022', 0, $event)">Unison</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[3] == 0, 'btn-danger': pitchStatus[3] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2023', 1)" @touchend="sendOSCcmd('/OPTICS/special2023', 0, $event)">+1 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[3] == 0, 'btn-danger': pitchStatus[3] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2023', 1)" @touchend="sendOSCcmd('/OPTICS/special2023', 0, $event)">+1 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[4] == 0, 'btn-danger': pitchStatus[4] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2024', 1)" @touchend="sendOSCcmd('/OPTICS/special2024', 0, $event)">+2 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[4] == 0, 'btn-danger': pitchStatus[4] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2024', 1)" @touchend="sendOSCcmd('/OPTICS/special2024', 0, $event)">+2 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[5] == 0, 'btn-danger': pitchStatus[5] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2025', 1)" @touchend="sendOSCcmd('/OPTICS/special2025', 0, $event)">+3 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[5] == 0, 'btn-danger': pitchStatus[5] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2025', 1)" @touchend="sendOSCcmd('/OPTICS/special2025', 0, $event)">+3 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[6] == 0, 'btn-danger': pitchStatus[6] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2026', 1)" @touchend="sendOSCcmd('/OPTICS/special2026', 0, $event)">+4 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[6] == 0, 'btn-danger': pitchStatus[6] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2026', 1)" @touchend="sendOSCcmd('/OPTICS/special2026', 0, $event)">+4 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[7] == 0, 'btn-danger': pitchStatus[7] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2027', 1)" @touchend="sendOSCcmd('/OPTICS/special2027', 0, $event)">+5 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[7] == 0, 'btn-danger': pitchStatus[7] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2027', 1)" @touchend="sendOSCcmd('/OPTICS/special2027', 0, $event)">+5 oct</button>
                         </div>
                         <div class="col-2 mb-2 d-flex">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[8] == 0, 'btn-danger': pitchStatus[8] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2028', 1)" @touchend="sendOSCcmd('/OPTICS/special2028', 0, $event)">+6 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[8] == 0, 'btn-danger': pitchStatus[8] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2028', 1)" @touchend="sendOSCcmd('/OPTICS/special2028', 0, $event)">+6 oct</button>
                         </div>
                         <div class="col-2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[9] == 0, 'btn-danger': pitchStatus[9] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2029', 1)" @touchend="sendOSCcmd('/OPTICS/special2029', 0, $event)">+7 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[9] == 0, 'btn-danger': pitchStatus[9] == 1}" @touchstart="sendOSCcmd('/OPTICS/special2029', 1)" @touchend="sendOSCcmd('/OPTICS/special2029', 0, $event)">+7 oct</button>
                         </div>
                         <div class="col-2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[10] == 0, 'btn-danger': pitchStatus[10] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1898', 1)" @touchend="sendOSCcmd('/OPTICS/special1898', 0, $event)">+8 oct</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': pitchStatus[10] == 0, 'btn-danger': pitchStatus[10] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1898', 1)" @touchend="sendOSCcmd('/OPTICS/special1898', 0, $event)">+8 oct</button>
                         </div>
                     </div>
                 </div>
                 <div class="col-12 col-lg-4">
                     <div class="row mb-3">
                         <div class="col-3 d-flex">
-                            <button class="w-100 btn btn-lg btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2014', 1)" @touchend="sendOSCcmd('/OPTICS/special2014', 0, $event)">Back</button>
+                            <button :disabled="!connected" class="w-100 btn btn-lg btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2014', 1)" @touchend="sendOSCcmd('/OPTICS/special2014', 0, $event)">Back</button>
                         </div>
                         <div class="col-3 d-flex">
-                            <button class="w-100 btn btn-lg btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2015', 1)" @touchend="sendOSCcmd('/OPTICS/special2015', 0, $event)">Next</button>
+                            <button :disabled="!connected" class="w-100 btn btn-lg btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2015', 1)" @touchend="sendOSCcmd('/OPTICS/special2015', 0, $event)">Next</button>
                         </div>
                         <div class="col-6 d-flex">
-                            <button class="w-100 btn btn-lg" :class="{'btn-outline-primary': magicTunerStatus.active == 0, 'btn-danger': magicTunerStatus.active == 1}" @touchstart="sendOSCcmd('/OPTICS/special2012', 1)" @touchend="sendOSCcmd('/OPTICS/special2012', 0, $event)">Magic Tuner ({{ magicTunerStatus.currentNote }})</button>
+                            <button :disabled="!connected" class="w-100 btn btn-lg" :class="{'btn-outline-primary': magicTunerStatus.active == 0, 'btn-danger': magicTunerStatus.active == 1}" @touchstart="sendOSCcmd('/OPTICS/special2012', 1)" @touchend="sendOSCcmd('/OPTICS/special2012', 0, $event)">Magic Tuner ({{ magicTunerStatus.currentNote }})</button>
                         </div>
                     </div>
                     <div class="row mb-3 ">
                         <div class="col-4 d-flex">
-                            <button class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2000', 1)" @touchend="sendOSCcmd('/OPTICS/special2000', 0, $event)">OSC Cancel</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2000', 1)" @touchend="sendOSCcmd('/OPTICS/special2000', 0, $event)">OSC Cancel</button>
                         </div>
                         <div class="col-4 d-flex">
-                            <button class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2017', 1)" @touchend="sendOSCcmd('/OPTICS/special2017', 0, $event)">Tuner Release</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2017', 1)" @touchend="sendOSCcmd('/OPTICS/special2017', 0, $event)">Tuner Release</button>
                         </div>
                         <div class="col-4 d-flex">
-                            <button class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2013', 1)" @touchend="sendOSCcmd('/OPTICS/special2013', 0, $event)">{{magicTunerStatus.pattern}}</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2013', 1)" @touchend="sendOSCcmd('/OPTICS/special2013', 0, $event)">{{magicTunerStatus.pattern}}</button>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2016', 1)" @touchend="sendOSCcmd('/OPTICS/special2016', 0, $event)">Touch</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2016', 1)" @touchend="sendOSCcmd('/OPTICS/special2016', 0, $event)">Touch</button>
                         </div>
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': sostActive == 0, 'btn-danger': sostActive == 1}" @touchstart="sendOSCcmd('/OPTICS/special2010', 1)" @touchend="sendOSCcmd('/OPTICS/special2010', 0, $event)">Sostenuto</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': sostActive == 0, 'btn-danger': sostActive == 1}" @touchstart="sendOSCcmd('/OPTICS/special2010', 1)" @touchend="sendOSCcmd('/OPTICS/special2010', 0, $event)">Sostenuto</button>
                         </div>
                         <div class="col-4">
-                            <button class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2011', 1)" @touchend="sendOSCcmd('/OPTICS/special2011', 0, $event)">Sost. Release</button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special2011', 1)" @touchend="sendOSCcmd('/OPTICS/special2011', 0, $event)">Sost. Release</button>
                         </div>
                     </div>
                     <div class="row mb-3">
                         <div class="col-3" v-if="page == 0">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[0] == 0, 'btn-danger': presetStatus[0] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1900', 1)" @touchend="sendOSCcmd('/OPTICS/special1900', 0, $event)">Preset<b class="d-block">1</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[0] == 0, 'btn-danger': presetStatus[0] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1900', 1)" @touchend="sendOSCcmd('/OPTICS/special1900', 0, $event)">Preset<b class="d-block">1</b></button>
                         </div>
                         <div class="col-3" v-if="page == 0">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[1] == 0, 'btn-danger': presetStatus[1] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1901', 1)" @touchend="sendOSCcmd('/OPTICS/special1901', 0, $event)">Preset<b class="d-block">2</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[1] == 0, 'btn-danger': presetStatus[1] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1901', 1)" @touchend="sendOSCcmd('/OPTICS/special1901', 0, $event)">Preset<b class="d-block">2</b></button>
                         </div>
                         <div class="col-3" v-if="page == 0">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[2] == 0, 'btn-danger': presetStatus[2] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1902', 1)" @touchend="sendOSCcmd('/OPTICS/special1902', 0, $event)">Preset<b class="d-block">3</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[2] == 0, 'btn-danger': presetStatus[2] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1902', 1)" @touchend="sendOSCcmd('/OPTICS/special1902', 0, $event)">Preset<b class="d-block">3</b></button>
                         </div>
                         <div class="col-3" v-if="page == 1">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[3] == 0, 'btn-danger': presetStatus[3] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1903', 1)" @touchend="sendOSCcmd('/OPTICS/special1903', 0, $event)">Preset<b class="d-block">4</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[3] == 0, 'btn-danger': presetStatus[3] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1903', 1)" @touchend="sendOSCcmd('/OPTICS/special1903', 0, $event)">Preset<b class="d-block">4</b></button>
                         </div>
                         <div class="col-3" v-if="page == 1">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[4] == 0, 'btn-danger': presetStatus[4] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1904', 1)" @touchend="sendOSCcmd('/OPTICS/special1904', 0, $event)">Preset<b class="d-block">5</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[4] == 0, 'btn-danger': presetStatus[4] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1904', 1)" @touchend="sendOSCcmd('/OPTICS/special1904', 0, $event)">Preset<b class="d-block">5</b></button>
                         </div>
                         <div class="col-3" v-if="page == 1">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[5] == 0, 'btn-danger': presetStatus[5] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1905', 1)" @touchend="sendOSCcmd('/OPTICS/special1905', 0, $event)">Preset<b class="d-block">6</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[5] == 0, 'btn-danger': presetStatus[5] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1905', 1)" @touchend="sendOSCcmd('/OPTICS/special1905', 0, $event)">Preset<b class="d-block">6</b></button>
                         </div>
                         <div class="col-3" v-if="page == 2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[6] == 0, 'btn-danger': presetStatus[6] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1906', 1)" @touchend="sendOSCcmd('/OPTICS/special1906', 0, $event)">Preset<b class="d-block">7</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[6] == 0, 'btn-danger': presetStatus[6] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1906', 1)" @touchend="sendOSCcmd('/OPTICS/special1906', 0, $event)">Preset<b class="d-block">7</b></button>
                         </div>
                         <div class="col-3" v-if="page == 2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[7] == 0, 'btn-danger': presetStatus[7] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1907', 1)" @touchend="sendOSCcmd('/OPTICS/special1907', 0, $event)">Preset<b class="d-block">8</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[7] == 0, 'btn-danger': presetStatus[7] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1907', 1)" @touchend="sendOSCcmd('/OPTICS/special1907', 0, $event)">Preset<b class="d-block">8</b></button>
                         </div>
                         <div class="col-3" v-if="page == 2">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[8] == 0, 'btn-danger': presetStatus[8] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1908', 1)" @touchend="sendOSCcmd('/OPTICS/special1908', 0, $event)">Preset<b class="d-block">9</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[8] == 0, 'btn-danger': presetStatus[8] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1908', 1)" @touchend="sendOSCcmd('/OPTICS/special1908', 0, $event)">Preset<b class="d-block">9</b></button>
                         </div>
                         <div class="col-3" v-if="page == 3">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[9] == 0, 'btn-danger': presetStatus[9] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1909', 1)" @touchend="sendOSCcmd('/OPTICS/special1909', 0, $event)">Preset<b class="d-block">10</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[9] == 0, 'btn-danger': presetStatus[9] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1909', 1)" @touchend="sendOSCcmd('/OPTICS/special1909', 0, $event)">Preset<b class="d-block">10</b></button>
                         </div>
                         <div class="col-3" v-if="page == 3">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[10] == 0, 'btn-danger': presetStatus[10] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1910', 1)" @touchend="sendOSCcmd('/OPTICS/special1910', 0, $event)">Preset<b class="d-block">11</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[10] == 0, 'btn-danger': presetStatus[10] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1910', 1)" @touchend="sendOSCcmd('/OPTICS/special1910', 0, $event)">Preset<b class="d-block">11</b></button>
                         </div>
                         <div class="col-3" v-if="page == 3">
-                            <button class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[11] == 0, 'btn-danger': presetStatus[11] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1911', 1)" @touchend="sendOSCcmd('/OPTICS/special1911', 0, $event)">Preset<b class="d-block">12</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm" :class="{'btn-outline-primary': presetStatus[11] == 0, 'btn-danger': presetStatus[11] == 1}" @touchstart="sendOSCcmd('/OPTICS/special1911', 1)" @touchend="sendOSCcmd('/OPTICS/special1911', 0, $event)">Preset<b class="d-block">12</b></button>
                         </div>
                         <div class="col-3">
-                            <button class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special1999', 1)" @touchend="sendOSCcmd('/OPTICS/special1999', 0, $event)">Preset<b class="d-block">Set</b></button>
+                            <button :disabled="!connected" class="w-100 btn btn-sm btn-outline-primary" @touchstart="sendOSCcmd('/OPTICS/special1999', 1)" @touchend="sendOSCcmd('/OPTICS/special1999', 0, $event)">Preset<b class="d-block">Set</b></button>
                         </div>
                     </div>
                 </div>
@@ -240,7 +241,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[n-1]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice((n-1)*7, n*7)" :id="i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @touchstart="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="!connected || (stop.name == '')" @touchstart="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(i+(n-1)*7+1).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
@@ -250,7 +251,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[9+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(63+(n-1)*7, 63+n*7)" :id="63+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @touchstart="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="!connected || (stop.name == '')" @touchstart="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(64+i+(n-1)*7).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
@@ -260,7 +261,7 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[18+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(126+(n-1)*7, 126+n*7)" :id="126+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @touchstart="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="!connected || (stop.name == '')" @touchstart="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(127+i+(n-1)*7).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
@@ -270,12 +271,13 @@
                 <div class="col text-center" v-for="n in 9">
                     <b>{{divLabels[27+(n-1)]}}</b>
                     <div class="mb-2 d-flex" v-for="(stop, i) in stops.slice(189+(n-1)*7, 189+n*7)" :id="189+i+(n-1)*7">
-                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="stop.name == ''" @touchstart="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
+                        <button class="btn btn-sm w-100" :class="{'btn-secondary': stop.active == 0, 'btn-success': stop.active == 1}" :disabled="!connected || (stop.name == '')" @touchstart="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 1)" @touchend="sendOSCcmd('/Stops/push'+(190+i+(n-1)*7).toString(), 0, $event)" v-if="stop.name != ''">{{stop.name}}</button>
                     </div>
                 </div>
             </div>
         </div>
         <div class="container-fluid" v-if="page == 4">
+            <template v-if="udpAvailable">
             <div class="row g-3 justify-content-center align-items-end mb-4">
                 <div class="col-6 col-md-2">
                     <label class="form-label" for="tuner-rename-track">Track number</label>
@@ -296,25 +298,25 @@
             </div>
             <div class="row g-2 justify-content-center mb-3">
                 <div class="col-6 col-md-2">
-                    <button class="btn btn-success w-100"
+                    <button :disabled="!connected" class="btn btn-success w-100"
                         @click="renameItem('renameTrack', renameTrackNumber)">
                         Rename Track
                     </button>
                 </div>
                 <div class="col-6 col-md-2">
-                    <button class="btn btn-success w-100"
+                    <button :disabled="!connected" class="btn btn-success w-100"
                         @click="renameItem('renameFolder', renameFolderNumber)">
                         Rename Folder
                     </button>
                 </div>
                 <div class="col-6 col-md-2">
-                    <button class="btn btn-outline-primary w-100"
+                    <button :disabled="!connected" class="btn btn-outline-primary w-100"
                         @click="sendUDPcmd('getTrackName', {number: renameTrackNumber})">
                         Read Track Name
                     </button>
                 </div>
                 <div class="col-6 col-md-2">
-                    <button class="btn btn-outline-primary w-100"
+                    <button :disabled="!connected" class="btn btn-outline-primary w-100"
                         @click="sendUDPcmd('getFolderName', {number: renameFolderNumber})">
                         Read Folder Name
                     </button>
@@ -330,105 +332,51 @@
                     <strong>{{queriedFolderNames[renameFolderNumber] || '—'}}</strong>
                 </div>
                 <div class="col-8 col-md-2">
-                    <button class="btn btn-outline-secondary w-100"
+                    <button :disabled="!connected" class="btn btn-outline-secondary w-100"
                         @click="sendUDPcmd('gotoFolder', {number: renameFolderNumber})">
                         Go to Folder
                     </button>
                 </div>
             </div>
-            <div class="row mb-3" v-if="false">
-                <div class="col-6 col-md-3 mb-2 mb-md-0">
-                    <button class="btn btn-sm btn-outline-secondary me-1" @touchstart="sendOSCcmd('/OPTICS/special2042', 1)" @touchend="sendOSCcmd('/OPTICS/special2042', 0, $event)">Track ↑</button>
-                    <button class="btn btn-sm btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2043', 1)" @touchend="sendOSCcmd('/OPTICS/special2043', 0, $event)">Track ↓</button>
+            </template>
+            <template v-else>
+                <p class="text-center text-muted">Choose the current track or folder below, then enter its name using the controller keyboard.</p>
+                <div class="row g-3 mb-4 justify-content-center">
+                    <div class="col-12 col-md-5 text-center">
+                        <h3>Current track · {{trackNum || '—'}}</h3>
+                        <button :disabled="!connected" class="btn btn-outline-secondary me-2" @click="sendUDPcmd('trackDown')">Previous track</button>
+                        <button :disabled="!connected" class="btn btn-outline-secondary" @click="sendUDPcmd('trackUp')">Next track</button>
+                    </div>
+                    <div class="col-12 col-md-5 text-center">
+                        <h3>Current folder · {{namingCurrentFolder || '—'}}</h3>
+                        <button :disabled="!connected" class="btn btn-outline-secondary me-2" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">Previous folder</button>
+                        <button :disabled="!connected" class="btn btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">Next folder</button>
+                    </div>
                 </div>
-                <div class="col-6 col-md-3 text-center">
-                    <h3>{{trackNum}}</h3>
+                <div class="tuner-name-editor">
+                    <label class="d-block">Name on controller<output class="tuner-name-preview" aria-live="polite">{{folderTrackName || 'Use the keyboard below to enter a name'}}</output></label>
+                    <div class="tuner-name-keyboard" aria-label="Name entry keyboard">
+                        <div class="tuner-name-row" v-for="row in nameKeys" :key="row"><button :disabled="!connected" class="btn btn-outline-secondary" v-for="key in row" :key="key" @click="nameKey(key.charCodeAt(0))">{{key}}</button></div>
+                        <div class="tuner-name-row"><button :disabled="!connected" class="btn btn-outline-secondary" @click="nameKey(28)">Shift</button><button :disabled="!connected" class="btn btn-outline-secondary" @click="nameKey(32)">Space</button><button :disabled="!connected" class="btn btn-outline-secondary" @click="nameKey(8)">Delete</button><button :disabled="!connected" class="btn btn-outline-secondary" @click="nameKey(27)">Clear</button></div>
+                    </div>
+                    <p class="text-muted mt-3">The preview is the controller’s shared name buffer. Clear it to start a new name; Shift changes the next character.</p>
+                    <div class="d-flex flex-wrap gap-2 mb-3">
+                        <button class="btn btn-success" :disabled="!connected || !folderTrackName.trim()" @click="saveName(14)">Save to current track</button>
+                        <button class="btn btn-success" :disabled="!connected || !folderTrackName.trim()" @click="saveName(15)">Save to current folder</button>
+                    </div>
                 </div>
-                <hr class="d-block d-md-none mt-3">
-                <div class="col-6 col-md-3">
-                    <button class="btn btn-sm btn-outline-secondary me-1" @touchstart="sendOSCcmd('/OPTICS/special2040', 1)" @touchend="sendOSCcmd('/OPTICS/special2040', 0, $event)">Folder ↑</button>
-                    <button class="btn btn-sm btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2041', 1)" @touchend="sendOSCcmd('/OPTICS/special2041', 0, $event)">Folder ↓</button>
-                </div>
-                <div class="col-6 col-md-3 text-center">
-                    <h3>{{namingCurrentFolder}}</h3>
-                </div>
-                <hr class="d-block d-md-none mt-3">
-            </div>
-            <div class="row mb-3 justify-content-center" v-if="false">
-                <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-outline-success w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb14', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb14', 0, $event)">Save To Track</button>
-                </div>
-                <div class="col-6 col-md-2 mb-3">
-                    <button class="btn btn-outline-success w-100" @touchstart="sendOSCcmd('/OPTICS/specialkb15', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb15', 0, $event)">Save To Folder</button>
-                </div>
-                <div class="col-12 col-md-6 col-lg-4 text-center">
-                    <h3><i>New Name: </i>{{folderTrackName}}</h3>
-                </div>
-            </div>
-            <div class="text-danger text-center mb-2" v-if="false">
-                Press <i>Escape</i> to erase a name.
-            </div>
-            <div class="text-center mb-3" v-if="false">
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb27', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb27', 0, $event)">Escape</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb49', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb49', 0, $event)">1</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb50', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb50', 0, $event)">2</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb51', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb51', 0, $event)">3</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb52', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb52', 0, $event)">4</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb53', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb53', 0, $event)">5</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb54', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb54', 0, $event)">6</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb55', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb55', 0, $event)">7</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb56', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb56', 0, $event)">8</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb57', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb57', 0, $event)">9</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb48', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb48', 0, $event)">0</button>
-                <button class="btn btn-outline-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb8', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb8', 0, $event)">Delete</button>
-            </div>
-            <div class="text-center mb-3" v-if="false">
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb113', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb113', 0, $event)">Q</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb119', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb119', 0, $event)">W</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb101', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb101', 0, $event)">E</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb114', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb114', 0, $event)">R</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb116', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb116', 0, $event)">T</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb121', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb121', 0, $event)">Y</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb117', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb117', 0, $event)">U</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb105', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb105', 0, $event)">I</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb111', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb111', 0, $event)">O</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb112', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb112', 0, $event)">P</button>
-            </div>
-            <div class="text-center mb-3" v-if="false">
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb97', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb97', 0, $event)">A</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb115', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb115', 0, $event)">S</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb100', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb100', 0, $event)">D</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb102', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb102', 0, $event)">F</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb103', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb103', 0, $event)">G</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb104', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb104', 0, $event)">H</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb106', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb106', 0, $event)">J</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb107', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb107', 0, $event)">K</button>
-                <button class="btn btn-outline-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb108', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb108', 0, $event)">L</button>
-            </div>
-            <div class="text-center mb-3" v-if="false">
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb122', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb122', 0, $event)">Z</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb120', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb120', 0, $event)">X</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb99', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb99', 0, $event)">C</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb118', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb118', 0, $event)">V</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb98', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb98', 0, $event)">B</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb110', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb110', 0, $event)">N</button>
-                <button class="btn btn-outline-secondary btn-lg me-3" @touchstart="sendOSCcmd('/OPTICS/specialkb109', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb109', 0, $event)">M</button>
-                <button class="btn btn-outline-secondary btn-lg" @touchstart="sendOSCcmd('/OPTICS/specialkb28', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb28', 0, $event)">Shift</button>
-            </div>
-            <div class="text-center mb-3" v-if="false">
-                <button class="btn btn-outline-secondary btn-lg ps-5 pe-5" @touchstart="sendOSCcmd('/OPTICS/specialkb32', 1)" @touchend="sendOSCcmd('/OPTICS/specialkb32', 0, $event)">Space</button>
-            </div>
+            </template>
         </div>
-        <div class="container-fluid" v-if="page == 5">
-            <div v-for="(expr, i) in expressions" class="d-inline-block me-5 mb-5 text-center" :key="i">
-                <b v-if="expr.name != ''">{{expr.name}}</b>
-                <br v-if="expr.name != ''">
-                <input v-if="expr.name != ''" type="range" class="form-range mt-2" orient="vertical" min="0" max="1" @input="moveFader(i)" v-model="expr.value" step="0.001">
+        <div class="container-fluid" v-if="page == 5 && namedExpressions.length">
+            <div v-for="expr in namedExpressions" class="d-inline-block me-5 mb-5 text-center" :key="expr.id">
+                <b>{{expr.name}}</b>
+                <br>
+                <input :disabled="!connected" :aria-label="expr.name" type="range" class="form-range mt-2" orient="vertical" min="0" max="1" @input="moveFader(expr.id, $event.target.value)" :value="expr.value" step="0.001">
             </div>
         </div>
         <div class="container-fluid" v-if="page == 6">
             <div class="alert alert-secondary py-2 text-center">
-                UDP target: {{remoteTarget}}
+                Controller: {{remoteTarget}}
                 <span v-if="remoteReply"> · Last reply: {{remoteReply}}</span>
             </div>
             <div class="row mt-4">
@@ -450,34 +398,37 @@
             </div>
             <div class="row mt-1 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('toggleTrackLock')" class="btn btn-lg w-100 btn-outline-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
+                    <button :disabled="!connected" @click="sendUDPcmd('toggleTrackLock')" class="btn btn-lg w-100 btn-outline-primary pt-4 pb-4"><span v-if="trackLocked == 1">Unlock</span><span v-else>Lock</span></button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('recordToggle')" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Record</button>
-                </div>
-            </div>
-            <div class="row mt-3 justify-content-center">
-                <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('trackDown')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Down ↓</button>
-                </div>
-                <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('trackUp')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Up ↑</button>
+                    <button :disabled="!connected || (!!trackLocked && oscSpecialStatus[2035] !== 1)" :class="{'btn-danger': oscSpecialStatus[2035] === 1}" :aria-pressed="oscSpecialStatus[2035] === 1" @click="sendUDPcmd('recordToggle')" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Record</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('trackDown', {count: 10})" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Down ↓ 10</button>
+                    <button :disabled="!connected" @click="sendUDPcmd('trackDown')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Down ↓</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('trackUp', {count: 10})" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Up ↑ 10</button>
+                    <button :disabled="!connected" @click="sendUDPcmd('trackUp')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Track Up ↑</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center">
                 <div class="col-6 col-md-3">
-                    <button @click="sendUDPcmd('playToggle')" class="btn btn-lg w-100 btn-outline-success pt-4 pb-4">Play / Toggle</button>
+                    <button :disabled="!connected" @click="sendUDPcmd('trackDown', {count: 10})" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Down ↓ 10</button>
                 </div>
                 <div class="col-6 col-md-3">
-                    <button @touchstart="sendOSCcmd('/OPTICS/special2037', 1)" @touchend="sendOSCcmd('/OPTICS/special2037', 0, $event)" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Stop</button>
+                    <button :disabled="!connected" @click="sendUDPcmd('trackUp', {count: 10})" class="btn btn-sm w-100 btn-outline-secondary pt-3 pb-3">Track Up ↑ 10</button>
+                </div>
+            </div>
+            <div class="row mt-3 justify-content-center">
+                <div class="col-6 col-md-3">
+                    <button :disabled="!connected" :class="{'btn-success': oscSpecialStatus[2036] === 1}" :aria-pressed="oscSpecialStatus[2036] === 1" @click="sendUDPcmd('playToggle')" class="btn btn-lg w-100 btn-outline-success pt-4 pb-4">Play / Toggle</button>
+                </div>
+                <div class="col-6 col-md-3">
+                    <button :disabled="!connected" @touchstart="sendOSCcmd('/OPTICS/special2037', 1)" @touchend="sendOSCcmd('/OPTICS/special2037', 0, $event)" class="btn btn-lg w-100 btn-outline-danger pt-4 pb-4">Stop</button>
+                </div>
+                <div v-if="udpAvailable" class="col-6 col-md-3 mt-2 mt-md-0">
+                    <button :disabled="!connected" @click="sendUDPcmd('pause')" class="btn btn-lg w-100 btn-outline-secondary pt-4 pb-4">Pause</button>
                 </div>
             </div>
             <div class="row mt-3 justify-content-center align-items-end">
@@ -488,7 +439,7 @@
                         v-model.number="jumpTrackNumber">
                 </div>
                 <div class="col-5 col-md-3">
-                    <button class="btn btn-lg btn-primary w-100"
+                    <button :disabled="!connected || !validTrack(jumpTrackNumber)" class="btn btn-lg btn-primary w-100"
                         @click="sendUDPcmd('playTrack', {number: jumpTrackNumber})">
                         Select &amp; Play
                     </button>
@@ -498,7 +449,7 @@
                 </div>
             </div>
             <div class="container mt-3 text-center">
-                <button class="btn btn-outline-warning me-2" @touchstart="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 1)" @touchend="sendOSCcmd('/OPTICS/special' + (2100 + Number(i)).toString(), 0, $event)" v-for="(item, i) in trackNames" :id="i">{{item}}</button>
+                <button :disabled="!connected" class="btn btn-outline-warning me-2" @click="sendUDPcmd('playTrack', {number: track.number})" v-for="track in knownTracks" :key="track.number">{{track.number}} · {{track.name}}</button>
             </div>
         </div>
         <div class="container-fluid" v-if="page == 7">
@@ -507,44 +458,46 @@
                 <div class="col-4 text-center">
                     <h3 class="text-success">{{trackDupSrc}}</h3>
                     <p class="mb-5">Source</p>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2049', 1)" @touchend="sendOSCcmd('/OPTICS/special2049', 0, $event)">Track -10</button>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2045', 1)" @touchend="sendOSCcmd('/OPTICS/special2045', 0, $event)">Track Dn</button>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2044', 1)" @touchend="sendOSCcmd('/OPTICS/special2044', 0, $event)">Track Up</button>
-                    <button class="btn btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2048', 1)" @touchend="sendOSCcmd('/OPTICS/special2048', 0, $event)">Track +10</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2049', 1)" @touchend="sendOSCcmd('/OPTICS/special2049', 0, $event)">Track -10</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2045', 1)" @touchend="sendOSCcmd('/OPTICS/special2045', 0, $event)">Track Dn</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2044', 1)" @touchend="sendOSCcmd('/OPTICS/special2044', 0, $event)">Track Up</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2048', 1)" @touchend="sendOSCcmd('/OPTICS/special2048', 0, $event)">Track +10</button>
                 </div>
                 <div class="col-4 col-md-2 text-center">
-                    <button class="btn btn-lg w-100 btn-outline-success" @touchstart="sendOSCcmd('/OPTICS/special2052', 1)" @touchend="sendOSCcmd('/OPTICS/special2052', 0, $event)">Copy >></button>
+                    <button :disabled="!connected || !copyReady" class="btn btn-lg w-100 btn-outline-success" @touchstart="sendOSCcmd('/OPTICS/special2052', 1)" @touchend="sendOSCcmd('/OPTICS/special2052', 0, $event)">Copy >></button>
+                    <p class="small mt-2">Replaces the destination recording.</p>
+                    <p v-if="trackLocked" class="small">Unlock recording in Tracks to enable copying.</p>
                 </div>
                 <div class="col-4 text-center">
                     <h3 class="text-danger">{{trackDupTgt}}</h3>
                     <p class="mb-5">Destination</p>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2051', 1)" @touchend="sendOSCcmd('/OPTICS/special2051', 0, $event)">Track -10</button>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2047', 1)" @touchend="sendOSCcmd('/OPTICS/special2047', 0, $event)">Track Dn</button>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2046', 1)" @touchend="sendOSCcmd('/OPTICS/special2046', 0, $event)">Track Up</button>
-                    <button class="btn btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2050', 1)" @touchend="sendOSCcmd('/OPTICS/special2050', 0, $event)">Track +10</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2051', 1)" @touchend="sendOSCcmd('/OPTICS/special2051', 0, $event)">Track -10</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2047', 1)" @touchend="sendOSCcmd('/OPTICS/special2047', 0, $event)">Track Dn</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/OPTICS/special2046', 1)" @touchend="sendOSCcmd('/OPTICS/special2046', 0, $event)">Track Up</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary" @touchstart="sendOSCcmd('/OPTICS/special2050', 1)" @touchend="sendOSCcmd('/OPTICS/special2050', 0, $event)">Track +10</button>
                 </div>
             </div>
             <h2 class="text-center mb-3">User Variables</h2>
             <div class="text-center mb-4">
                 <h5>Page Number</h5>
-                <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/UserDef/dec999', 1)" @touchend="sendOSCcmd('/UserDef/dec999', 0, $event)">Down</button>
+                <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/UserDef/dec999', 1)" @touchend="sendOSCcmd('/UserDef/dec999', 0, $event)">Down</button>
                 <h5 class="me-3 d-inline">{{userVarPage}}</h5>
-                <button class="btn btn-outline-secondary"@touchstart="sendOSCcmd('/UserDef/inc999', 1)" @touchend="sendOSCcmd('/UserDef/inc999', 0, $event)">Up</button>
+                <button :disabled="!connected" class="btn btn-outline-secondary"@touchstart="sendOSCcmd('/UserDef/inc999', 1)" @touchend="sendOSCcmd('/UserDef/inc999', 0, $event)">Up</button>
             </div>
             <div class="row justify-content-center mb-3">
                 <div class="col text-center" v-for="(uvar, i) in userVars.slice(0, 5)" :key="i">
                     <h5 class="text-start w-100 bg-danger p-1"><b>Name:</b> {{uvar.name}}</h5>
                     <h5 class="text-start w-100 bg-secondary p-1"><b>Value:</b> {{uvar.value}}</h5>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 1)" @touchend="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 0, $event)">Down</button>
-                    <button class="btn btn-outline-secondary"@touchstart="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 1)" @touchend="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 0, $event)">Up</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 1)" @touchend="sendOSCcmd('/UserDef/dec'+(i+1).toString(), 0, $event)">Down</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary"@touchstart="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 1)" @touchend="sendOSCcmd('/UserDef/inc'+(i+1).toString(), 0, $event)">Up</button>
                 </div>
             </div>
             <div class="row justify-content-center">
                 <div class="col text-center" v-for="(uvar, i) in userVars.slice(5, 10)" :key="i">
                     <h5 class="text-start w-100 bg-danger p-1"><b>Name:</b> {{uvar.name}}</h5>
                     <h5 class="text-start w-100 bg-secondary p-1"><b>Value:</b> {{uvar.value}}</h5>
-                    <button class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/UserDef/dec'+(i+6).toString(), 1)" @touchend="sendOSCcmd('/UserDef/dec'+(i+6).toString(), 0, $event)">Down</button>
-                    <button class="btn btn-outline-secondary"@touchstart="sendOSCcmd('/UserDef/inc'+(i+6).toString(), 1)" @touchend="sendOSCcmd('/UserDef/inc'+(i+6).toString(), 0, $event)">Up</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary me-3" @touchstart="sendOSCcmd('/UserDef/dec'+(i+6).toString(), 1)" @touchend="sendOSCcmd('/UserDef/dec'+(i+6).toString(), 0, $event)">Down</button>
+                    <button :disabled="!connected" class="btn btn-outline-secondary"@touchstart="sendOSCcmd('/UserDef/inc'+(i+6).toString(), 1)" @touchend="sendOSCcmd('/UserDef/inc'+(i+6).toString(), 0, $event)">Up</button>
                 </div>
             </div>
         </div>
@@ -560,6 +513,10 @@
             data() {
                 return {
                     page: 0,
+                    connected: false,
+                    udpAvailable: false,
+                    oscSpecialStatus: {},
+                    nameKeys: ['1234567890', 'qwertyuiop', 'asdfghjkl', 'zxcvbnm', "-.,'!?()"],
                     siteName: "",
                     fugaraPairingCode: "",
                     trackNum: "",
@@ -592,27 +549,46 @@
                     renameText: ""
                 }
             },
+            computed: {
+                namedExpressions() {
+                    return this.expressions.map((expr, id) => ({...expr, id})).filter(expr => expr.name?.trim());
+                },
+                knownTracks() {
+                    return Object.entries(this.trackNames).map(([number, name]) => ({number: Number(number), name}))
+                        .filter(track => this.validTrack(track.number) && track.name?.trim());
+                },
+                copyReady() {
+                    return !!this.trackDupSrc && !!this.trackDupTgt && this.trackDupSrc !== '[source]' && this.trackDupTgt !== '[target]' && !this.trackLocked;
+                }
+            },
             methods: {
+                canCommand(action) {
+                    return this.udpAvailable || ['memoryLevelUp', 'memoryLevelDown', 'generalCancel',
+                        'trackUp', 'trackDown', 'toggleTrackLock', 'recordToggle', 'playToggle',
+                        'playTrack', 'toggleStop', 'toggleButton', 'setButton', 'clearButton'].includes(action);
+                },
+                validTrack(number) { return Number.isInteger(number) && number >= 1 && number <= this.numTracks; },
                 sendMessage(message) {
+                    if (!socket.connected) return;
                     socket.emit(message);
                 },
                 sendOSCcmd(cmd, state = 1, event = null) {
+                    if (!socket.connected) { this.remoteReply = 'Disconnected · command not sent'; return; }
                     socket.emit('sendOSCcmd', {cmd: cmd, state: state});
                     if (state == 0 && event) {
                         event.target.blur();
                     }
                 },
                 sendUDPcmd(action, values = {}) {
-                    socket.emit(
+                    if (!socket.connected) { this.remoteReply = 'Disconnected · command not sent'; return; }
+                    if (!this.canCommand(action)) { this.remoteReply = 'Controller capability unavailable'; return; }
+                    socket.timeout(5000).emit(
                         'sendUDPcmd',
                         {action: action, ...values},
-                        (result) => {
-                            if (result?.ok && result.transport === 'osc') {
-                                this.remoteReply = 'Queued via OSC: ' + result.commands.join(' · ');
-                            } else if (!result?.ok) {
-                                this.remoteReply =
-                                    result?.error || 'UDP command was not accepted';
-                            }
+                        (error, result) => {
+                            this.remoteReply = error ? 'No server acknowledgement · check controller before retrying'
+                                : result?.ok ? (result.transport === 'osc' ? 'Queued via OSC' : 'Command sent')
+                                : result?.error || 'Command not accepted';
                         }
                     );
                 },
@@ -622,11 +598,30 @@
                         name: this.renameText
                     });
                 },
-                moveFader(id) {
-                    socket.emit('moveFader', {id: id, value: this.expressions[id].value});
+                nameKey(code) {
+                    this.sendOSCcmd('/OPTICS/specialkb' + code, 1);
+                    if (socket.connected) window.setTimeout(() => {
+                        if (socket.connected) this.sendOSCcmd('/OPTICS/specialkb' + code, 0);
+                    }, 80);
+                },
+                saveName(code) {
+                    if (this.folderTrackName.trim() && [14, 15].includes(code)) this.nameKey(code);
+                },
+                moveFader(id, rawValue) {
+                    if (!socket.connected || !this.expressions[id]?.name) return;
+                    const value = Number(rawValue);
+                    if (!Number.isFinite(value) || value < 0 || value > 1) return;
+                    socket.emit('moveFader', {id, value});
+                    this.expressions[id].value = value;
                 }
             }
         }).mount('#app');
+
+        socket.on('connect', () => { app.connected = true; app.remoteReply = ''; });
+        socket.on('disconnect', () => { app.connected = false; app.udpAvailable = false; app.remoteReply = 'Connection lost'; });
+        socket.on('connect_error', () => { app.connected = false; app.udpAvailable = false; app.remoteReply = 'Unable to connect to server'; });
+        socket.on('udpAvailable', value => { app.udpAvailable = value === true; });
+        socket.on('oscSpecialStatus', value => { app.oscSpecialStatus = value; });
 
         socket.on('siteName', function (name) {
             app.siteName = name;
@@ -682,6 +677,7 @@
 
         socket.on('expressions', function (expressions) {
             app.expressions = expressions;
+            if (!app.namedExpressions.length && app.page === 5) app.page = 0;
         });
 
         socket.on('keyboardStatus', function (status) {
